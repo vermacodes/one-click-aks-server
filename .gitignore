@@ -50,8 +50,13 @@ npm-debug.log
 # Go workspace file
 go.work
 
-# Go Server Build
-**/one-click-aks-server
+# Ignore Go binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/one-click-aks-server
 
 # Logs
 logs
