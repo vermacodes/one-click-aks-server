@@ -49,14 +49,6 @@ func AuthRequired(authService entity.AuthService, logStream entity.LogStreamServ
 			return
 		}
 
-		// useServicePrincipal, err := strconv.ParseBool(os.Getenv("USE_SERVICE_PRINCIPAL"))
-		// if err != nil {
-		// 	slog.Error("not able to parse USE_SERVICE_PRINCIPAL env variable", err)
-		// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "not able to parse USE_SERVICE_PRINCIPAL env variable"})
-		// 	return
-		// }
-
-		//if useServicePrincipal {
 		loginStatus, err := authService.ServicePrincipalLoginStatus()
 		if err != nil {
 			slog.Error("not able to get auth status", err)
@@ -69,7 +61,6 @@ func AuthRequired(authService entity.AuthService, logStream entity.LogStreamServ
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		//}
 
 		c.Next()
 	}
