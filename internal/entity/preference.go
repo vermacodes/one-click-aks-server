@@ -7,7 +7,7 @@ type Preference struct {
 
 type PreferenceService interface {
 	GetPreference() (Preference, error)
-	SetPreference(prefence Preference) error
+	SetPreference(preference Preference) error
 }
 
 type PreferenceRepository interface {
