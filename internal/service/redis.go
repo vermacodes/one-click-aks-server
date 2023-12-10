@@ -9,9 +9,9 @@ type RedisService struct {
 	redisRepository entity.RedisRepository
 }
 
-func NewRedisService(redisReposiroty entity.RedisRepository) entity.RedisService {
+func NewRedisService(redisRepository entity.RedisRepository) entity.RedisService {
 	return &RedisService{
-		redisRepository: redisReposiroty,
+		redisRepository: redisRepository,
 	}
 }
 
@@ -22,6 +22,6 @@ func (r *RedisService) ResetServerCache() error {
 		return err
 	}
 
-	slog.Debug("Server Cachek Reset complete")
+	slog.Debug("Server Cache Reset complete")
 	return nil
 }
