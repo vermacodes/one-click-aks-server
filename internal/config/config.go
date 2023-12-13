@@ -26,6 +26,8 @@ func NewConfig() *Config {
 	}
 
 	armUserPrincipalName := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+	slog.Info("ARM_USER_PRINCIPAL_NAME: " + armUserPrincipalName)
+
 	if armUserPrincipalName == "" {
 		slog.Error("ARM_USER_PRINCIPAL_NAME not set")
 		os.Exit(1)

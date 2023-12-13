@@ -4,18 +4,9 @@
 
 rm one-click-aks-server
 
-export ROOT_DIR=$(pwd)
-export LOG_LEVEL="-4"
-
-export ARM_USER_PRINCIPAL_NAME=$(az account show --output json | jq -r .user.name)
-if [ $? -ne 0 ]; then
-    err "Failed to get user principal name from az cli"
-    exit 1
-fi
-
 export VERSION="$(date +%Y%m%d)"
 
-required_env_vars=("ARM_USER_PRINCIPAL_NAME" "AZURE_SUBSCRIPTION_ID" "STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION" "ROOT_DIR")
+required_env_vars=("STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION")
 
 for var in "${required_env_vars[@]}"; do
     if [[ -z "${!var}" ]]; then
