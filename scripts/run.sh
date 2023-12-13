@@ -2,37 +2,8 @@
 
 # This script is for local testing. It starts both server and UI in one go.
 
-# gather input parameters
-# if flag -d is set the set LOG_LEVEL to -4 else to 0
-
-while getopts ":d" opt; do
-    case $opt in
-    d)
-        LOG_LEVEL="-4"
-        ;;
-    \?)
-        echo "Invalid option -$OPTARG" >&2
-        ;;
-    esac
-done
-
-if [ -z "${LOG_LEVEL}" ]; then
-    LOG_LEVEL="0"
-fi
-
-echo "LOG_LEVEL = ${LOG_LEVEL}"
-
 export ROOT_DIR=$(pwd)
-
-if [[ "${SAS_TOKEN}" == "" ]]; then
-    echo "SAS TOKEN missing"
-    exit 1
-fi
-
-if [[ "${STORAGE_ACCOUNT_NAME}" == "" ]]; then
-    echo "STORAGE ACCOUNT NAME missing"
-    exit 1
-fi
+export LOG_LEVEL="-4"
 
 export ARM_USER_PRINCIPAL_NAME=$(az account show --output json | jq -r .user.name)
 if [ $? -ne 0 ]; then
@@ -40,9 +11,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Storage Account -> ${STORAGE_ACCOUNT_NAME}"
-
 export VERSION="$(date +%Y%m%d)"
+
+required_env_vars=("ARM_USER_PRINCIPAL_NAME" "STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION" "ROOT_DIR")
+
+for var in "${required_env_vars[@]}"; do
+    if [[ -z "${!var}" ]]; then
+        echo "Required environment variable $var is missing"
+        exit 1
+    fi
+done
 
 rm one-click-aks-server
 
