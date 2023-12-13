@@ -3,22 +3,55 @@ package config
 import (
 	"os"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/exp/slog"
 )
 
 type Config struct {
 	SubscriptionID                  string
 	KubernetesVersionApiUrlTemplate string
+	ArmUserPrincipalName            string
+	AuthTokenAud                    string
+	AuthTokenIss                    string
+	RootDir                         string
 	// Add other configuration fields as needed
 }
 
 func NewConfig() *Config {
+
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		slog.Error("Error loading .env file")
+	}
+
+	armUserPrincipalName := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+	if armUserPrincipalName == "" {
+		slog.Error("ARM_USER_PRINCIPAL_NAME not set")
+		os.Exit(1)
+	}
+	slog.Info("ARM_USER_PRINCIPAL_NAME: " + armUserPrincipalName)
+
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
 		slog.Error("AZURE_SUBSCRIPTION_ID not set")
 		os.Exit(1)
 	}
 	slog.Info("AZURE_SUBSCRIPTION_ID: " + subscriptionID)
+
+	authTokenAud := os.Getenv("AUTH_TOKEN_AUD")
+	if authTokenAud == "" {
+		slog.Error("AUTH_TOKEN_AUD not set")
+		os.Exit(1)
+	}
+	slog.Info("AUTH_TOKEN_AUD: " + authTokenAud)
+
+	authTokenIss := os.Getenv("AUTH_TOKEN_ISS")
+	if authTokenIss == "" {
+		slog.Error("AUTH_TOKEN_ISS not set")
+		os.Exit(1)
+	}
+	slog.Info("AUTH_TOKEN_ISS: " + authTokenIss)
 
 	rootDir := os.Getenv("ROOT_DIR")
 	if rootDir == "" {
@@ -36,6 +69,10 @@ func NewConfig() *Config {
 	return &Config{
 		SubscriptionID:                  subscriptionID,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
+		ArmUserPrincipalName:            armUserPrincipalName,
+		AuthTokenAud:                    authTokenAud,
+		AuthTokenIss:                    authTokenIss,
+		RootDir:                         rootDir,
 		// Set other fields
 	}
 }
