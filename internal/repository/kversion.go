@@ -2,8 +2,7 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 
 	"one-click-aks-server/internal/entity"
@@ -37,8 +36,6 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 		return "", err
 	}
 
-	slog.Debug("Access Token" + accessToken.Token)
-
 	// Make HTTP request to retrieve Kubernetes versions
 	url := "https://management.azure.com/subscriptions/da846304-0089-48e0-bfa7-65f68a3eb74f/providers/Microsoft.ContainerService/locations/" + location + "/kubernetesVersions?api-version=2023-09-01"
 	req, err := http.NewRequest("GET", url, nil)
@@ -55,18 +52,10 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	defer resp.Body.Close()
 
 	// Read the response body
-	var result map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
-	// Extract the Kubernetes version from the response
-	versions := result["value"].([]interface{})
-	if len(versions) > 0 {
-		version := versions[0].(map[string]interface{})
-		return version["name"].(string), nil
-	}
-
-	return "", fmt.Errorf("No Kubernetes versions found")
+	return string(body), nil
 }
