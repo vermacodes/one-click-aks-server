@@ -2,9 +2,11 @@ package main
 
 import (
 	"net/http"
+	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/cache"
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/handler"
-	"os"
-	"strconv"
+	"one-click-aks-server/internal/logger"
 
 	"one-click-aks-server/internal/middleware"
 	"one-click-aks-server/internal/repository"
@@ -12,7 +14,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slog"
 )
 
 type Status struct {
@@ -33,20 +34,10 @@ func status(c *gin.Context) {
 
 func main() {
 
-	// Logging config.
-	logLevel := os.Getenv("LOG_LEVEL")
-	logLevelInt, err := strconv.Atoi(logLevel)
-	if err != nil {
-		logLevelInt = 0
-	}
-
-	opts := &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.Level(logLevelInt),
-	}
-
-	slogHandler := slog.NewTextHandler(os.Stdout, opts)
-	slog.SetDefault(slog.New(slogHandler))
+	appConfig := config.NewConfig()
+	auth := auth.NewAuth()
+	logger.SetupLogger()
+	rdb := cache.NewRedisClient()
 
 	// repositories
 	logStreamRepository := repository.NewLogStreamRepository()
@@ -54,10 +45,10 @@ func main() {
 	actionStatusRepository := repository.NewActionStatusRepository()
 	redisRepository := repository.NewRedisRepository()
 	authRepository := repository.NewAuthRepository()
-	storageAccountRepository := repository.NewStorageAccountRepository()
+	storageAccountRepository := repository.NewStorageAccountRepository(auth, rdb, appConfig)
 	workspaceRepository := repository.NewTfWorkspaceRepository()
 	prefRepository := repository.NewPreferenceRepository()
-	kVersionRepository := repository.NewKVersionRepository()
+	kVersionRepository := repository.NewKVersionRepository(appConfig, auth, rdb)
 	labRepository := repository.NewLabRepository()
 	terraformRepository := repository.NewTerraformRepository()
 	deploymentRepository := repository.NewDeploymentRepository()

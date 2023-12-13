@@ -2,47 +2,55 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
+	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/exp/slog"
 )
 
 type kVersionRepository struct {
-	cred *azidentity.DefaultAzureCredential
+	auth                            *auth.Auth
+	rdb                             *redis.Client
+	subscriptionId                  string
+	kubernetesVersionApiUrlTemplate string
 }
 
-func NewKVersionRepository() entity.KVersionRepository {
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		panic(err)
-	}
+func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis.Client) entity.KVersionRepository {
 	return &kVersionRepository{
-		cred: cred,
+		auth:                            auth,
+		rdb:                             rdb,
+		subscriptionId:                  appConfig.SubscriptionID,
+		kubernetesVersionApiUrlTemplate: appConfig.KubernetesVersionApiUrlTemplate,
 	}
 }
 
 func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	slog.Info("Getting Kubernetes versions for location " + location)
-	// Get access token from cred
-	accessToken, err := k.cred.GetToken(context.Background(), policy.TokenRequestOptions{
-		Scopes: []string{"https://management.azure.com/.default"},
-	})
+
+	// Check if the orchestrator versions are already cached in Redis
+	kubernetesVersions, err := k.rdb.Get(context.Background(), "kubernetesVersions").Result()
+	if err == nil {
+		return kubernetesVersions, nil
+	}
+
+	accessToken, err := k.auth.GetARMAccessToken()
 	if err != nil {
 		return "", err
 	}
 
 	// Make HTTP request to retrieve Kubernetes versions
-	url := "https://management.azure.com/subscriptions/da846304-0089-48e0-bfa7-65f68a3eb74f/providers/Microsoft.ContainerService/locations/" + location + "/kubernetesVersions?api-version=2023-09-01"
+	url := fmt.Sprintf(k.kubernetesVersionApiUrlTemplate, k.subscriptionId, location)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken.Token)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -55,6 +63,12 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+
+	// Set the response body in Redis
+	err = k.rdb.Set(context.Background(), "kubernetesVersions", string(body), 0).Err()
+	if err != nil {
+		slog.Error("failed to set kubernetes versions in redis", err)
 	}
 
 	return string(body), nil

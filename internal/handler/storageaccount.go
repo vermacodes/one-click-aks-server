@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"one-click-aks-server/internal/entity"
-	"one-click-aks-server/internal/helper"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +17,8 @@ func NewStorageAccountHandler(r *gin.RouterGroup, service entity.StorageAccountS
 		storageAccountService: service,
 	}
 
-	r.GET("/storageaccount", handler.GetStorageAccountConfiguration)
+	//r.GET("/storageaccount", handler.GetStorageAccountConfiguration)
+	r.GET("/storageaccount", handler.GetStorageAccount)
 }
 
 func NewStorageAccountWithActionStatusHandler(r *gin.RouterGroup, service entity.StorageAccountService) {
@@ -26,70 +26,48 @@ func NewStorageAccountWithActionStatusHandler(r *gin.RouterGroup, service entity
 		storageAccountService: service,
 	}
 
-	r.POST("/storageaccount", handler.ConfigureStorageAccount)
+	//r.POST("/storageaccount", handler.ConfigureStorageAccount)
 	r.PUT("/storageaccount/breakbloblease/:workspaceName", handler.BreakBlobLease)
 }
 
-func (s *StorageAccountHandler) GetStorageAccountConfiguration(c *gin.Context) {
-	configuration := entity.StateConfiguration{}
-	storageAccountName, err := s.storageAccountService.GetStorageAccountName()
+func (s *StorageAccountHandler) GetStorageAccount(c *gin.Context) {
+	storageAccount, err := s.storageAccountService.GetStorageAccount()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	resourceGroup, err := s.storageAccountService.GetResourceGroup()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	storageAccount, err := s.storageAccountService.GetStorageAccount(storageAccountName)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	blobContainer, err := s.storageAccountService.GetBlobContainer(storageAccountName, "tfstate")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	configuration.ResourceGroup = resourceGroup
-	configuration.StorageAccount = storageAccount
-	configuration.BlobContainer = blobContainer
-
-	c.IndentedJSON(http.StatusOK, configuration)
+	c.IndentedJSON(http.StatusOK, storageAccount)
 }
 
-func (s *StorageAccountHandler) ConfigureStorageAccount(c *gin.Context) {
-	configuration := entity.StateConfiguration{}
+// func (s *StorageAccountHandler) GetStorageAccountConfiguration(c *gin.Context) {
+// 	configuration := entity.StateConfiguration{}
+// 	storageAccountName, err := s.storageAccountService.GetStorageAccountName()
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	resourceGroup, err := s.storageAccountService.GetResourceGroup()
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	storageAccount, err := s.storageAccountService.GetStorageAccount(storageAccountName)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	blobContainer, err := s.storageAccountService.GetBlobContainer(storageAccountName, "tfstate")
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	resourceGroup, err := s.storageAccountService.CreateResourceGroup()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+// 	configuration.ResourceGroup = resourceGroup
+// 	configuration.StorageAccount = storageAccount
+// 	configuration.BlobContainer = blobContainer
 
-	storageAccount, err := s.storageAccountService.CreateStorageAccount(helper.Generate(12))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	blobContainer, err := s.storageAccountService.CreateBlobContainer(storageAccount.Name, "tfstate")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Creating continer for labs.
-	s.storageAccountService.CreateBlobContainer(storageAccount.Name, "labs")
-
-	configuration.ResourceGroup = resourceGroup
-	configuration.StorageAccount = storageAccount
-	configuration.BlobContainer = blobContainer
-
-	c.IndentedJSON(http.StatusCreated, configuration)
-}
+// 	c.IndentedJSON(http.StatusOK, configuration)
+// }
 
 func (s *StorageAccountHandler) BreakBlobLease(c *gin.Context) {
 

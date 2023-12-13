@@ -6,6 +6,8 @@ github.com/Azure/azure-sdk-for-go/sdk/data/aztables v1.1.0 h1:ONYihl/vbwtVAmEmqo
 github.com/Azure/azure-sdk-for-go/sdk/data/aztables v1.1.0/go.mod h1:PMB5kQ1apg/irrvpPryVdchapVIYP+VV9iHJQ2CHwG8=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.0 h1:d81/ng9rET2YqdVkVwkb6EXeRrLJIwyGnJcAlAWKwhs=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.0/go.mod h1:s4kgfzA0covAXNicZHDMN58jExvcng2mC/DepXiF1EI=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.5.0 h1:AifHbc4mg0x9zW52WOpKbsHaDKuRhlI7TVl47thgQ70=
+github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage v1.5.0/go.mod h1:T5RfihdXtBDxt1Ch2wobif3TvzTdumDy29kahv6AV9A=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 h1:WpB/QDNLpMw72xHJc34BNNykqSOeEJDAWkhf0u12/Jk=
 github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
 github.com/Rican7/conjson v0.1.0 h1:8dNZzdy1mzwo9LOideWcOyY3PbKdsJPF7hj31/mrIiw=

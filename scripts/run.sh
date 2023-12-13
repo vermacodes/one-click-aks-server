@@ -2,6 +2,8 @@
 
 # This script is for local testing. It starts both server and UI in one go.
 
+rm one-click-aks-server
+
 export ROOT_DIR=$(pwd)
 export LOG_LEVEL="-4"
 
@@ -13,7 +15,7 @@ fi
 
 export VERSION="$(date +%Y%m%d)"
 
-required_env_vars=("ARM_USER_PRINCIPAL_NAME" "STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION" "ROOT_DIR")
+required_env_vars=("ARM_USER_PRINCIPAL_NAME" "AZURE_SUBSCRIPTION_ID" "STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION" "ROOT_DIR")
 
 for var in "${required_env_vars[@]}"; do
     if [[ -z "${!var}" ]]; then
@@ -22,8 +24,7 @@ for var in "${required_env_vars[@]}"; do
     fi
 done
 
-rm one-click-aks-server
 
 go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
 
-redis-cli flushall && export LOG_LEVEL="${LOG_LEVEL}" && export PORT="8881" && ./one-click-aks-server
+redis-cli flushall
