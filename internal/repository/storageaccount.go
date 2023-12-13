@@ -30,7 +30,7 @@ func NewStorageAccountRepository(auth *auth.Auth, rdb *redis.Client, config *con
 	}
 }
 
-https://learn.microsoft.com/en-us/rest/api/storagerp/storage-accounts/list-by-resource-group?view=rest-storagerp-2023-01-01&tabs=Go
+// https://learn.microsoft.com/en-us/rest/api/storagerp/storage-accounts/list-by-resource-group?view=rest-storagerp-2023-01-01&tabs=Go
 func (s *storageAccountRepository) GetStorageAccount() (armstorage.Account, error) {
 
 	// Check if the storage account is already cached in Redis
