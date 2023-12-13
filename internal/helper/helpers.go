@@ -14,11 +14,12 @@ import (
 	"unicode"
 	"unsafe"
 
+	"one-click-aks-server/internal/entity"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/golang-jwt/jwt"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
 	"golang.org/x/exp/slog"
 )
 

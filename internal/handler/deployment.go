@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
+
 	"github.com/gin-gonic/gin"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
-	"github.com/vermacodes/one-click-aks/app/server/helper"
 	"golang.org/x/exp/slog"
 )
 

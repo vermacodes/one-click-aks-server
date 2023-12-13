@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/vermacodes/one-click-aks/app/server/entity"
-	"github.com/vermacodes/one-click-aks/app/server/helper"
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
+
 	"golang.org/x/exp/slog"
 )
 

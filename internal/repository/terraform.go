@@ -6,10 +6,11 @@ import (
 	"os/exec"
 	"reflect"
 
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
+
 	"github.com/Rican7/conjson"
 	"github.com/Rican7/conjson/transform"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
-	"github.com/vermacodes/one-click-aks/app/server/helper"
 	"golang.org/x/exp/slog"
 )
 

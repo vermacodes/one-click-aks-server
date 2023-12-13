@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/vermacodes/one-click-aks/app/server/entity"
+	"one-click-aks-server/internal/entity"
+
 	"golang.org/x/exp/slog"
 )
 

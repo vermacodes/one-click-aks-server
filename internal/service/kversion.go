@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/vermacodes/one-click-aks/app/server/entity"
+	"one-click-aks-server/internal/entity"
+
 	"golang.org/x/exp/slog"
 )
 
@@ -24,7 +25,7 @@ func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceServic
 }
 
 func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
-
+	slog.Info("Getting Kubernetes versions")
 	kubernetesVersions := entity.KubernetesVersions{}
 
 	preference, err := k.preferenceService.GetPreference()
@@ -33,6 +34,7 @@ func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
 		return kubernetesVersions, err
 	}
 
+	slog.Info("Getting Kubernetes versions for location " + preference.AzureRegion)
 	out, err := k.kVersionRepository.GetOrchestrator(preference.AzureRegion)
 	if err != nil {
 		slog.Error("not able to get orchestrator", err)

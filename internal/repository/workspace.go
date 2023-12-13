@@ -5,8 +5,9 @@ import (
 	"os"
 	"os/exec"
 
+	"one-click-aks-server/internal/entity"
+
 	"github.com/redis/go-redis/v9"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
 )
 
 type tfWorkspaceRepository struct{}

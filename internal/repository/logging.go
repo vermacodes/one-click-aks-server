@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
-	"github.com/vermacodes/one-click-aks/app/server/helper"
 	"golang.org/x/exp/slog"
 )
 

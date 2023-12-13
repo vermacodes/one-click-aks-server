@@ -6,11 +6,12 @@ import (
 	"os"
 	"strconv"
 
+	"one-click-aks-server/internal/middleware"
+	"one-click-aks-server/internal/repository"
+	"one-click-aks-server/internal/service"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/vermacodes/one-click-aks/app/server/middleware"
-	"github.com/vermacodes/one-click-aks/app/server/repository"
-	"github.com/vermacodes/one-click-aks/app/server/service"
 	"golang.org/x/exp/slog"
 )
 

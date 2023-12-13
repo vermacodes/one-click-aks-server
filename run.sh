@@ -44,6 +44,8 @@ echo "Storage Account -> ${STORAGE_ACCOUNT_NAME}"
 
 export VERSION="$(date +%Y%m%d)"
 
-go build -ldflags "-X 'main.version=$VERSION' -X 'github.com/vermacodes/one-click-aks/app/server/entity.SasToken=$SAS_TOKEN' -X 'github.com/vermacodes/one-click-aks/app/server/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
+rm one-click-aks-server
+
+go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
 
 redis-cli flushall && export LOG_LEVEL="${LOG_LEVEL}" && export PORT="8881" && ./one-click-aks-server

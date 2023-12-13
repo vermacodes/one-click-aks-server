@@ -3,8 +3,9 @@ package middleware
 import (
 	"net/http"
 
+	"one-click-aks-server/internal/entity"
+
 	"github.com/gin-gonic/gin"
-	"github.com/vermacodes/one-click-aks/app/server/entity"
 	"golang.org/x/exp/slog"
 )
 

@@ -1,6 +1,6 @@
 package service
 
-import "github.com/vermacodes/one-click-aks/app/server/entity"
+import "one-click-aks-server/internal/entity"
 
 type loggingService struct {
 	loggingRepository entity.LoggingRepository
