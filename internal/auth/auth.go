@@ -3,6 +3,9 @@ package auth
 import (
 	"context"
 	"log"
+	"one-click-aks-server/internal/config"
+	"os"
+	"os/exec"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -14,12 +17,28 @@ type Auth struct {
 	Cred *azidentity.DefaultAzureCredential
 }
 
-func NewAuth() *Auth {
+func NewAuth(appConfig *config.Config) *Auth {
+
+	if appConfig.UseMsi {
+		AzureCLILoginByMSI()
+	}
+
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatalf("Failed to initialize auth: %v", err)
 	}
 	return &Auth{Cred: cred}
+}
+
+// login using msi
+func AzureCLILoginByMSI() {
+	out, err := exec.Command("bash", "-c", "az login --identity").Output()
+	if err != nil {
+		slog.Error("not able to login using msi", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az login --identity output: " + string(out))
 }
 
 func (a *Auth) GetARMAccessToken() (string, error) {

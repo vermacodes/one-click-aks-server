@@ -15,6 +15,7 @@ type Config struct {
 	AuthTokenIss                    string
 	RootDir                         string
 	ProtectedLabSecret              string
+	UseMsi                          bool
 	// Add other configuration fields as needed
 }
 
@@ -69,6 +70,19 @@ func NewConfig() *Config {
 		os.Exit(1)
 	}
 
+	useMsiString := os.Getenv("USE_MSI")
+	if useMsiString == "" {
+		slog.Error("USE_MSI not set")
+		os.Exit(1)
+	}
+	useMsi := false
+	if useMsiString == "true" {
+		slog.Info("USE_MSI: true")
+		useMsi = true
+	} else {
+		slog.Info("USE_MSI: false")
+	}
+
 	kubernetesVersionApiUrlTemplate := os.Getenv("KUBERNETES_VERSION_API_URL_TEMPLATE")
 	if kubernetesVersionApiUrlTemplate == "" {
 		kubernetesVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.ContainerService/locations/%s/kubernetesVersions?api-version=2023-09-01"
@@ -83,6 +97,7 @@ func NewConfig() *Config {
 		AuthTokenIss:                    authTokenIss,
 		RootDir:                         rootDir,
 		ProtectedLabSecret:              protectedLabSecret,
+		UseMsi:                          useMsi,
 		// Set other fields
 	}
 }

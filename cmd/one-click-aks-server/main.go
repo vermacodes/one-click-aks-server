@@ -35,7 +35,7 @@ func status(c *gin.Context) {
 func main() {
 
 	appConfig := config.NewConfig()
-	auth := auth.NewAuth()
+	auth := auth.NewAuth(appConfig)
 	logger.SetupLogger()
 	rdb := cache.NewRedisClient()
 
