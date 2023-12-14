@@ -125,15 +125,16 @@ type LabService interface {
 	SetLabInRedis(LabType) error
 	DeleteLabFromRedis() error
 
-	// Public Labs
-	// Includes = sharedlabs, readinesslabs, mockcases.
-	GetPublicLabs(typeOfLab string) ([]LabType, error)
+	// // Public Labs
+	// // Includes = sharedlabs, readinesslabs, mockcases.
+	// GetPublicLabs(typeOfLab string) ([]LabType, error)
 
-	// Private Labs
-	// Includes labs that are saved in your own subscription.
-	GetMyLabs() ([]LabType, error)
-	AddMyLab(LabType) error
-	DeleteMyLab(lab LabType) error
+	// // Private Labs
+	// // Includes labs that are saved in your own subscription.
+	// GetMyLabs() ([]LabType, error)
+	// AddMyLab(LabType) error
+	// DeleteMyLab(lab LabType) error
+	GetProtectedLab(typeOfLab string, labId string) (LabType, error)
 	HelperDefaultLab() (LabType, error)
 }
 
@@ -142,19 +143,21 @@ type LabRepository interface {
 	SetLabInRedis(string) error
 	DeleteLabFromRedis() error
 
+	GetProtectedLab(typeOfLab string, labId string) (string, error)
+
 	GetExtendScriptTemplate() (string, error)
 
-	// Public labs
-	GetEnumerationResults(typeOfLab string) (EnumerationResults, error)
-	GetLab(name string, typeOfLab string) (LabType, error)
+	// // Public labs
+	// GetEnumerationResults(typeOfLab string) (EnumerationResults, error)
+	// GetLab(name string, typeOfLab string) (LabType, error)
 
-	// My Labs
-	GetMyLabsFromRedis() (string, error)
-	GetMyLabsFromStorageAccount(string) (string, error)
-	GetMyLabFromStorageAccount(string, string) (string, error)
+	// // My Labs
+	// GetMyLabsFromRedis() (string, error)
+	// GetMyLabsFromStorageAccount(string) (string, error)
+	// GetMyLabFromStorageAccount(string, string) (string, error)
 
-	AddMyLab(storageAccountName string, labId string, lab string) error
-	DeleteLabsFromRedis() error
+	// AddMyLab(storageAccountName string, labId string, lab string) error
+	// DeleteLabsFromRedis() error
 
-	DeleteMyLab(labId string, storageAccountName string) error
+	// DeleteMyLab(labId string, storageAccountName string) error
 }

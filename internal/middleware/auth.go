@@ -50,18 +50,20 @@ func AuthRequired(authService entity.AuthService, logStream entity.LogStreamServ
 			return
 		}
 
-		loginStatus, err := authService.ServicePrincipalLoginStatus()
-		if err != nil {
-			slog.Error("not able to get auth status", err)
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
+		// loginStatus, err := authService.ServicePrincipalLoginStatus()
+		// if err != nil {
+		// 	slog.Error("not able to get auth status", err)
+		// 	c.AbortWithStatus(http.StatusUnauthorized)
+		// 	return
+		// }
 
-		if !loginStatus.IsLoggedIn {
-			slog.Info("authentication required")
-			c.AbortWithStatus(http.StatusUnauthorized)
-			return
-		}
+		// if !loginStatus.IsLoggedIn {
+		// 	slog.Info("authentication required")
+		// 	c.AbortWithStatus(http.StatusUnauthorized)
+		// 	return
+		// }
+
+		os.Setenv("ACTLABS_AUTH_TOKEN", authToken) // used by repositories to authenticate with other services
 
 		c.Next()
 	}

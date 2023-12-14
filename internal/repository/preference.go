@@ -2,17 +2,27 @@ package repository
 
 import (
 	"context"
-	"os/exec"
+	"fmt"
+	"io"
 
+	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/redis/go-redis/v9"
 )
 
-type preferenceRepository struct{}
+type preferenceRepository struct {
+	auth      *auth.Auth
+	appConfig *config.Config
+}
 
-func NewPreferenceRepository() entity.PreferenceRepository {
-	return &preferenceRepository{}
+func NewPreferenceRepository(auth *auth.Auth, appConfig *config.Config) entity.PreferenceRepository {
+	return &preferenceRepository{
+		auth:      auth,
+		appConfig: appConfig,
+	}
 }
 
 var preferenceCtx = context.Background()
@@ -26,13 +36,42 @@ func newPreferenceRedisClient() *redis.Client {
 }
 
 func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) (string, error) {
-	out, err := exec.Command("bash", "-c", "az storage blob download -c tfstate -n preference.json --account-name "+storageAccountName+" --file /tmp/preference > /dev/null 2>&1 && cat /tmp/preference && rm /tmp/preference").Output()
-	return string(out), err
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
+
+	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Download the blob
+	downloadResponse, err := client.DownloadStream(ctx, "tfstate", "preference.json", nil)
+	if err != nil {
+		return "", err
+	}
+
+	// Assert that the content is correct
+	actualBlobData, err := io.ReadAll(downloadResponse.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(actualBlobData), nil
 }
 
 func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountName string) error {
-	_, err := exec.Command("bash", "-c", "echo '"+val+"' | az storage blob upload --data @- -c tfstate -n preference.json --account-name "+storageAccountName+" --overwrite").Output()
-	return err
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
+
+	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.UploadBuffer(ctx, "tfstate", "preference.json", []byte(val), nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *preferenceRepository) GetPreferenceFromRedis() (string, error) {

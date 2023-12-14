@@ -14,6 +14,7 @@ type Config struct {
 	AuthTokenAud                    string
 	AuthTokenIss                    string
 	RootDir                         string
+	ProtectedLabSecret              string
 	// Add other configuration fields as needed
 }
 
@@ -62,6 +63,12 @@ func NewConfig() *Config {
 	}
 	slog.Info("ROOT_DIR: " + rootDir)
 
+	protectedLabSecret := os.Getenv("PROTECTED_LAB_SECRET")
+	if protectedLabSecret == "" {
+		slog.Error("PROTECTED_LAB_SECRET not set")
+		os.Exit(1)
+	}
+
 	kubernetesVersionApiUrlTemplate := os.Getenv("KUBERNETES_VERSION_API_URL_TEMPLATE")
 	if kubernetesVersionApiUrlTemplate == "" {
 		kubernetesVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.ContainerService/locations/%s/kubernetesVersions?api-version=2023-09-01"
@@ -75,6 +82,7 @@ func NewConfig() *Config {
 		AuthTokenAud:                    authTokenAud,
 		AuthTokenIss:                    authTokenIss,
 		RootDir:                         rootDir,
+		ProtectedLabSecret:              protectedLabSecret,
 		// Set other fields
 	}
 }

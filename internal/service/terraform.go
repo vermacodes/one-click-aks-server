@@ -2,7 +2,6 @@ package service
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 
@@ -19,7 +18,6 @@ type terraformService struct {
 	actionStatusService   entity.ActionStatusService
 	kVersionService       entity.KVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
-	loggingService        entity.LoggingService
 	authService           entity.AuthService
 }
 
@@ -31,7 +29,6 @@ func NewTerraformService(
 	actionStatusService entity.ActionStatusService,
 	kVersionService entity.KVersionService,
 	storageAccountService entity.StorageAccountService,
-	loggingService entity.LoggingService,
 	authService entity.AuthService,
 ) entity.TerraformService {
 	return &terraformService{
@@ -42,7 +39,6 @@ func NewTerraformService(
 		kVersionService:       kVersionService,
 		workspaceService:      workspaceService,
 		storageAccountService: storageAccountService,
-		loggingService:        loggingService,
 		authService:           authService,
 	}
 }
@@ -87,7 +83,7 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 
 	// Getting back redacted values
 	if lab.ExtendScript == "redacted" {
-		lab, err := helperGetCompleteLabById(t, lab.Type, lab.Id)
+		lab, err := t.labService.GetProtectedLab(lab.Type, lab.Id)
 		if err != nil {
 			slog.Error("not able to find the complete lab", err)
 			return err
@@ -187,29 +183,4 @@ func helperExecuteScript(t *terraformService, script string, mode string) error 
 	wPipe.Close()
 
 	return err
-}
-
-func helperGetCompleteLabById(t *terraformService, labType string, labId string) (entity.LabType, error) {
-	lab := entity.LabType{}
-
-	if labType == "assignment" {
-		labType = "readinesslab"
-	}
-	if labType == "challenge" {
-		labType = "challengelab"
-	}
-
-	completeLabs, err := t.labService.GetPublicLabs(labType)
-	if err != nil {
-		slog.Error("not able to get complete labs", err)
-		return lab, err
-	}
-
-	for _, element := range completeLabs {
-		if element.Id == labId {
-			return element, nil
-		}
-	}
-
-	return lab, errors.New("complete lab not found")
 }

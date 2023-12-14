@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
 	"golang.org/x/exp/slog"
@@ -18,6 +19,7 @@ type DeploymentService struct {
 	actionStatusService  entity.ActionStatusService
 	logstreamService     entity.LogStreamService
 	authService          entity.AuthService
+	config               config.Config
 }
 
 func NewDeploymentService(deploymentRepo entity.DeploymentRepository,
@@ -26,7 +28,8 @@ func NewDeploymentService(deploymentRepo entity.DeploymentRepository,
 	actionStatusService entity.ActionStatusService,
 	logstreamService entity.LogStreamService,
 	authService entity.AuthService,
-	workspaceService entity.WorkspaceService) entity.DeploymentService {
+	workspaceService entity.WorkspaceService,
+	config config.Config) entity.DeploymentService {
 	return &DeploymentService{
 		deploymentRepository: deploymentRepo,
 		labService:           labService,
@@ -35,6 +38,7 @@ func NewDeploymentService(deploymentRepo entity.DeploymentRepository,
 		logstreamService:     logstreamService,
 		authService:          authService,
 		workspaceService:     workspaceService,
+		config:               config,
 	}
 }
 
@@ -44,14 +48,14 @@ func (d *DeploymentService) GetDeployments() ([]entity.Deployment, error) {
 
 func (d *DeploymentService) GetMyDeployments(userId string) ([]entity.Deployment, error) {
 
-	activeAccount, err := d.authService.GetActiveAccount()
-	if err != nil {
-		slog.Error("not able to get active account", err)
-		return nil, err
-	}
+	// activeAccount, err := d.authService.GetActiveAccount()
+	// if err != nil {
+	// 	slog.Error("not able to get active account", err)
+	// 	return nil, err
+	// }
 
 	// get all deployments
-	deployments, err := d.deploymentRepository.GetMyDeployments(userId, activeAccount.Id)
+	deployments, err := d.deploymentRepository.GetMyDeployments(userId, d.config.SubscriptionID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +63,8 @@ func (d *DeploymentService) GetMyDeployments(userId string) ([]entity.Deployment
 	// filter deployments for active account
 	var filteredDeployments []entity.Deployment
 	for _, deployment := range deployments {
-		slog.Debug("Deployment Filter", "workspace", deployment.DeploymentWorkspace, "subscription", deployment.DeploymentSubscriptionId, "active", activeAccount.Id)
-		if deployment.DeploymentSubscriptionId == activeAccount.Id {
+		slog.Debug("Deployment Filter", "workspace", deployment.DeploymentWorkspace, "subscription", deployment.DeploymentSubscriptionId, "active", d.config.SubscriptionID)
+		if deployment.DeploymentSubscriptionId == d.config.SubscriptionID {
 			filteredDeployments = append(filteredDeployments, deployment)
 		}
 	}
@@ -76,8 +80,8 @@ func (d *DeploymentService) GetMyDeployments(userId string) ([]entity.Deployment
 		deployment := entity.Deployment{
 			DeploymentUserId:             userId,
 			DeploymentWorkspace:          "default",
-			DeploymentSubscriptionId:     activeAccount.Id,
-			DeploymentId:                 userId + "-default-" + activeAccount.Id,
+			DeploymentSubscriptionId:     d.config.SubscriptionID,
+			DeploymentId:                 userId + "-default-" + d.config.SubscriptionID,
 			DeploymentLab:                defaultLab,
 			DeploymentAutoDelete:         false,
 			DeploymentLifespan:           28800,
@@ -143,12 +147,12 @@ func (d *DeploymentService) SelectDeployment(deployment entity.Deployment) error
 }
 
 func (d *DeploymentService) UpsertDeployment(deployment entity.Deployment) error {
-	activeAccount, err := d.authService.GetActiveAccount()
-	if err != nil {
-		slog.Error("not able to get active account", err)
-		return err
-	}
-	deployment.DeploymentSubscriptionId = activeAccount.Id
+	// activeAccount, err := d.authService.GetActiveAccount()
+	// if err != nil {
+	// 	slog.Error("not able to get active account", err)
+	// 	return err
+	// }
+	deployment.DeploymentSubscriptionId = d.config.SubscriptionID
 
 	// check if workspace exists, if not add it.
 	if err := checkAndAddWorkspace(d, &deployment); err != nil {

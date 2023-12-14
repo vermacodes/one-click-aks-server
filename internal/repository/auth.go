@@ -2,70 +2,89 @@ package repository
 
 import (
 	"context"
-	"os/exec"
-
+	"encoding/json"
+	"fmt"
+	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/exp/slog"
 )
 
-type authRepository struct{}
-
-func NewAuthRepository() entity.AuthRepository {
-	return &authRepository{}
+type authRepository struct {
+	config *config.Config
+	auth   *auth.Auth
+	rdb    *redis.Client
 }
 
-var authCtx = context.Background()
-
-func newAuthRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+func NewAuthRepository(config *config.Config, auth *auth.Auth, rdb *redis.Client) entity.AuthRepository {
+	return &authRepository{
+		config: config,
+		auth:   auth,
+		rdb:    rdb,
+	}
 }
 
-func (a *authRepository) ServicePrincipalLogin() (string, error) {
-	out, err := exec.Command("bash", "-c", "az login --service-principal -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET --tenant $ARM_TENANT_ID").Output()
-	return string(out), err
+func (a *authRepository) GetSubscriptionDetails() (*armsubscription.Subscription, error) {
+
+	// check if subscription id is already set in redis
+	subscription, ok := a.getSubscriptionFromRedis()
+	if ok {
+		return subscription, nil
+	}
+
+	ctx := context.Background()
+	clientFactory, err := armsubscription.NewClientFactory(a.auth.Cred, nil)
+	if err != nil {
+		return nil, fmt.Errorf("not able to create subscription client factory: %v", err)
+	}
+
+	pager := clientFactory.NewSubscriptionsClient().NewListPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to advance page: %v", err)
+		}
+		for _, sub := range page.Value {
+			// slog.Debug("Subscription ID:" + *sub.SubscriptionID)
+			// slog.Debug("Looking for subscription ID:" + a.config.SubscriptionID)
+			if *sub.SubscriptionID == a.config.SubscriptionID {
+				a.addSubscriptionToRedis(sub) // add subscription to redis
+				return sub, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("subscription not found")
 }
 
-func (a *authRepository) ServicePrincipalLoginStatus() (string, error) {
-	out, err := exec.Command("bash", "-c", "az account get-access-token -o json").Output()
-	return string(out), err
+// Get subscription from redis, return ok if found
+func (a *authRepository) getSubscriptionFromRedis() (*armsubscription.Subscription, bool) {
+	subscription, err := a.rdb.Get(context.Background(), "subscription").Result()
+	if err == nil {
+		slog.Debug("subscription found in redis.")
+		var sub armsubscription.Subscription
+		err = json.Unmarshal([]byte(subscription), &sub)
+		if err != nil {
+			slog.Error("failed to unmarshal subscription", err)
+			return nil, false
+		}
+		return &sub, true
+	}
+
+	return nil, false
 }
 
-func (a *authRepository) GetServicePrincipalLoginStatusFromRedis() (string, error) {
-	rdb := newAuthRedisClient()
-	return rdb.Get(authCtx, "spLoginStatus").Result()
-}
-
-func (a *authRepository) SetServicePrincipalLoginStatusInRedis(val string) error {
-	rdb := newAuthRedisClient()
-	return rdb.Set(authCtx, "spLoginStatus", val, 0).Err()
-}
-
-func (a *authRepository) GetAccounts() (string, error) {
-	out, err := exec.Command("bash", "-c", "az account list -o json").Output()
-	return string(out), err
-}
-
-func (a *authRepository) GetAccountsFromRedis() (string, error) {
-	rdb := newAuthRedisClient()
-	return rdb.Get(authCtx, "accounts").Result()
-}
-
-func (a *authRepository) SetAccountsInRedis(val string) error {
-	rdb := newAuthRedisClient()
-	return rdb.Set(authCtx, "accounts", val, 0).Err()
-}
-
-func (a *authRepository) SetAccount(accountId string) error {
-	_, err := exec.Command("bash", "-c", "az account set --subscription "+accountId).Output()
-	return err
-}
-
-func (a *authRepository) DeleteAccountsFromRedis() error {
-	rdb := newAuthRedisClient()
-	return rdb.Del(authCtx, "accounts").Err()
+func (a *authRepository) addSubscriptionToRedis(subscription *armsubscription.Subscription) error {
+	subscriptionJson, err := json.Marshal(subscription)
+	if err != nil {
+		return fmt.Errorf("failed to marshal subscription: %w", err)
+	}
+	err = a.rdb.Set(context.Background(), "subscription", subscriptionJson, 0).Err()
+	if err != nil {
+		return fmt.Errorf("failed to set subscription in redis: %w", err)
+	}
+	return nil
 }

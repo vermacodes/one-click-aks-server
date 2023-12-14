@@ -2,10 +2,8 @@ package service
 
 import (
 	"encoding/json"
-	"sync"
 
 	"one-click-aks-server/internal/entity"
-	"one-click-aks-server/internal/helper"
 
 	"golang.org/x/exp/slog"
 )
@@ -82,133 +80,183 @@ func (l *labService) DeleteLabFromRedis() error {
 	return l.labRepository.DeleteLabFromRedis()
 }
 
-func (l *labService) GetMyLabs() ([]entity.LabType, error) {
-	labs := []entity.LabType{}
+func (l *labService) GetProtectedLab(typeOfLab string, labId string) (entity.LabType, error) {
+	lab := entity.LabType{}
 
-	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
+	if labId == "" || typeOfLab == "" {
+		return lab, nil
+	}
+
+	typeOfLab = l.OriginalTypeOfLab(typeOfLab)
+
+	// http call to actlabs-auth
+	labString, err := l.labRepository.GetProtectedLab(typeOfLab, labId)
 	if err != nil {
-		slog.Error("not able to get storage account name", err)
-		return labs, err
+		slog.Error("not able to get protected lab request", err)
+		return lab, err
 	}
 
-	// Fetching templates is different from fetching labs or mock cases as these are coming from private container.
-	// TODO: May be add them to redis to make it work faster.
-
-	blobs := []entity.Blob{}
-
-	out, err := l.labRepository.GetMyLabsFromStorageAccount(storageAccountName)
-	if err != nil {
-		slog.Error("not able to get my labs from storage account", err)
-		return labs, err
+	if err := json.Unmarshal([]byte(labString), &lab); err != nil {
+		slog.Error("not able to unmarshal lab object", err)
+		return lab, err
 	}
 
-	if err = json.Unmarshal([]byte(out), &blobs); err != nil {
-		slog.Error("not able to unmarshal the output from cli command to object", err)
-		return labs, err
-	}
+	lab.Type = l.RedactedTypeOfLab(lab.Type)
 
-	// Implements go routines and channels.
-	// The channel is reading labs on channel.
-	wgReader := sync.WaitGroup{}
-	ch := make(chan entity.LabType)
-	wgReader.Add(1)
-	go func() {
-		for lab := range ch {
-			labs = append(labs, lab)
-		}
-		wgReader.Done()
-	}()
-
-	// Reads the blobs in parallel.
-	wgWriter := sync.WaitGroup{}
-	for index, blob := range blobs {
-		wgWriter.Add(1)
-		go func(index int, blobName string) {
-			slog.Debug("Lab ", index, blobName)
-			out, err = l.labRepository.GetMyLabFromStorageAccount(storageAccountName, blobName)
-			if err != nil {
-				slog.Error("Error getting template from storage exec command failed", err)
-				wgWriter.Done()
-				return
-			}
-
-			lab := entity.LabType{}
-			if err = json.Unmarshal([]byte(out), &lab); err != nil {
-				slog.Error("Error reading blob", err)
-				wgWriter.Done()
-				return
-			}
-			ch <- lab
-			wgWriter.Done()
-		}(index, blob.Name)
-	}
-
-	wgWriter.Wait() // Wait for all writes.
-	close(ch)       // Close channel.
-	wgReader.Wait() // Wait for all reads
-
-	return labs, nil
+	return lab, nil
 }
 
-func (l *labService) AddMyLab(lab entity.LabType) error {
-	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
-	if err != nil {
-		return err
+func (l *labService) OriginalTypeOfLab(typeOfLab string) string {
+	// change typeOfLab to match the real type of lab
+	if typeOfLab == "assignment" {
+		return "readinesslab"
+	}
+	if typeOfLab == "challenge" {
+		return "challengelab"
 	}
 
-	// If lab Id is not yet generated Generate
-	if lab.Id == "" {
-		lab.Id = helper.Generate(20)
-	}
-
-	out, err := json.Marshal(lab)
-	if err != nil {
-		slog.Error("not able to marshal lab object to string.", err)
-		return err
-	}
-
-	if err := l.labRepository.AddMyLab(storageAccountName, lab.Id, string(out)); err != nil {
-		slog.Error("not able to add lab", err)
-		return err
-	}
-
-	return nil
+	return typeOfLab
 }
 
-func (l *labService) DeleteMyLab(lab entity.LabType) error {
-	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
-	if err != nil {
-		return err
+func (l *labService) RedactedTypeOfLab(typeOfLab string) string {
+	// change typeOfLab to match the real type of lab
+	if typeOfLab == "readinesslab" {
+		return "assignment"
+	}
+	if typeOfLab == "challengelab" {
+		return "challenge"
 	}
 
-	if err := l.labRepository.DeleteMyLab(lab.Id, storageAccountName); err != nil {
-		slog.Error("not able to delete lab", err)
-		return err
-	}
-
-	return nil
+	return typeOfLab
 }
 
-func (l *labService) GetPublicLabs(typeOfLab string) ([]entity.LabType, error) {
-	labs := []entity.LabType{}
+// func (l *labService) GetMyLabs() ([]entity.LabType, error) {
+// 	labs := []entity.LabType{}
 
-	er, err := l.labRepository.GetEnumerationResults(typeOfLab)
-	if err != nil {
-		slog.Error("Not able to get list of blobs", err)
-		return labs, err
-	}
+// 	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
+// 	if err != nil {
+// 		slog.Error("not able to get storage account name", err)
+// 		return labs, err
+// 	}
 
-	for _, element := range er.Blobs.Blob {
-		lab, err := l.labRepository.GetLab(element.Name, typeOfLab)
-		if err != nil {
-			slog.Error("not able to get blob from given url", err)
-			continue
-		}
-		labs = append(labs, lab)
-	}
+// 	// Fetching templates is different from fetching labs or mock cases as these are coming from private container.
+// 	// TODO: May be add them to redis to make it work faster.
 
-	return labs, nil
-}
+// 	blobs := []entity.Blob{}
+
+// 	out, err := l.labRepository.GetMyLabsFromStorageAccount(storageAccountName)
+// 	if err != nil {
+// 		slog.Error("not able to get my labs from storage account", err)
+// 		return labs, err
+// 	}
+
+// 	if err = json.Unmarshal([]byte(out), &blobs); err != nil {
+// 		slog.Error("not able to unmarshal the output from cli command to object", err)
+// 		return labs, err
+// 	}
+
+// 	// Implements go routines and channels.
+// 	// The channel is reading labs on channel.
+// 	wgReader := sync.WaitGroup{}
+// 	ch := make(chan entity.LabType)
+// 	wgReader.Add(1)
+// 	go func() {
+// 		for lab := range ch {
+// 			labs = append(labs, lab)
+// 		}
+// 		wgReader.Done()
+// 	}()
+
+// 	// Reads the blobs in parallel.
+// 	wgWriter := sync.WaitGroup{}
+// 	for index, blob := range blobs {
+// 		wgWriter.Add(1)
+// 		go func(index int, blobName string) {
+// 			slog.Debug("Lab ", index, blobName)
+// 			out, err = l.labRepository.GetMyLabFromStorageAccount(storageAccountName, blobName)
+// 			if err != nil {
+// 				slog.Error("Error getting template from storage exec command failed", err)
+// 				wgWriter.Done()
+// 				return
+// 			}
+
+// 			lab := entity.LabType{}
+// 			if err = json.Unmarshal([]byte(out), &lab); err != nil {
+// 				slog.Error("Error reading blob", err)
+// 				wgWriter.Done()
+// 				return
+// 			}
+// 			ch <- lab
+// 			wgWriter.Done()
+// 		}(index, blob.Name)
+// 	}
+
+// 	wgWriter.Wait() // Wait for all writes.
+// 	close(ch)       // Close channel.
+// 	wgReader.Wait() // Wait for all reads
+
+// 	return labs, nil
+// }
+
+// func (l *labService) AddMyLab(lab entity.LabType) error {
+// 	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	// If lab Id is not yet generated Generate
+// 	if lab.Id == "" {
+// 		lab.Id = helper.Generate(20)
+// 	}
+
+// 	out, err := json.Marshal(lab)
+// 	if err != nil {
+// 		slog.Error("not able to marshal lab object to string.", err)
+// 		return err
+// 	}
+
+// 	if err := l.labRepository.AddMyLab(storageAccountName, lab.Id, string(out)); err != nil {
+// 		slog.Error("not able to add lab", err)
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// func (l *labService) DeleteMyLab(lab entity.LabType) error {
+// 	storageAccountName, err := l.storageAccountService.GetStorageAccountName()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	if err := l.labRepository.DeleteMyLab(lab.Id, storageAccountName); err != nil {
+// 		slog.Error("not able to delete lab", err)
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// func (l *labService) GetPublicLabs(typeOfLab string) ([]entity.LabType, error) {
+// 	labs := []entity.LabType{}
+
+// 	er, err := l.labRepository.GetEnumerationResults(typeOfLab)
+// 	if err != nil {
+// 		slog.Error("Not able to get list of blobs", err)
+// 		return labs, err
+// 	}
+
+// 	for _, element := range er.Blobs.Blob {
+// 		lab, err := l.labRepository.GetLab(element.Name, typeOfLab)
+// 		if err != nil {
+// 			slog.Error("not able to get blob from given url", err)
+// 			continue
+// 		}
+// 		labs = append(labs, lab)
+// 	}
+
+// 	return labs, nil
+// }
 
 func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 
