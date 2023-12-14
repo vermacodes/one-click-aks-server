@@ -1,0 +1,3 @@
+actlabs-aci.eastus.azurecontainer.io {
+    reverse_proxy http://localhost:8881
+}

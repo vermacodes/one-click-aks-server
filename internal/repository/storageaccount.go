@@ -11,7 +11,6 @@ import (
 	"one-click-aks-server/internal/entity"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
@@ -21,7 +20,6 @@ import (
 )
 
 type storageAccountRepository struct {
-	cred           *azidentity.DefaultAzureCredential
 	auth           *auth.Auth
 	rdb            *redis.Client
 	subscriptionId string
@@ -29,7 +27,6 @@ type storageAccountRepository struct {
 
 func NewStorageAccountRepository(auth *auth.Auth, rdb *redis.Client, config *config.Config) entity.StorageAccountRepository {
 	return &storageAccountRepository{
-		cred:           auth.Cred,
 		auth:           auth,
 		rdb:            rdb,
 		subscriptionId: config.SubscriptionID,
@@ -50,7 +47,7 @@ func (s *storageAccountRepository) GetStorageAccount() (armstorage.Account, erro
 		return storageAccount, nil
 	}
 
-	clientFactory, err := armstorage.NewClientFactory(s.subscriptionId, s.cred, nil)
+	clientFactory, err := armstorage.NewClientFactory(s.subscriptionId, s.auth.Cred, nil)
 	if err != nil {
 		slog.Error("not able to create client factory to get storage account", err)
 		return armstorage.Account{}, err

@@ -26,12 +26,9 @@ fi
 echo "TAG = ${TAG}"
 
 # remove terraform state
-cd tf
-rm -rf .terraform
-rm .terraform.lock.hcl
+rm -rf ./tf/.terraform
+rm ./tf/.terraform.lock.hcl
 
-# build server
-cd ../app/server
 
 if [[ "${SAS_TOKEN}" == "" ]]; then
     echo "SAS URL missing"
@@ -45,15 +42,12 @@ fi
 
 export VERSION="$(date +%Y%m%d)"
 
-go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'"
-
-cd ../..
+go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
 
 # build docker image
 docker build -t repro:${TAG} .
 
-cd ./app/server
-rm server
+rm one-click-aks-server
 
 docker tag repro:${TAG} actlab.azurecr.io/repro:${TAG}
 

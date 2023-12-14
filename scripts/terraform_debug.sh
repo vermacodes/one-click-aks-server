@@ -112,7 +112,9 @@ function getSecertsFromKeyVault() {
 #     exit 1
 # fi
 
-export ARM_SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
+if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
+    export ARM_SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
+fi
 
 cd $root_directory/$terraform_directory
 log "Terraform Environment Variables"

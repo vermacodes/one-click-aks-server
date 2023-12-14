@@ -16,6 +16,7 @@ type Config struct {
 	RootDir                         string
 	ProtectedLabSecret              string
 	UseMsi                          bool
+	AzureClientID                   string
 	// Add other configuration fields as needed
 }
 
@@ -83,6 +84,12 @@ func NewConfig() *Config {
 		slog.Info("USE_MSI: false")
 	}
 
+	azureClientId := os.Getenv("AZURE_CLIENT_ID")
+	if azureClientId == "" {
+		slog.Error("AZURE_CLIENT_ID not set")
+		os.Exit(1)
+	}
+
 	kubernetesVersionApiUrlTemplate := os.Getenv("KUBERNETES_VERSION_API_URL_TEMPLATE")
 	if kubernetesVersionApiUrlTemplate == "" {
 		kubernetesVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.ContainerService/locations/%s/kubernetesVersions?api-version=2023-09-01"
@@ -98,6 +105,7 @@ func NewConfig() *Config {
 		RootDir:                         rootDir,
 		ProtectedLabSecret:              protectedLabSecret,
 		UseMsi:                          useMsi,
+		AzureClientID:                   azureClientId,
 		// Set other fields
 	}
 }
