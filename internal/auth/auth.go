@@ -29,6 +29,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 		if err != nil {
 			log.Fatalf("Failed to initialize managed identity auth: %v", err)
 		}
+		AzureCLILoginByMSI(appConfig.AzureClientID)
 	} else {
 		cred, err = azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
