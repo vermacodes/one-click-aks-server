@@ -17,6 +17,7 @@ type Config struct {
 	ProtectedLabSecret              string
 	UseMsi                          bool
 	AzureClientID                   string
+	ActlabsHubURL                   string
 	// Add other configuration fields as needed
 }
 
@@ -94,6 +95,11 @@ func NewConfig() *Config {
 	if kubernetesVersionApiUrlTemplate == "" {
 		kubernetesVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.ContainerService/locations/%s/kubernetesVersions?api-version=2023-09-01"
 	}
+
+	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
+	if actlabsHubURL == "" {
+		actlabsHubURL = "https://actlabs-hub.eastus.azurecontainer.io/"
+	}
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
@@ -106,6 +112,7 @@ func NewConfig() *Config {
 		ProtectedLabSecret:              protectedLabSecret,
 		UseMsi:                          useMsi,
 		AzureClientID:                   azureClientId,
+		ActlabsHubURL:                   actlabsHubURL,
 		// Set other fields
 	}
 }

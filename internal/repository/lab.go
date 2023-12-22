@@ -49,10 +49,7 @@ func (l *labRepository) DeleteLabFromRedis() error {
 }
 
 func (l *labRepository) GetProtectedLab(typeOfLab string, labId string) (string, error) {
-	actlabsAuthEndpoint := os.Getenv("ACTLABS_AUTH_URL")
-	if actlabsAuthEndpoint == "" {
-		actlabsAuthEndpoint = "https://actlabs-auth.azurewebsites.net/"
-	}
+	actlabsAuthEndpoint := l.appConfig.ActlabsHubURL
 	// http call to actlabs-auth
 	req, err := http.NewRequest("GET", actlabsAuthEndpoint+"lab/protected/"+typeOfLab+"/"+labId, nil)
 	if err != nil {
