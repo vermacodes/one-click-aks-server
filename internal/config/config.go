@@ -1,7 +1,9 @@
 package config
 
 import (
+	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/exp/slog"
@@ -14,10 +16,10 @@ type Config struct {
 	AuthTokenAud                    string
 	AuthTokenIss                    string
 	RootDir                         string
-	ProtectedLabSecret              string
 	UseMsi                          bool
 	AzureClientID                   string
 	ActlabsHubURL                   string
+	HttpRequestTimeoutSeconds       int
 	// Add other configuration fields as needed
 }
 
@@ -66,12 +68,6 @@ func NewConfig() *Config {
 	}
 	slog.Info("ROOT_DIR: " + rootDir)
 
-	protectedLabSecret := os.Getenv("PROTECTED_LAB_SECRET")
-	if protectedLabSecret == "" {
-		slog.Error("PROTECTED_LAB_SECRET not set")
-		os.Exit(1)
-	}
-
 	useMsiString := os.Getenv("USE_MSI")
 	if useMsiString == "" {
 		slog.Error("USE_MSI not set")
@@ -100,6 +96,16 @@ func NewConfig() *Config {
 	if actlabsHubURL == "" {
 		actlabsHubURL = "https://actlabs-hub.eastus.azurecontainer.io/"
 	}
+
+	httpRequestTimeoutSecondsStr := os.Getenv("HTTP_REQUEST_TIMEOUT_SECONDS")
+	httpRequestTimeoutSeconds := 30 // default value
+	if httpRequestTimeoutSecondsStr != "" {
+		var err error
+		httpRequestTimeoutSeconds, err = strconv.Atoi(httpRequestTimeoutSecondsStr)
+		if err != nil {
+			log.Fatalf("Invalid value for HTTP_REQUEST_TIMEOUT_SECONDS: %v", err)
+		}
+	}
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
@@ -109,10 +115,10 @@ func NewConfig() *Config {
 		AuthTokenAud:                    authTokenAud,
 		AuthTokenIss:                    authTokenIss,
 		RootDir:                         rootDir,
-		ProtectedLabSecret:              protectedLabSecret,
 		UseMsi:                          useMsi,
 		AzureClientID:                   azureClientId,
 		ActlabsHubURL:                   actlabsHubURL,
+		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
 		// Set other fields
 	}
 }

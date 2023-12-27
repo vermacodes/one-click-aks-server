@@ -1,7 +1,8 @@
 package entity
 
-var SasToken string
-var StorageAccountName string
+// var SasToken string
+// var StorageAccountName string
+var ProtectedLabSecret string
 
 type TfvarResourceGroupType struct {
 	Location string `json:"location"`

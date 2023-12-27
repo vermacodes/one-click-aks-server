@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
@@ -15,18 +16,16 @@ import (
 )
 
 type kVersionRepository struct {
-	auth                            *auth.Auth
-	rdb                             *redis.Client
-	subscriptionId                  string
-	kubernetesVersionApiUrlTemplate string
+	auth      *auth.Auth
+	rdb       *redis.Client
+	appConfig *config.Config
 }
 
 func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis.Client) entity.KVersionRepository {
 	return &kVersionRepository{
-		auth:                            auth,
-		rdb:                             rdb,
-		subscriptionId:                  appConfig.SubscriptionID,
-		kubernetesVersionApiUrlTemplate: appConfig.KubernetesVersionApiUrlTemplate,
+		auth:      auth,
+		rdb:       rdb,
+		appConfig: appConfig,
 	}
 }
 
@@ -45,14 +44,17 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	}
 
 	// Make HTTP request to retrieve Kubernetes versions
-	url := fmt.Sprintf(k.kubernetesVersionApiUrlTemplate, k.subscriptionId, location)
+	url := fmt.Sprintf(k.appConfig.KubernetesVersionApiUrlTemplate, k.appConfig.SubscriptionID, location)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Second * time.Duration(k.appConfig.HttpRequestTimeoutSeconds),
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err

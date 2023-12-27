@@ -30,19 +30,14 @@ rm -rf ./tf/.terraform
 rm ./tf/.terraform.lock.hcl
 
 
-if [[ "${SAS_TOKEN}" == "" ]]; then
-    echo "SAS URL missing"
-    exit 1
-fi
-
-if [[ "${STORAGE_ACCOUNT_NAME}" == "" ]]; then
-    echo "SAS URL missing"
+if [[ "${PROTECTED_LAB_SECRET}" == "" ]]; then
+    echo "PROTECTED_LAB_SECRET missing"
     exit 1
 fi
 
 export VERSION="$(date +%Y%m%d)"
 
-go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
+go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.ProtectedLabSecret=$PROTECTED_LAB_SECRET'" ./cmd/one-click-aks-server
 
 # build docker image
 docker build -t repro:${TAG} .

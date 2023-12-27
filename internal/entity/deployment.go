@@ -73,6 +73,6 @@ type DeploymentRepository interface {
 	GetMyDeployments(string, string) ([]Deployment, error)
 	GetDeployment(string, string, string) (Deployment, error)
 	UpsertDeployment(Deployment) error
-	DeploymentOperationEntry(Deployment) error
+	// DeploymentOperationEntry(Deployment) error
 	DeleteDeployment(string, string, string) error
 }

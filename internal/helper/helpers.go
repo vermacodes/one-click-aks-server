@@ -16,7 +16,6 @@ import (
 
 	"one-click-aks-server/internal/entity"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 	"github.com/golang-jwt/jwt"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
@@ -161,16 +160,16 @@ func VerifyToken(tokenString string) (bool, error) {
 
 }
 
-func GetServiceClient() *aztables.ServiceClient {
+// func GetServiceClient() *aztables.ServiceClient {
 
-	SasUrl := "https://" + entity.StorageAccountName + ".table.core.windows.net/" + entity.SasToken
-	serviceClient, err := aztables.NewServiceClientWithNoCredential(SasUrl, nil)
-	if err != nil {
-		slog.Error("error get client", err)
-	}
+// 	SasUrl := "https://" + entity.StorageAccountName + ".table.core.windows.net/" + entity.SasToken
+// 	serviceClient, err := aztables.NewServiceClientWithNoCredential(SasUrl, nil)
+// 	if err != nil {
+// 		slog.Error("error get client", err)
+// 	}
 
-	return serviceClient
-}
+// 	return serviceClient
+// }
 
 // CalculateNewEpochTimeForDeployment updates the deployment's destroy time in place.
 func CalculateNewEpochTimeForDeployment(deployment *entity.Deployment) {

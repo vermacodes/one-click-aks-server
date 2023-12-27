@@ -159,9 +159,6 @@ func (d *DeploymentService) UpsertDeployment(deployment entity.Deployment) error
 		return err
 	}
 
-	// Add deployment operation entry.
-	go d.deploymentRepository.DeploymentOperationEntry(deployment)
-
 	return d.deploymentRepository.UpsertDeployment(deployment)
 
 }

@@ -6,7 +6,7 @@ rm one-click-aks-server
 
 export VERSION="$(date +%Y%m%d)"
 
-required_env_vars=("STORAGE_ACCOUNT_NAME" "SAS_TOKEN" "VERSION")
+required_env_vars=("PROTECTED_LAB_SECRET" "VERSION")
 
 for var in "${required_env_vars[@]}"; do
     if [[ -z "${!var}" ]]; then
@@ -16,6 +16,6 @@ for var in "${required_env_vars[@]}"; do
 done
 
 
-go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.SasToken=$SAS_TOKEN' -X 'one-click-aks-server/internal/entity.StorageAccountName=$STORAGE_ACCOUNT_NAME'" ./cmd/one-click-aks-server
+go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.ProtectedLabSecret=$PROTECTED_LAB_SECRET'" ./cmd/one-click-aks-server
 
 redis-cli flushall

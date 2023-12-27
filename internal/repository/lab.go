@@ -57,7 +57,7 @@ func (l *labRepository) GetProtectedLab(typeOfLab string, labId string) (string,
 	}
 	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", l.appConfig.ProtectedLabSecret)
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
