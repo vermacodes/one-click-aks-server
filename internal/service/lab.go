@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"one-click-aks-server/internal/entity"
 
@@ -81,24 +82,57 @@ func (l *labService) DeleteLabFromRedis() error {
 }
 
 func (l *labService) GetProtectedLab(typeOfLab string, labId string) (entity.LabType, error) {
+	slog.Info("getting protected lab",
+		slog.String("typeOfLab", typeOfLab),
+		slog.String("labId", labId),
+	)
+
 	lab := entity.LabType{}
 
 	if labId == "" || typeOfLab == "" {
-		return lab, nil
+		slog.Error("required typeOfLab or labId is empty",
+			slog.String("typeOfLab", typeOfLab),
+			slog.String("labId", labId),
+		)
+		return lab, fmt.Errorf("required typeOfLab or labId is empty")
 	}
 
 	typeOfLab = l.OriginalTypeOfLab(typeOfLab)
 
+	slog.Info("getting protected lab (original typeOfLab)",
+		slog.String("typeOfLab", typeOfLab),
+		slog.String("labId", labId),
+	)
+
 	// http call to actlabs-auth
 	labString, err := l.labRepository.GetProtectedLab(typeOfLab, labId)
 	if err != nil {
-		slog.Error("not able to get protected lab request", err)
-		return lab, err
+		slog.Error("not able to get protected lab request",
+			slog.String("typeOfLab", typeOfLab),
+			slog.String("labId", labId),
+			slog.String("error", err.Error()),
+		)
+		return lab, fmt.Errorf("not able to get protected %s", err.Error())
 	}
 
 	if err := json.Unmarshal([]byte(labString), &lab); err != nil {
-		slog.Error("not able to unmarshal lab object", err)
-		return lab, err
+		slog.Error("not able to unmarshal lab object",
+			slog.String("typeOfLab", typeOfLab),
+			slog.String("labId", labId),
+			slog.String("error", err.Error()),
+		)
+		return lab, fmt.Errorf("not able to unmarshal lab object %s", err.Error())
+	}
+
+	if lab.ExtendScript == "redacted" || lab.ExtendScript == "" {
+		slog.Error("got the lab, but the extend script is redacted or empty",
+			slog.String("labId", labId),
+			slog.String("labName", lab.Name),
+			slog.String("labType", lab.Type),
+			slog.String("extendScript", lab.ExtendScript),
+		)
+
+		return lab, fmt.Errorf("got the lab, but the extend script is redacted or empty")
 	}
 
 	lab.Type = l.RedactedTypeOfLab(lab.Type)

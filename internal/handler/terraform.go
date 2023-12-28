@@ -197,7 +197,7 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 		}
 		if err := t.terraformService.Extend(lab, mode); err != nil {
 			notification.NotificationType = entity.Error
-			notification.Message = mode + " failed."
+			notification.Message = mode + " failed. " + err.Error()
 		} else {
 			notification.NotificationType = entity.Success
 			notification.Message = mode + " completed."
