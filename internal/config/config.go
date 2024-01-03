@@ -94,7 +94,8 @@ func NewConfig() *Config {
 
 	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
 	if actlabsHubURL == "" {
-		actlabsHubURL = "https://actlabs-hub.eastus.azurecontainer.io/"
+		slog.Error("ACTLABS_HUB_URL not set")
+		os.Exit(1)
 	}
 
 	httpRequestTimeoutSecondsStr := os.Getenv("HTTP_REQUEST_TIMEOUT_SECONDS")
