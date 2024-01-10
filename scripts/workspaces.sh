@@ -48,7 +48,7 @@ function createWorkspace() {
 cd ${ROOT_DIR}/tf
 
 if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
-    export ARM_SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
+    export ARM_SUBSCRIPTION_ID=$(az account show --output json --only-show-error | jq -r .id)
 fi
 
 init

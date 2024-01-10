@@ -4,8 +4,9 @@
 cd $ROOT_DIR
 
 # Add some color
-RED='\033[0;31m'
-GREEN='\033[0;32m'
+RED='\033[0;91m'
+GREEN='\033[0;92m'
+YELLOW='\033[0;93m'
 NC='\033[0m' # No Color
 
 err() {
@@ -16,8 +17,12 @@ log() {
   echo -e "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: INFO - $*" >&1
 }
 
+warn() {
+  echo -e "${YELLOW}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: WARN - $* ${NC}" >&1
+}
+
 ok() {
-  echo -e "${GREEN}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: INFO - $* ${NC}" >&1
+  echo -e "${GREEN}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: SUCCESS - $* ${NC}" >&1
 }
 
 gap() {
@@ -70,7 +75,7 @@ function get_kubectl() {
   which kubectl >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     log "kubectl not found. installing."
-    az aks install-cli
+    az aks install-cli --only-show-errors
   fi
 }
 
@@ -102,7 +107,7 @@ function get_variables_from_tf_output() {
   changeToTerraformDirectory
 
   # Subscription as Env Variable
-  export SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
+  export SUBSCRIPTION_ID=$(az account show --output json  --only-show-errors | jq -r .id)
 
   output=$(terraform output -json)
   log "output -> ${output}"
