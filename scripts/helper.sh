@@ -60,7 +60,7 @@ function get_aks_credentials() {
 
   if [[ ${AKS_LOGIN} != "" ]]; then
     ok "AKS Login Command -> ${AKS_LOGIN}"
-    echo ${AKS_LOGIN} | bash
+    echo ${AKS_LOGIN} --only-show-errors | bash
   elif [[ ${AKS_LOGIN} == "" ]]; then
     log "AKS Login command not available"
   else

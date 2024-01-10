@@ -77,6 +77,11 @@
 #       Args: (String)
 #       Example: err "this error occrured"
 #
+# 04.   Warning Logging
+#       warn()
+#       Args: (String)
+#       Example: warn "this is a warning"
+#
 
 #####################################
 #   DO NOT MODIFY ABOVE THIS LINE   #
