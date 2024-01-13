@@ -12,7 +12,6 @@ import (
 // TerraformMiddleware checks for already running operation and rejects new requests.
 func TerraformActionMiddleware(actionStatusService entity.ActionStatusService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		actionStatus, err := actionStatusService.GetActionStatus()
 		if err != nil {
 			slog.Error("not able to get current action status", err)
@@ -31,6 +30,12 @@ func TerraformActionMiddleware(actionStatusService entity.ActionStatusService) g
 		if actionStatus.InProgress {
 			slog.Info("action in progress")
 			c.AbortWithStatus(http.StatusConflict)
+			return
+		}
+
+		if err := actionStatusService.SetActionStart(); err != nil {
+			slog.Error("not able to set action start", err)
+			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
