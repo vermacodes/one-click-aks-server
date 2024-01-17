@@ -93,7 +93,7 @@ func (t *terraformService) Apply(lab entity.LabType) error {
 	if lab.Type == "assignment" {
 		userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
 		if err := t.UpdateAssignment(userId, lab.Id, "InProgress"); err != nil {
-			return err
+			return fmt.Errorf("not able to update assignment status, try again")
 		}
 	}
 

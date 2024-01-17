@@ -142,7 +142,8 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 		}
 		if err := t.terraformService.Apply(lab); err != nil {
 			notification.NotificationType = entity.Error
-			notification.Message = string(entity.DeploymentFailed)
+			notification.Message = string(entity.DeploymentFailed) + ". " + err.Error()
+			notification.AutoClose = 5000
 			deployment.DeploymentStatus = entity.DeploymentFailed
 		} else {
 			notification.NotificationType = entity.Success
@@ -197,6 +198,7 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 		}
 		if err := t.terraformService.Extend(lab, mode); err != nil {
 			notification.NotificationType = entity.Error
+			notification.AutoClose = 5000
 			notification.Message = mode + " failed. " + err.Error()
 		} else {
 			notification.NotificationType = entity.Success
