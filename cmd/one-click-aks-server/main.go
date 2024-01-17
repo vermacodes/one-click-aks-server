@@ -49,7 +49,7 @@ func main() {
 	prefRepository := repository.NewPreferenceRepository(auth, appConfig)
 	kVersionRepository := repository.NewKVersionRepository(appConfig, auth, rdb)
 	labRepository := repository.NewLabRepository(appConfig)
-	terraformRepository := repository.NewTerraformRepository()
+	terraformRepository := repository.NewTerraformRepository(appConfig)
 	deploymentRepository := repository.NewDeploymentRepository(appConfig, auth, rdb)
 
 	// services

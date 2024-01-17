@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 
 	"one-click-aks-server/internal/entity"
 
@@ -88,6 +89,14 @@ func (t *terraformService) Apply(lab entity.LabType) error {
 		return err
 	}
 
+	// if lab is assignment, update assignment status to InProgress
+	if lab.Type == "assignment" {
+		userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+		if err := t.UpdateAssignment(userId, lab.Id, "InProgress"); err != nil {
+			return err
+		}
+	}
+
 	if err := helperTerraformAction(t, lab.Template, "apply"); err != nil {
 		slog.Error("terraform apply failed",
 			slog.String("labId", lab.Id),
@@ -117,7 +126,19 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 			return err
 		}
 
-		return helperExecuteScript(t, lab.ExtendScript, mode)
+		err = helperExecuteScript(t, lab.ExtendScript, mode)
+		if err != nil {
+			return err
+		}
+
+		if lab.Type == "assignment" {
+			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+			if err := t.UpdateAssignment(userId, lab.Id, "Completed"); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 
 	return helperExecuteScript(t, lab.ExtendScript, mode)
