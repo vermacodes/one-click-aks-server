@@ -2,10 +2,13 @@ package repository
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"reflect"
 
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 
@@ -14,10 +17,14 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type terraformRepository struct{}
+type terraformRepository struct {
+	appConfig *config.Config
+}
 
-func NewTerraformRepository() entity.TerraformRepository {
-	return &terraformRepository{}
+func NewTerraformRepository(appConfig *config.Config) entity.TerraformRepository {
+	return &terraformRepository{
+		appConfig: appConfig,
+	}
 }
 
 func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, action string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
@@ -88,4 +95,30 @@ func (t *terraformRepository) ExecuteScript(script string, mode string, storageA
 
 	// Return stuff to the service.
 	return cmd, rPipe, wPipe, nil
+}
+
+func (t *terraformRepository) UpdateAssignment(userId string, labId string, status string) error {
+
+	// http call to actlabs-hub
+	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"assignment/"+userId+"/"+labId+"/"+status, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("not able to update assignment status")
+	}
+
+	return nil
 }

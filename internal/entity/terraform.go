@@ -41,9 +41,13 @@ type TerraformService interface {
 	// runs against selected workspace. This doesn't send any response body
 	// and logs are streamed.
 	// Validate(LabType) error
+
+	UpdateAssignment(userId string, labId string, status string) error
 }
 
 type TerraformRepository interface {
 	TerraformAction(TfvarConfigType, string, string) (*exec.Cmd, *os.File, *os.File, error)
 	ExecuteScript(script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error)
+
+	UpdateAssignment(userId string, labId string, status string) error
 }
