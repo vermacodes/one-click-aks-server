@@ -151,6 +151,25 @@ func (t *terraformService) Destroy(lab entity.LabType) error {
 	return nil
 }
 
+func (t *terraformService) UpdateAssignment(userId string, labId string, status string) error {
+	slog.Info("updating assignment status",
+		slog.String("userId", userId),
+		slog.String("labId", labId),
+		slog.String("status", status),
+	)
+	if err := t.terraformRepository.UpdateAssignment(userId, labId, status); err != nil {
+		slog.Error("not able to update assignment status",
+			slog.String("userId", userId),
+			slog.String("labId", labId),
+			slog.String("status", status),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	return nil
+}
+
 func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, action string) error {
 
 	storageAccountName, err := t.storageAccountService.GetStorageAccountName()
