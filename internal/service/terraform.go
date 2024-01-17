@@ -131,10 +131,12 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 			return err
 		}
 
-		if lab.Type == "assignment" {
+		// if lab is assignment and mode is validate,
+		// update assignment status to completed if the validation was good.
+		if lab.Type == "assignment" && mode == "validate" {
 			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
 			if err := t.UpdateAssignment(userId, lab.Id, "Completed"); err != nil {
-				return err
+				return fmt.Errorf("validation was successful but not able to update status, try again")
 			}
 		}
 
