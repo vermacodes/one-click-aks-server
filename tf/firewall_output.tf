@@ -8,5 +8,4 @@ output "firewall_name" {
 
 output "firewall_id" {
   value = length(var.firewalls) == 0 ? "" : azurerm_firewall.this[0].id
-
 }
