@@ -5,3 +5,8 @@ output "firewall_private_ip" {
 output "firewall_name" {
   value = length(var.firewalls) == 0 ? "" : azurerm_firewall.this[0].name
 }
+
+output "firewall_id" {
+  value = length(var.firewalls) == 0 ? "" : azurerm_firewall.this[0].id
+
+}
