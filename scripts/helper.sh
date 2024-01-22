@@ -7,6 +7,7 @@ cd $ROOT_DIR
 RED='\033[0;91m'
 GREEN='\033[0;92m'
 YELLOW='\033[0;93m'
+PURPLE='\033[0;95m'
 NC='\033[0m' # No Color
 
 err() {
@@ -22,7 +23,11 @@ warn() {
 }
 
 ok() {
-  echo -e "${GREEN}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: SUCCESS - $* ${NC}" >&1
+  echo -e "${GREEN}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: OKAY - $* ${NC}" >&1
+}
+
+chat() {
+  echo -e "${PURPLE}[$(date +'%Y-%m-%dT%H:%M:%S%z')]: CHAT - $* ${NC}" >&1
 }
 
 gap() {
@@ -107,7 +112,7 @@ function get_variables_from_tf_output() {
   changeToTerraformDirectory
 
   # Subscription as Env Variable
-  export SUBSCRIPTION_ID=$(az account show --output json  --only-show-errors | jq -r .id)
+  export SUBSCRIPTION_ID=$(az account show --output json --only-show-errors | jq -r .id)
 
   output=$(terraform output -json)
   log "output -> ${output}"
