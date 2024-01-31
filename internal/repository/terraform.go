@@ -122,3 +122,29 @@ func (t *terraformRepository) UpdateAssignment(userId string, labId string, stat
 
 	return nil
 }
+
+func (t *terraformRepository) UpdateChallenge(userId string, labId string, status string) error {
+
+	// http call to actlabs-hub
+	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"challenge/"+userId+"/"+labId+"/"+status, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("not able to update challenge status")
+	}
+
+	return nil
+}

@@ -140,6 +140,15 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 			}
 		}
 
+		// if lab is challenge and mode is validate,
+		// update challenge status to completed if the validation was good.
+		if lab.Type == "challenge" && mode == "validate" {
+			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+			if err := t.UpdateChallenge(userId, lab.Id, "completed"); err != nil { // it is completed. not Completed.
+				return fmt.Errorf("validation was successful but not able to update status, try again")
+			}
+		}
+
 		return nil
 	}
 
@@ -182,6 +191,25 @@ func (t *terraformService) UpdateAssignment(userId string, labId string, status 
 	)
 	if err := t.terraformRepository.UpdateAssignment(userId, labId, status); err != nil {
 		slog.Error("not able to update assignment status",
+			slog.String("userId", userId),
+			slog.String("labId", labId),
+			slog.String("status", status),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (t *terraformService) UpdateChallenge(userId string, labId string, status string) error {
+	slog.Info("updating challenge status",
+		slog.String("userId", userId),
+		slog.String("labId", labId),
+		slog.String("status", status),
+	)
+	if err := t.terraformRepository.UpdateChallenge(userId, labId, status); err != nil {
+		slog.Error("not able to update challenge status",
 			slog.String("userId", userId),
 			slog.String("labId", labId),
 			slog.String("status", status),

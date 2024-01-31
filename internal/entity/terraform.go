@@ -43,6 +43,7 @@ type TerraformService interface {
 	// Validate(LabType) error
 
 	UpdateAssignment(userId string, labId string, status string) error
+	UpdateChallenge(userId string, labId string, status string) error
 }
 
 type TerraformRepository interface {
@@ -50,4 +51,5 @@ type TerraformRepository interface {
 	ExecuteScript(script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error)
 
 	UpdateAssignment(userId string, labId string, status string) error
+	UpdateChallenge(userId string, labId string, status string) error
 }
