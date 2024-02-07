@@ -39,36 +39,6 @@ func (s *StorageAccountHandler) GetStorageAccount(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, storageAccount)
 }
 
-// func (s *StorageAccountHandler) GetStorageAccountConfiguration(c *gin.Context) {
-// 	configuration := entity.StateConfiguration{}
-// 	storageAccountName, err := s.storageAccountService.GetStorageAccountName()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-// 	resourceGroup, err := s.storageAccountService.GetResourceGroup()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-// 	storageAccount, err := s.storageAccountService.GetStorageAccount(storageAccountName)
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-// 	blobContainer, err := s.storageAccountService.GetBlobContainer(storageAccountName, "tfstate")
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	configuration.ResourceGroup = resourceGroup
-// 	configuration.StorageAccount = storageAccount
-// 	configuration.BlobContainer = blobContainer
-
-// 	c.IndentedJSON(http.StatusOK, configuration)
-// }
-
 func (s *StorageAccountHandler) BreakBlobLease(c *gin.Context) {
 
 	workspaceName := c.Param("workspaceName")
