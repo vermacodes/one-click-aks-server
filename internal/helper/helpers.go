@@ -160,17 +160,6 @@ func VerifyToken(tokenString string) (bool, error) {
 
 }
 
-// func GetServiceClient() *aztables.ServiceClient {
-
-// 	SasUrl := "https://" + entity.StorageAccountName + ".table.core.windows.net/" + entity.SasToken
-// 	serviceClient, err := aztables.NewServiceClientWithNoCredential(SasUrl, nil)
-// 	if err != nil {
-// 		slog.Error("error get client", err)
-// 	}
-
-// 	return serviceClient
-// }
-
 // CalculateNewEpochTimeForDeployment updates the deployment's destroy time in place.
 func CalculateNewEpochTimeForDeployment(deployment *entity.Deployment) {
 	if !deployment.DeploymentAutoDelete {
