@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
@@ -61,17 +61,18 @@ func (s *storageAccountRepository) GetStorageAccountName() (string, error) {
 			return "", err
 		}
 		for _, account := range page.Value {
-			// Cache storage account in Redis
-			storageAccountName, err := json.Marshal(account)
-			if err != nil {
-				slog.Error("not able to marshal storage account", err)
+
+			// Check if the storage account name is the user's alias
+			if !strings.HasPrefix(*account.Name, UserAliasForStorageAccount(s.config.ArmUserPrincipalName)) {
+				continue
 			}
-			err = s.rdb.Set(context.Background(), "storageAccount", storageAccountName, 0).Err()
+
+			err = s.rdb.Set(context.Background(), "storageAccount", account.Name, 0).Err()
 			if err != nil {
 				slog.Error("not able to set storage account in redis", err)
 			}
 
-			return *account.Name, nil // return the first storage account found.
+			return *account.Name, nil // return the storage account found.
 		}
 	}
 
@@ -121,4 +122,17 @@ func (s *storageAccountRepository) createLeaseBlobClient(storageAccountName stri
 	}
 
 	return leaseBlobClient, nil
+}
+
+func UserAliasForStorageAccount(userPrincipalName string) string {
+	// change to lowercase
+	userPrincipalName = strings.ToLower(userPrincipalName)
+
+	// drop the domain
+	userPrincipalName = strings.Split(userPrincipalName, "@")[0]
+
+	// drop the suffix `v-`
+	userPrincipalName = strings.TrimPrefix(userPrincipalName, "v-")
+
+	return userPrincipalName
 }
