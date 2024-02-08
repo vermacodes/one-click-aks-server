@@ -100,30 +100,3 @@ func defaultPreference() entity.Preference {
 		TerminalAutoScroll: false,
 	}
 }
-
-// func helperDeleteLabFromRedis() error {
-// 	req, err := http.NewRequest(http.MethodDelete, "http://localhost:8080/lab/redis", nil)
-// 	if err != nil {
-// 		slog.Error("not able to create request", err)
-// 		return err
-// 	}
-
-// 	client := &http.Client{}
-
-// 	resp, err := client.Do(req)
-// 	if err != nil {
-// 		slog.Error("not able to execute delete lab from redis.", err)
-// 		return err
-// 	}
-
-// 	defer resp.Body.Close()
-
-// 	if resp.StatusCode != 204 {
-// 		error := errors.New("delete lab failure")
-// 		slog.Error("not able to delete lab from redis", error)
-
-// 		return error
-// 	}
-
-// 	return nil
-// }
