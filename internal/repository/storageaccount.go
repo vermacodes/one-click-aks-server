@@ -20,37 +20,37 @@ import (
 )
 
 type storageAccountRepository struct {
-	auth           *auth.Auth
-	rdb            *redis.Client
-	subscriptionId string
+	auth   *auth.Auth
+	rdb    *redis.Client
+	config *config.Config
 }
 
 func NewStorageAccountRepository(auth *auth.Auth, rdb *redis.Client, config *config.Config) entity.StorageAccountRepository {
 	return &storageAccountRepository{
-		auth:           auth,
-		rdb:            rdb,
-		subscriptionId: config.SubscriptionID,
+		auth:   auth,
+		rdb:    rdb,
+		config: config,
 	}
 }
 
 // https://learn.microsoft.com/en-us/rest/api/storagerp/storage-accounts/list-by-resource-group?view=rest-storagerp-2023-01-01&tabs=Go
-func (s *storageAccountRepository) GetStorageAccount() (armstorage.Account, error) {
+func (s *storageAccountRepository) GetStorageAccountName() (string, error) {
+
+	slog.Debug("getting storage account name from resource group")
 
 	// Check if the storage account is already cached in Redis
-	storageAccountStr, err := s.rdb.Get(context.Background(), "storageAccount").Result()
+	storageAccountName, err := s.rdb.Get(context.Background(), "storageAccount").Result()
 	if err == nil {
-		var storageAccount armstorage.Account
-		err = json.Unmarshal([]byte(storageAccountStr), &storageAccount)
-		if err != nil {
-			return armstorage.Account{}, err
-		}
-		return storageAccount, nil
+		slog.Debug("storage account found in redis")
+		return storageAccountName, nil
 	}
 
-	clientFactory, err := armstorage.NewClientFactory(s.subscriptionId, s.auth.Cred, nil)
+	slog.Debug("storage account not found in redis")
+
+	clientFactory, err := armstorage.NewClientFactory(s.config.SubscriptionID, s.auth.Cred, nil)
 	if err != nil {
 		slog.Error("not able to create client factory to get storage account", err)
-		return armstorage.Account{}, err
+		return "", err
 	}
 
 	pager := clientFactory.NewAccountsClient().NewListByResourceGroupPager("repro-project", nil)
@@ -58,31 +58,31 @@ func (s *storageAccountRepository) GetStorageAccount() (armstorage.Account, erro
 		page, err := pager.NextPage(context.Background())
 		if err != nil {
 			slog.Error("not able to get next page for storage account", err)
-			return armstorage.Account{}, err
+			return "", err
 		}
 		for _, account := range page.Value {
 			// Cache storage account in Redis
-			storageAccountStr, err := json.Marshal(account)
+			storageAccountName, err := json.Marshal(account)
 			if err != nil {
 				slog.Error("not able to marshal storage account", err)
 			}
-			err = s.rdb.Set(context.Background(), "storageAccount", storageAccountStr, 0).Err()
+			err = s.rdb.Set(context.Background(), "storageAccount", storageAccountName, 0).Err()
 			if err != nil {
 				slog.Error("not able to set storage account in redis", err)
 			}
 
-			return *account, nil // return the first storage account found.
+			return *account.Name, nil // return the first storage account found.
 		}
 	}
 
-	return armstorage.Account{}, errors.New("storage account not found in resource group repro-project")
+	return "", errors.New("storage account not found in resource group repro-project")
 }
 
 // https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/storage/azblob@v1.2.0/lease#BlobClient.BreakLease
 func (s *storageAccountRepository) BreakBlobLease(storageAccountName string, containerName string, blobName string) error {
 	slog.Debug("breaking blob lease for blob", blobName+" in container "+containerName+" in storage account "+storageAccountName)
 
-	accountKey, err := s.auth.GetStorageAccountKey(s.subscriptionId, "repro-project", storageAccountName)
+	accountKey, err := s.auth.GetStorageAccountKey(s.config.SubscriptionID, "repro-project", storageAccountName)
 	if err != nil {
 		return fmt.Errorf("failed to get storage account key: %w", err)
 	}

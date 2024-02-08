@@ -99,7 +99,7 @@ func main() {
 	handler.NewAuthActionStatusHandler(authRouter, actionStatusService)
 	handler.NewAuthHandler(authRouter, authService)
 	// handler.NewAuthWithActionStatusHandler(authWithActionRouter, authService)
-	handler.NewStorageAccountHandler(authRouter, storageAccountService)
+	// handler.NewStorageAccountHandler(authRouter, storageAccountService)
 	handler.NewStorageAccountWithActionStatusHandler(authWithActionRouter, storageAccountService)
 	handler.NewWorkspaceHandler(authRouter, workspaceService)
 	handler.NewPreferenceHandler(authRouter, prefService)

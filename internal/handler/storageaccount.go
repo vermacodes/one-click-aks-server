@@ -12,14 +12,14 @@ type StorageAccountHandler struct {
 	storageAccountService entity.StorageAccountService
 }
 
-func NewStorageAccountHandler(r *gin.RouterGroup, service entity.StorageAccountService) {
-	handler := &StorageAccountHandler{
-		storageAccountService: service,
-	}
+// func NewStorageAccountHandler(r *gin.RouterGroup, service entity.StorageAccountService) {
+// 	handler := &StorageAccountHandler{
+// 		storageAccountService: service,
+// 	}
 
-	//r.GET("/storageaccount", handler.GetStorageAccountConfiguration)
-	r.GET("/storageaccount", handler.GetStorageAccount)
-}
+// 	//r.GET("/storageaccount", handler.GetStorageAccountConfiguration)
+// 	// r.GET("/storageaccount", handler.GetStorageAccount)
+// }
 
 func NewStorageAccountWithActionStatusHandler(r *gin.RouterGroup, service entity.StorageAccountService) {
 	handler := &StorageAccountHandler{
@@ -30,14 +30,14 @@ func NewStorageAccountWithActionStatusHandler(r *gin.RouterGroup, service entity
 	r.PUT("/storageaccount/breakbloblease/:workspaceName", handler.BreakBlobLease)
 }
 
-func (s *StorageAccountHandler) GetStorageAccount(c *gin.Context) {
-	storageAccount, err := s.storageAccountService.GetStorageAccount()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.IndentedJSON(http.StatusOK, storageAccount)
-}
+// func (s *StorageAccountHandler) GetStorageAccount(c *gin.Context) {
+// 	storageAccount, err := s.storageAccountService.GetStorageAccount()
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	c.IndentedJSON(http.StatusOK, storageAccount)
+// }
 
 func (s *StorageAccountHandler) BreakBlobLease(c *gin.Context) {
 

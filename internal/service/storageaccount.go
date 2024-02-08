@@ -5,7 +5,6 @@ import (
 	"one-click-aks-server/internal/entity"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"
 	"golang.org/x/exp/slog"
 )
 
@@ -19,23 +18,14 @@ func NewStorageAccountService(storageAccountRepo entity.StorageAccountRepository
 	}
 }
 
-func (s *storageAccountService) GetStorageAccount() (armstorage.Account, error) {
-	storageAccount, err := s.storageAccountRepository.GetStorageAccount()
-	if err != nil {
-		slog.Error("not able to get storage account", err)
-		return armstorage.Account{}, err
-	}
-	return storageAccount, nil
-}
-
 func (s *storageAccountService) GetStorageAccountName() (string, error) {
-	storageAccountName, err := s.GetStorageAccount()
+	storageAccountName, err := s.storageAccountRepository.GetStorageAccountName()
 	if err != nil {
 		slog.Error("not able to get storage account name", err)
 		return "", err
 	}
 
-	return *storageAccountName.Name, nil
+	return storageAccountName, nil
 }
 
 func (s *storageAccountService) BreakBlobLease(storageAccountName string, containerName string, workspaceName string) error {
