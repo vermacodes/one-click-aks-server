@@ -22,7 +22,13 @@ func NewAuth(appConfig *config.Config) *Auth {
 	var cred azcore.TokenCredential
 	var err error
 
-	if appConfig.UseMsi {
+	if appConfig.UseServicePrincipal {
+		cred, err = azidentity.NewClientSecretCredential(appConfig.AzureTenantID, appConfig.AzureClientID, appConfig.AzureClientSecret, nil)
+		if err != nil {
+			log.Fatalf("Failed to initialize service principal auth: %v", err)
+		}
+		AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.AzureTenantID)
+	} else if appConfig.UseMsi {
 		cred, err = azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(appConfig.AzureClientID),
 		})
@@ -49,6 +55,17 @@ func AzureCLILoginByMSI(username string) {
 	}
 
 	slog.Info("az login --identity output: " + string(out))
+}
+
+// login using service principal
+func AzureCLILoginByServicePrincipal(username string, password string, tenant string) {
+	out, err := exec.Command("bash", "-c", "az login --service-principal -u "+username+" -p "+password+" --tenant "+tenant).Output()
+	if err != nil {
+		slog.Error("not able to login using service principal", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az login --service-principal output: " + string(out))
 }
 
 func (a *Auth) GetARMAccessToken() (string, error) {

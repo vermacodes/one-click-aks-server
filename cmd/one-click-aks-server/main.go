@@ -45,7 +45,7 @@ func main() {
 	redisRepository := repository.NewRedisRepository()
 	authRepository := repository.NewAuthRepository(appConfig, auth, rdb)
 	storageAccountRepository := repository.NewStorageAccountRepository(auth, rdb, appConfig)
-	workspaceRepository := repository.NewTfWorkspaceRepository()
+	workspaceRepository := repository.NewTfWorkspaceRepository(appConfig)
 	prefRepository := repository.NewPreferenceRepository(auth, appConfig)
 	kVersionRepository := repository.NewKVersionRepository(appConfig, auth, rdb)
 	labRepository := repository.NewLabRepository(appConfig)
