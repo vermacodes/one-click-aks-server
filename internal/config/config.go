@@ -89,6 +89,7 @@ func NewConfig() *Config {
 		slog.Error("USE_SERVICE_PRINCIPAL not set")
 		os.Exit(1)
 	}
+
 	useServicePrincipal := false
 	if useServicePrincipalString == "true" {
 		slog.Info("USE_SERVICE_PRINCIPAL: true")
@@ -98,7 +99,7 @@ func NewConfig() *Config {
 	}
 
 	azureClientId := os.Getenv("AZURE_CLIENT_ID")
-	if azureClientId == "" {
+	if azureClientId == "" && useServicePrincipal {
 		slog.Error("AZURE_CLIENT_ID not set")
 		os.Exit(1)
 	}
@@ -110,7 +111,7 @@ func NewConfig() *Config {
 	}
 
 	azureTenantID := os.Getenv("AZURE_TENANT_ID")
-	if azureTenantID == "" {
+	if azureTenantID == "" && useServicePrincipal {
 		slog.Error("AZURE_TENANT_ID not set")
 		os.Exit(1)
 	}
