@@ -73,6 +73,10 @@ func (d *deploymentRepository) GetMyDeployments(userId string, subscriptionId st
 	}
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
 
+	if d.appConfig.UseServicePrincipal {
+		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	}
+
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),
 	}
@@ -203,6 +207,10 @@ func (d *deploymentRepository) UpsertDeployment(deployment entity.Deployment) er
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
 	req.Header.Set("Content-Type", "application/json")
 
+	if d.appConfig.UseServicePrincipal {
+		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	}
+
 	marshalledDeployment, err := json.Marshal(deployment)
 	if err != nil {
 		slog.Error("error occurred marshalling the deployment.", err)
@@ -280,6 +288,10 @@ func (d *deploymentRepository) DeleteDeployment(userId string, workspace string,
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
+
+	if d.appConfig.UseServicePrincipal {
+		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	}
 
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),

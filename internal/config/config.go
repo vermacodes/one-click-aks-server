@@ -17,7 +17,10 @@ type Config struct {
 	AuthTokenIss                    string
 	RootDir                         string
 	UseMsi                          bool
+	UseServicePrincipal             bool
 	AzureClientID                   string
+	AzureClientSecret               string
+	AzureTenantID                   string
 	ActlabsHubURL                   string
 	HttpRequestTimeoutSeconds       int
 	// Add other configuration fields as needed
@@ -81,9 +84,34 @@ func NewConfig() *Config {
 		slog.Info("USE_MSI: false")
 	}
 
+	useServicePrincipalString := os.Getenv("USE_SERVICE_PRINCIPAL")
+	if useServicePrincipalString == "" {
+		slog.Error("USE_SERVICE_PRINCIPAL not set")
+		os.Exit(1)
+	}
+	useServicePrincipal := false
+	if useServicePrincipalString == "true" {
+		slog.Info("USE_SERVICE_PRINCIPAL: true")
+		useServicePrincipal = true
+	} else {
+		slog.Info("USE_SERVICE_PRINCIPAL: false")
+	}
+
 	azureClientId := os.Getenv("AZURE_CLIENT_ID")
 	if azureClientId == "" {
 		slog.Error("AZURE_CLIENT_ID not set")
+		os.Exit(1)
+	}
+
+	azureClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
+	if azureClientSecret == "" && useServicePrincipal {
+		slog.Error("AZURE_CLIENT_SECRET not set")
+		os.Exit(1)
+	}
+
+	azureTenantID := os.Getenv("AZURE_TENANT_ID")
+	if azureTenantID == "" {
+		slog.Error("AZURE_TENANT_ID not set")
 		os.Exit(1)
 	}
 
@@ -117,7 +145,10 @@ func NewConfig() *Config {
 		AuthTokenIss:                    authTokenIss,
 		RootDir:                         rootDir,
 		UseMsi:                          useMsi,
+		UseServicePrincipal:             useServicePrincipal,
 		AzureClientID:                   azureClientId,
+		AzureClientSecret:               azureClientSecret,
+		AzureTenantID:                   azureTenantID,
 		ActlabsHubURL:                   actlabsHubURL,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
 		// Set other fields

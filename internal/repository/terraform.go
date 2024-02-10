@@ -35,6 +35,12 @@ func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, acti
 	setEnvironmentVariable("storage_account_name", storageAccountName)
 	setEnvironmentVariable("container_name", "tfstate")
 	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
+	if t.appConfig.UseServicePrincipal {
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 
 	// Sets terraform environment variables from tfvar
 
@@ -80,6 +86,12 @@ func (t *terraformRepository) ExecuteScript(script string, mode string, storageA
 	setEnvironmentVariable("container_name", "tfstate")
 	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
 	setEnvironmentVariable("SCRIPT_MODE", mode)
+	if t.appConfig.UseServicePrincipal {
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 
 	// Execute terraform script with appropriate action.
 	cmd := exec.Command("bash", "-c", "echo '"+script+"' | base64 -d | dos2unix | bash")

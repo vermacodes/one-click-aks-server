@@ -5,15 +5,20 @@ import (
 	"os"
 	"os/exec"
 
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type tfWorkspaceRepository struct{}
+type tfWorkspaceRepository struct {
+	appConfig *config.Config
+}
 
-func NewTfWorkspaceRepository() entity.WorkspaceRepository {
-	return &tfWorkspaceRepository{}
+func NewTfWorkspaceRepository(appConfig *config.Config) entity.WorkspaceRepository {
+	return &tfWorkspaceRepository{
+		appConfig: appConfig,
+	}
 }
 
 var tfWorkspaceCtx = context.Background()
@@ -33,6 +38,12 @@ func (t *tfWorkspaceRepository) List(storageAccountName string) (string, error) 
 	setEnvironmentVariable("storage_account_name", storageAccountName)
 	setEnvironmentVariable("container_name", "tfstate")
 	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
+	if t.appConfig.UseServicePrincipal {
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 
 	out, err := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "list").Output()
 	return string(out), err
@@ -75,6 +86,12 @@ func (t *tfWorkspaceRepository) Resources(storageAccountName string) (string, er
 	setEnvironmentVariable("storage_account_name", storageAccountName)
 	setEnvironmentVariable("container_name", "tfstate")
 	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
+	if t.appConfig.UseServicePrincipal {
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 
 	out, err := exec.Command("bash", "-c", "cd "+os.ExpandEnv("$ROOT_DIR")+"/tf; terraform state list").Output()
 	return string(out), err
