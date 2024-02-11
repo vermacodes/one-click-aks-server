@@ -4,6 +4,12 @@ variable "resource_group" {
     location = string
   })
   default = {
-    location ="eastus"
+    location = "eastus"
   }
+}
+
+variable "created_by" {
+  description = "Created By"
+  type        = string
+  default     = "ACTLabs"
 }
