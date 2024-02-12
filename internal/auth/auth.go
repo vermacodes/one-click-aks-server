@@ -27,7 +27,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 		if err != nil {
 			log.Fatalf("Failed to initialize service principal auth: %v", err)
 		}
-		AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.AzureTenantID)
+		AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.SubscriptionID, appConfig.AzureTenantID)
 	} else if appConfig.UseMsi {
 		cred, err = azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(appConfig.AzureClientID),
@@ -58,7 +58,7 @@ func AzureCLILoginByMSI(username string) {
 }
 
 // login using service principal
-func AzureCLILoginByServicePrincipal(username string, password string, tenant string) {
+func AzureCLILoginByServicePrincipal(username string, password string, subscriptionId string, tenant string) {
 	out, err := exec.Command("bash", "-c", "az login --service-principal -u "+username+" -p "+password+" --tenant "+tenant).Output()
 	if err != nil {
 		slog.Error("not able to login using service principal", err)
@@ -66,6 +66,14 @@ func AzureCLILoginByServicePrincipal(username string, password string, tenant st
 	}
 
 	slog.Info("az login --service-principal output: " + string(out))
+
+	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
+	if err != nil {
+		slog.Error("not able to set subscription", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az account set --subscription output: " + string(out))
 }
 
 func (a *Auth) GetARMAccessToken() (string, error) {

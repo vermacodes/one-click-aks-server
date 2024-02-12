@@ -111,9 +111,6 @@ function get_variables_from_tf_output() {
   log "Pulling variables from TF output"
   changeToTerraformDirectory
 
-  # Subscription as Env Variable
-  export SUBSCRIPTION_ID=$(az account show --output json --only-show-errors | jq -r .id)
-
   output=$(terraform output -json)
   log "output -> ${output}"
 
