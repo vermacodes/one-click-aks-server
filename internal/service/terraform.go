@@ -50,11 +50,6 @@ func (t *terraformService) Init() error {
 		return err
 	}
 
-	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
-		return err
-	}
-
 	if err := helperTerraformAction(t, lab.Template, "init"); err != nil {
 		slog.Error("terraform init failed",
 			slog.String("labId", lab.Id),
@@ -63,6 +58,11 @@ func (t *terraformService) Init() error {
 			slog.String("error", err.Error()),
 		)
 		return fmt.Errorf("terraform init failed %s", err.Error())
+	}
+
+	// Invalidate workspace cache
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+		return err
 	}
 
 	return nil
