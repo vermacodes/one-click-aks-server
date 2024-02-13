@@ -84,11 +84,6 @@ func (t *terraformService) Plan(lab entity.LabType) error {
 
 func (t *terraformService) Apply(lab entity.LabType) error {
 
-	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
-		return err
-	}
-
 	// if lab is assignment, update assignment status to InProgress
 	if lab.Type == "assignment" {
 		userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
@@ -105,6 +100,11 @@ func (t *terraformService) Apply(lab entity.LabType) error {
 			slog.String("error", err.Error()),
 		)
 		return fmt.Errorf("terraform apply failed %s", err.Error())
+	}
+
+	// Invalidate workspace cache
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+		return err
 	}
 
 	return t.Extend(lab, "apply")
@@ -161,10 +161,6 @@ func (t *terraformService) Destroy(lab entity.LabType) error {
 		slog.String("labName", lab.Name),
 		slog.String("labType", lab.Type),
 	)
-	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
-		return err
-	}
 
 	if err := t.Extend(lab, "destroy"); err != nil {
 		return err
@@ -178,6 +174,11 @@ func (t *terraformService) Destroy(lab entity.LabType) error {
 			slog.String("error", err.Error()),
 		)
 		return fmt.Errorf("terraform destroy failed %s", err.Error())
+	}
+
+	// Invalidate workspace cache
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+		return err
 	}
 
 	return nil

@@ -23,20 +23,34 @@ func NewAuth(appConfig *config.Config) *Auth {
 	var err error
 
 	if appConfig.UseServicePrincipal {
+
+		slog.Debug("Using service principal for auth")
+
 		cred, err = azidentity.NewClientSecretCredential(appConfig.AzureTenantID, appConfig.AzureClientID, appConfig.AzureClientSecret, nil)
 		if err != nil {
 			log.Fatalf("Failed to initialize service principal auth: %v", err)
 		}
+
 		AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.SubscriptionID, appConfig.AzureTenantID)
+
 	} else if appConfig.UseMsi {
+
+		slog.Debug("Using managed identity for auth")
+
 		cred, err = azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(appConfig.AzureClientID),
 		})
+
 		if err != nil {
 			log.Fatalf("Failed to initialize managed identity auth: %v", err)
 		}
+
 		AzureCLILoginByMSI(appConfig.AzureClientID)
+
 	} else {
+
+		slog.Debug("Using default auth")
+
 		cred, err = azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
 			log.Fatalf("Failed to initialize default auth: %v", err)
@@ -83,6 +97,7 @@ func (a *Auth) GetARMAccessToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return accessToken.Token, nil
 }
 
