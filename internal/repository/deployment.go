@@ -71,11 +71,11 @@ func (d *deploymentRepository) GetMyDeployments(userId string, subscriptionId st
 		slog.Error("error getting arm access token ", err)
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
 
-	if d.appConfig.UseServicePrincipal {
-		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
-	}
+	req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),
@@ -192,6 +192,14 @@ func (d *deploymentRepository) GetDeployment(userId string, workspace string, su
 }
 
 func (d *deploymentRepository) UpsertDeployment(deployment entity.Deployment) error {
+
+	slog.Debug("upserting deployment ",
+		slog.String("userId", deployment.DeploymentUserId),
+		slog.String("subscriptionId", deployment.DeploymentSubscriptionId),
+		slog.String("workspace", deployment.DeploymentWorkspace),
+		slog.String("Status", string(deployment.DeploymentStatus)),
+	)
+
 	url := d.appConfig.ActlabsHubURL + "deployments"
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
@@ -204,12 +212,11 @@ func (d *deploymentRepository) UpsertDeployment(deployment entity.Deployment) er
 		slog.Error("error getting arm access token ", err)
 		return err
 	}
+
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
 	req.Header.Set("Content-Type", "application/json")
-
-	if d.appConfig.UseServicePrincipal {
-		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
-	}
+	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	marshalledDeployment, err := json.Marshal(deployment)
 	if err != nil {
@@ -288,10 +295,8 @@ func (d *deploymentRepository) DeleteDeployment(userId string, workspace string,
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-
-	if d.appConfig.UseServicePrincipal {
-		req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
-	}
+	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),

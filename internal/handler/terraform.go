@@ -216,28 +216,6 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 	c.Status(http.StatusAccepted)
 }
 
-// func (t *terraformHandler) Extend(c *gin.Context) {
-// 	lab := entity.LabType{}
-// 	mode := c.Param("mode")
-// 	if err := c.Bind(&lab); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	w := c.Writer
-// 	header := w.Header()
-// 	header.Set("Transfer-Encoding", "chunked")
-// 	header.Set("Content-type", "text/html")
-
-// 	if err := t.terraformService.Extend(lab, mode); err != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 	} else {
-// 		w.WriteHeader(http.StatusOK)
-// 	}
-
-// 	w.(http.Flusher).Flush()
-// }
-
 func (t *terraformHandler) Destroy(c *gin.Context) {
 	deployment := entity.Deployment{}
 	if err := c.Bind(&deployment); err != nil {

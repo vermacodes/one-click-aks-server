@@ -48,7 +48,7 @@ func main() {
 	workspaceRepository := repository.NewTfWorkspaceRepository(appConfig)
 	prefRepository := repository.NewPreferenceRepository(auth, appConfig)
 	kVersionRepository := repository.NewKVersionRepository(appConfig, auth, rdb)
-	labRepository := repository.NewLabRepository(appConfig)
+	labRepository := repository.NewLabRepository(appConfig, auth)
 	terraformRepository := repository.NewTerraformRepository(appConfig)
 	deploymentRepository := repository.NewDeploymentRepository(appConfig, auth, rdb)
 

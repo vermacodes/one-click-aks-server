@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
-	"os"
 	"os/exec"
 
+	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 
@@ -16,11 +17,13 @@ import (
 
 type labRepository struct {
 	appConfig *config.Config
+	auth      *auth.Auth
 }
 
-func NewLabRepository(appConfig *config.Config) entity.LabRepository {
+func NewLabRepository(appConfig *config.Config, auth *auth.Auth) entity.LabRepository {
 	return &labRepository{
 		appConfig: appConfig,
+		auth:      auth,
 	}
 }
 
@@ -56,7 +59,15 @@ func (l *labRepository) GetProtectedLab(typeOfLab string, labId string) (string,
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
+
+	armAccessToken, err := l.auth.GetARMAccessToken()
+	if err != nil {
+		slog.Error("error getting arm access token ", err)
+		return "", err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	req.Header.Set("x-ms-client-principal-name", l.appConfig.ArmUserPrincipalName)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 

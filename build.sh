@@ -9,18 +9,18 @@
 # -t tag
 
 while getopts ":t:" opt; do
-    case $opt in
-    t)
-        TAG="$OPTARG"
-        ;;
-    \?)
-        echo "Invalid option -$OPTARG" >&2
-        ;;
-    esac
+  case $opt in
+  t)
+    TAG="$OPTARG"
+    ;;
+  \?)
+    echo "Invalid option -$OPTARG" >&2
+    ;;
+  esac
 done
 
 if [ -z "${TAG}" ]; then
-    TAG="latest"
+  TAG="latest"
 fi
 
 echo "TAG = ${TAG}"
@@ -29,18 +29,26 @@ echo "TAG = ${TAG}"
 rm -rf ./tf/.terraform
 rm ./tf/.terraform.lock.hcl
 
-
 if [[ "${PROTECTED_LAB_SECRET}" == "" ]]; then
-    echo "PROTECTED_LAB_SECRET missing"
-    exit 1
+  echo "PROTECTED_LAB_SECRET missing"
+  exit 1
 fi
 
 export VERSION="$(date +%Y%m%d)"
 
 go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.ProtectedLabSecret=$PROTECTED_LAB_SECRET'" ./cmd/one-click-aks-server
 
+if [ $? -ne 0 ]; then
+  echo "Failed to build one-click-aks-server"
+  exit 1
+fi
+
 # build docker image
 docker build -t repro:${TAG} .
+if [ $? -ne 0 ]; then
+  echo "Failed to build docker image"
+  exit 1
+fi
 
 rm one-click-aks-server
 
