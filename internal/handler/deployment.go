@@ -49,6 +49,17 @@ func NewDeploymentWithActionStatusHandler(r *gin.RouterGroup, service entity.Dep
 	r.PUT("/deployments", handler.UpsertDeployment)
 	r.POST("/deployments", handler.UpsertDeployment)
 	r.PUT("/deployments/select", handler.SelectDeployment)
+}
+
+func NewDeploymentWithTerraformActionStatusHandler(r *gin.RouterGroup, service entity.DeploymentService,
+	terraformService entity.TerraformService,
+	actionStatusService entity.ActionStatusService) {
+	handler := &deploymentHandler{
+		deploymentService:   service,
+		terraformService:    terraformService,
+		actionStatusService: actionStatusService,
+	}
+
 	r.DELETE("/deployments/:workspace/:subscriptionId/:operationId", handler.DeleteDeployment)
 }
 

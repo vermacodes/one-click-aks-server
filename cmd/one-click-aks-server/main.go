@@ -107,6 +107,7 @@ func main() {
 	handler.NewLabHandler(authRouter, labService)
 	handler.NewDeploymentHandler(authRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithActionStatusHandler(authWithActionRouter, deploymentService, terraformService, actionStatusService)
+	handler.NewDeploymentWithTerraformActionStatusHandler(authWithTerraformActionRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService)
 
 	// go routine to poll and delete deployments.
