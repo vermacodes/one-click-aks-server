@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = ">=3.11.0"
+      version = ">=3.93.0"
     }
     curl = {
       source  = "anschoewe/curl"
@@ -19,7 +19,7 @@ terraform {
       version = "~>2.2.0"
     }
     helm = {
-      source  = "hashicorp/helm"
+      source = "hashicorp/helm"
     }
   }
 
