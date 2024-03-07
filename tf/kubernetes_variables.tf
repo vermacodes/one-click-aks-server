@@ -23,6 +23,7 @@ variable "kubernetes_clusters" {
       enable_auto_scaling = bool
       min_count           = number
       max_count           = number
+      vm_size             = string
     })
   }))
 }

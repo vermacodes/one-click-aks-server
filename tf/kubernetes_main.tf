@@ -45,7 +45,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     min_count            = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling == false ? null : var.kubernetes_clusters[count.index].default_node_pool.min_count
     max_count            = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling == false ? null : var.kubernetes_clusters[count.index].default_node_pool.max_count
     node_count           = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling == false ? 1 : null
-    vm_size              = "Standard_D2_v5"
+    vm_size              = var.kubernetes_clusters[count.index].default_node_pool.vm_size
     enable_auto_scaling  = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling
     vnet_subnet_id       = var.virtual_networks == null || length(var.virtual_networks) == 0 ? null : azurerm_subnet.this[2].id
     orchestrator_version = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version

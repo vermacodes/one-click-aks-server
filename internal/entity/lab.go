@@ -9,9 +9,10 @@ type TfvarResourceGroupType struct {
 }
 
 type TfvarDefaultNodePoolType struct {
-	EnableAutoScaling bool `json:"enableAutoScaling"`
-	MinCount          int  `json:"minCount"`
-	MaxCount          int  `json:"maxCount"`
+	EnableAutoScaling bool   `json:"enableAutoScaling"`
+	MinCount          int    `json:"minCount"`
+	MaxCount          int    `json:"maxCount"`
+	VmSize            string `json:"vmSize"`
 }
 
 type TfvarServiceMeshType struct {

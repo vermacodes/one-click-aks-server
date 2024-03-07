@@ -174,6 +174,7 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		EnableAutoScaling: false,
 		MinCount:          1,
 		MaxCount:          1,
+    VmSize:           "Standard_D2_v5",
 	}
 
 	var defaultServiceMesh = entity.TfvarServiceMeshType{
