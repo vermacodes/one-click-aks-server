@@ -20,10 +20,11 @@ variable "kubernetes_clusters" {
       })
     })
     default_node_pool = object({
-      enable_auto_scaling = bool
-      min_count           = number
-      max_count           = number
-      vm_size             = string
+      enable_auto_scaling          = bool
+      min_count                    = number
+      max_count                    = number
+      vm_size                      = string
+      only_critical_addons_enabled = bool
     })
   }))
 }
