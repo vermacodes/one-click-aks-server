@@ -171,10 +171,11 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 	}
 
 	var defaultNodePool = entity.TfvarDefaultNodePoolType{
-		EnableAutoScaling: false,
-		MinCount:          1,
-		MaxCount:          1,
-    VmSize:           "Standard_D2_v5",
+		EnableAutoScaling:         false,
+		MinCount:                  1,
+		MaxCount:                  1,
+		VmSize:                    "Standard_D2_v5",
+		OnlyCriticalAddonsEnabled: false,
 	}
 
 	var defaultServiceMesh = entity.TfvarServiceMeshType{
