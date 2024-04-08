@@ -176,6 +176,7 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		MaxCount:                  1,
 		VmSize:                    "Standard_D2_v5",
 		OnlyCriticalAddonsEnabled: false,
+		NodeOsSku:                 "Ubuntu",
 	}
 
 	var defaultServiceMesh = entity.TfvarServiceMeshType{

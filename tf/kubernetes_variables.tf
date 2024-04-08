@@ -25,6 +25,7 @@ variable "kubernetes_clusters" {
       max_count                    = number
       vm_size                      = string
       only_critical_addons_enabled = bool
+      os_sku                       = string
     })
   }))
 }

@@ -50,6 +50,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     vnet_subnet_id               = var.virtual_networks == null || length(var.virtual_networks) == 0 ? null : azurerm_subnet.this[2].id
     orchestrator_version         = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version
     only_critical_addons_enabled = coalesce(var.kubernetes_clusters[count.index].default_node_pool.only_critical_addons_enabled, false)
+    os_sku                       = var.kubernetes_clusters[count.index].default_node_pool.os_sku == null || var.kubernetes_clusters[count.index].default_node_pool.os_sku == "" ? "Ubuntu" : var.kubernetes_clusters[count.index].default_node_pool.os_sku
   }
 
   network_profile {
