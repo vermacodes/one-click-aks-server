@@ -14,7 +14,7 @@ type TfvarDefaultNodePoolType struct {
 	MaxCount                  int    `json:"maxCount"`
 	VmSize                    string `json:"vmSize"`
 	OnlyCriticalAddonsEnabled bool   `json:"onlyCriticalAddonsEnabled"`
-	NodeOsSku                 string `json:"nodeOsSku"`
+	OsSku                     string `json:"osSku"`
 }
 
 type TfvarServiceMeshType struct {
