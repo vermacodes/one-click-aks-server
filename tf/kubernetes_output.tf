@@ -41,3 +41,8 @@ output "kubelet_msi_principal_id" {
   value       = length(var.kubernetes_clusters) == 0 ? "" : azurerm_user_assigned_identity.kubelet_identity[0].principal_id
   description = "ID of User assigned Identity for kubelet"
 }
+
+output "cluster_oidc_issuer_url" {
+  value       = length(var.kubernetes_clusters) == 0 ? "" : azurerm_kubernetes_cluster.this[0].oidc_issuer_url
+  description = "The OIDC Issuer URL associated with this AKS Cluster"
+}

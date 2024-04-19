@@ -1,12 +1,14 @@
 variable "kubernetes_clusters" {
   description = "AKS Cluster Object"
   type = list(object({
-    kubernetes_version      = string
-    network_plugin          = string
-    network_policy          = string
-    network_plugin_mode     = string
-    outbound_type           = string
-    private_cluster_enabled = bool
+    kubernetes_version        = string
+    network_plugin            = string
+    network_policy            = string
+    network_plugin_mode       = string
+    outbound_type             = string
+    oidc_issuer_enabled       = bool
+    workload_identity_enabled = bool
+    private_cluster_enabled   = bool
     addons = object({
       app_gateway              = bool
       microsoft_defender       = bool

@@ -39,6 +39,8 @@ resource "azurerm_kubernetes_cluster" "this" {
   dns_prefix              = "aks"
   private_cluster_enabled = var.kubernetes_clusters[count.index].private_cluster_enabled
   kubernetes_version      = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version
+  oidc_issuer_enabled     = var.kubernetes_clusters[count.index].workload_identity_enabled == null || var.kubernetes_clusters[count.index].workload_identity_enabled == "" ? null : var.kubernetes_clusters[count.index].workload_identity_enabled
+  workload_identity_enabled = var.kubernetes_clusters[count.index].workload_identity_enabled == null || var.kubernetes_clusters[count.index].workload_identity_enabled == "" ? null : var.kubernetes_clusters[count.index].workload_identity_enabled
 
   default_node_pool {
     name                         = "default"
