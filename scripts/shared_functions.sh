@@ -90,3 +90,52 @@ function deployIngressNginxController() {
         sleep 30s
     done
 }
+
+function stopKubelet() {
+  cat <<<EOF | kubectl apply -f -
+  apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: stop-kubelet-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: stop-kubelet
+  template:
+    metadata:
+      labels:
+        name: stop-kubelet
+    spec:
+      hostPID: true
+      containers:
+        - name: stop-kubelet
+          image: mcr.microsoft.com/cbl-mariner/base/core:1.0
+          command:
+            - nsenter
+            - --target
+            - "1"
+            - --mount
+            - --uts
+            - --ipc
+            - --net
+            - --pid
+            - --
+            - bash
+            - -exc
+            - |
+              killall kubelet
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 16Mi
+          securityContext:
+            privileged: true
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+      terminationGracePeriodSeconds: 0
+EOF
+}
