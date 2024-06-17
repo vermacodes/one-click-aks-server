@@ -196,14 +196,16 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 
 	var defaultKubernetesClusters = []entity.TfvarKubernetesClusterType{
 		{
-			KubernetesVersion:     l.kVersionService.GetDefaultVersion(),
-			NetworkPlugin:         "kubenet",
-			NetworkPolicy:         "null",
-			NetworkPluginMode:     "null",
-			OutboundType:          "loadBalancer",
-			PrivateClusterEnabled: "false",
-			Addons:                defaultAddons,
-			DefaultNodePool:       defaultNodePool,
+			KubernetesVersion:       l.kVersionService.GetDefaultVersion(),
+			NetworkPlugin:           "kubenet",
+			NetworkPolicy:           "null",
+			NetworkPluginMode:       "null",
+			OutboundType:            "loadBalancer",
+			PrivateClusterEnabled:   "false",
+			OidcIssuerEnabled:       false,
+			WorkloadIdentityEnabled: false,
+			Addons:                  defaultAddons,
+			DefaultNodePool:         defaultNodePool,
 		},
 	}
 
