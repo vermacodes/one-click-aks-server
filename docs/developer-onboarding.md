@@ -63,7 +63,7 @@ echo "AZURE_CLIENT_ID=not-used-for-self-hosting" >> .env
 echo "AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)" >> .env
 echo "AUTH_TOKEN_ISS=https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0" >> .env
 echo "AUTH_TOKEN_AUD=00399ddd-434c-4b8a-84be-d096cff4f494" >> .env
-echo "ACTLABS_HUB_URL=https://actlabs-hub-capp.redisland-ff4b63ab.azurecontainerapps.io" >> .env
+echo "ACTLABS_HUB_URL=https://actlabs-hub-capp.purplegrass-7409b036.azurecontainerapps.io" >> .env
 echo "LOG_LEVEL=0" >> .env
 ```
 
