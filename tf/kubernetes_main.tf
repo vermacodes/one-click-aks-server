@@ -32,14 +32,14 @@ resource "azurerm_role_assignment" "network_contributor" {
 }
 
 resource "azurerm_kubernetes_cluster" "this" {
-  count                   = var.kubernetes_clusters == null ? 0 : length(var.kubernetes_clusters)
-  name                    = module.naming.kubernetes_cluster.name
-  location                = azurerm_resource_group.this.location
-  resource_group_name     = azurerm_resource_group.this.name
-  dns_prefix              = "aks"
-  private_cluster_enabled = var.kubernetes_clusters[count.index].private_cluster_enabled
-  kubernetes_version      = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version
-  oidc_issuer_enabled     = var.kubernetes_clusters[count.index].workload_identity_enabled == null || var.kubernetes_clusters[count.index].workload_identity_enabled == "" ? null : var.kubernetes_clusters[count.index].workload_identity_enabled
+  count                     = var.kubernetes_clusters == null ? 0 : length(var.kubernetes_clusters)
+  name                      = module.naming.kubernetes_cluster.name
+  location                  = azurerm_resource_group.this.location
+  resource_group_name       = azurerm_resource_group.this.name
+  dns_prefix                = "aks"
+  private_cluster_enabled   = var.kubernetes_clusters[count.index].private_cluster_enabled
+  kubernetes_version        = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version
+  oidc_issuer_enabled       = var.kubernetes_clusters[count.index].workload_identity_enabled == null || var.kubernetes_clusters[count.index].workload_identity_enabled == "" ? null : var.kubernetes_clusters[count.index].workload_identity_enabled
   workload_identity_enabled = var.kubernetes_clusters[count.index].workload_identity_enabled == null || var.kubernetes_clusters[count.index].workload_identity_enabled == "" ? null : var.kubernetes_clusters[count.index].workload_identity_enabled
 
   default_node_pool {
@@ -48,7 +48,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     max_count                    = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling == false ? null : var.kubernetes_clusters[count.index].default_node_pool.max_count
     node_count                   = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling == false ? 1 : null
     vm_size                      = coalesce(var.kubernetes_clusters[count.index].default_node_pool.vm_size, "Standard_D2_v5")
-    enable_auto_scaling          = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling
+    auto_scaling_enabled         = var.kubernetes_clusters[count.index].default_node_pool.enable_auto_scaling
     vnet_subnet_id               = var.virtual_networks == null || length(var.virtual_networks) == 0 ? null : azurerm_subnet.this[2].id
     orchestrator_version         = var.kubernetes_clusters[count.index].kubernetes_version == null || var.kubernetes_clusters[count.index].kubernetes_version == "" ? null : var.kubernetes_clusters[count.index].kubernetes_version
     only_critical_addons_enabled = coalesce(var.kubernetes_clusters[count.index].default_node_pool.only_critical_addons_enabled, false)
@@ -98,13 +98,14 @@ resource "azurerm_kubernetes_cluster" "this" {
   dynamic "web_app_routing" {
     for_each = var.kubernetes_clusters[count.index].addons.http_application_routing ? [{}] : []
     content {
-      dns_zone_id = ""
+      dns_zone_ids = []
     }
   }
 
   dynamic "service_mesh_profile" {
     for_each = var.kubernetes_clusters[count.index].addons.service_mesh.enabled ? [{}] : []
     content {
+      revisions                        = []
       mode                             = var.kubernetes_clusters[count.index].addons.service_mesh.mode
       internal_ingress_gateway_enabled = var.kubernetes_clusters[count.index].addons.service_mesh.internal_ingress_gateway_enabled
       external_ingress_gateway_enabled = var.kubernetes_clusters[count.index].addons.service_mesh.external_ingress_gateway_enabled
