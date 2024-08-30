@@ -46,7 +46,19 @@ func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
 		return kubernetesVersions, err
 	}
 
-	return kubernetesVersions, nil
+	// Filter Kubernetes versions
+	filteredVersions := entity.KubernetesVersions{}
+	for _, version := range kubernetesVersions.Values {
+		for _, capability := range version.Capabilities.SupportPlan {
+			if capability == "KubernetesOfficial" {
+				slog.Info("Adding version " + version.Version)
+				filteredVersions.Values = append(filteredVersions.Values, version)
+				break
+			}
+		}
+	}
+
+	return filteredVersions, nil
 }
 
 func (k *kVersionService) GetMostRecentVersion() string {
