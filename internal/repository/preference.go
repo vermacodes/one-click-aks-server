@@ -39,39 +39,18 @@ func newPreferenceRedisClient() *redis.Client {
 func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) (string, error) {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
 
-	accountKey, err := p.auth.GetStorageAccountKey(p.appConfig.SubscriptionID, "repro-project", storageAccountName)
-	if err != nil {
-		slog.Debug("not able to get storage account key",
-			slog.String("subscriptionId", p.appConfig.SubscriptionID),
-			slog.String("resourceGroup", "repro-project"),
-			slog.String("storageAccountName", storageAccountName),
-			slog.String("error", err.Error()),
-		)
-
-		return "", err
-	}
-
-	credential, err := azblob.NewSharedKeyCredential(storageAccountName, accountKey)
-	if err != nil {
-		slog.Debug("not able to create shared key credential",
-			slog.String("storageAccountName", storageAccountName),
-			slog.String("error", err.Error()),
-		)
-
-		return "", err
-	}
-
-	client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
+	// Create a new Blob Service Client with the AAD credential
+	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
 		slog.Debug("not able to create blob client",
 			slog.String("serviceURL", serviceURL),
 			slog.String("error", err.Error()),
 		)
-
 		return "", err
 	}
 
 	// Download the blob
+	ctx := context.Background()
 	downloadResponse, err := client.DownloadStream(ctx, "tfstate", "preference.json", nil)
 	if err != nil {
 		slog.Debug("not able to download stream",
@@ -79,17 +58,16 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 			slog.String("blobName", "preference.json"),
 			slog.String("error", err.Error()),
 		)
-
 		return "", err
 	}
+	defer downloadResponse.Body.Close()
 
-	// Assert that the content is correct
+	// Read the blob content
 	actualBlobData, err := io.ReadAll(downloadResponse.Body)
 	if err != nil {
 		slog.Debug("not able to read all from download response",
 			slog.String("error", err.Error()),
 		)
-
 		return "", err
 	}
 
@@ -99,40 +77,25 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountName string) error {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
 
-	accountKey, err := p.auth.GetStorageAccountKey(p.appConfig.SubscriptionID, "repro-project", storageAccountName)
-	if err != nil {
-		slog.Debug("not able to get storage account key",
-			slog.String("subscriptionId", p.appConfig.SubscriptionID),
-			slog.String("resourceGroup", "repro-project"),
-			slog.String("storageAccountName", storageAccountName),
-			slog.String("error", err.Error()),
-		)
-
-		return err
-	}
-
-	credential, err := azblob.NewSharedKeyCredential(storageAccountName, accountKey)
-	if err != nil {
-		slog.Debug("not able to create shared key credential",
-			slog.String("storageAccountName", storageAccountName),
-			slog.String("error", err.Error()),
-		)
-
-		return err
-	}
-
-	client, err := azblob.NewClientWithSharedKeyCredential(serviceURL, credential, nil)
+	// Create a new Blob Service Client with the AAD credential
+	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
 		slog.Debug("not able to create blob client",
 			slog.String("serviceURL", serviceURL),
 			slog.String("error", err.Error()),
 		)
-
 		return err
 	}
 
+	// Upload the blob
+	ctx := context.Background()
 	_, err = client.UploadBuffer(ctx, "tfstate", "preference.json", []byte(val), nil)
 	if err != nil {
+		slog.Debug("not able to upload buffer",
+			slog.String("containerName", "tfstate"),
+			slog.String("blobName", "preference.json"),
+			slog.String("error", err.Error()),
+		)
 		return err
 	}
 

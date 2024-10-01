@@ -64,11 +64,11 @@ func NewAuth(appConfig *config.Config) *Auth {
 func AzureCLILoginByMSI(username string) {
 	out, err := exec.Command("bash", "-c", "az login --identity --username "+username).Output()
 	if err != nil {
-		slog.Error("not able to login using msi", err)
+		slog.Error("not able to login using msi "+username, err)
 		os.Exit(1)
 	}
 
-	slog.Info("az login --identity output: " + string(out))
+	slog.Info("az login --identity --username " + username + " output: " + string(out))
 }
 
 // login using service principal
@@ -88,6 +88,14 @@ func AzureCLILoginByServicePrincipal(username string, password string, subscript
 	}
 
 	slog.Info("az account set --subscription output: " + string(out))
+
+	out, err = exec.Command("bash", "-c", "az account show").Output()
+	if err != nil {
+		slog.Error("not able to show account", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az account show output: " + string(out))
 }
 
 func (a *Auth) GetARMAccessToken() (string, error) {

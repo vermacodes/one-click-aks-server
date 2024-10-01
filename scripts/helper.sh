@@ -89,6 +89,7 @@ function tf_init() {
 
   # Change to TF Directory
   changeToTerraformDirectory
+  enableSharedKeyAccess
 
   # Initialize terraform only if not.
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
@@ -140,6 +141,14 @@ function init() {
   get_aks_credentials
   # changeToTerraformDirectory
   get_kubectl
+}
+
+function enableSharedKeyAccess() {
+  # Enable shared key access to storage account if not already enabled
+  sharedKeyAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --query "allowSharedKeyAccess" --output tsv)
+  if [[ ${sharedKeyAccess} == "false" ]]; then
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --allow-shared-key-access true
+  fi
 }
 
 # Adding sources
