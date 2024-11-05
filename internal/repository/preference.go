@@ -111,3 +111,13 @@ func (p *preferenceRepository) PutPreferenceInRedis(val string) error {
 	rdb := newPreferenceRedisClient()
 	return rdb.Set(preferenceCtx, "preference", val, 0).Err()
 }
+
+func (p *preferenceRepository) DeletePreferenceFromRedis() error {
+	rdb := newPreferenceRedisClient()
+	return rdb.Del(preferenceCtx, "preference").Err()
+}
+
+func (p *preferenceRepository) DeleteKubernetesVersionsFromRedis() error {
+	rdb := newPreferenceRedisClient()
+	return rdb.Del(preferenceCtx, "kubernetesVersions").Err()
+}
