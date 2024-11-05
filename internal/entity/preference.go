@@ -15,4 +15,6 @@ type PreferenceRepository interface {
 	PutPreferenceInBlob(val string, storageAccountName string) error
 	GetPreferenceFromRedis() (string, error)
 	PutPreferenceInRedis(val string) error
+	DeletePreferenceFromRedis() error
+	DeleteKubernetesVersionsFromRedis() error
 }

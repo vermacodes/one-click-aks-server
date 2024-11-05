@@ -86,6 +86,17 @@ func (p *preferenceService) SetPreference(preference entity.Preference) error {
 		return err
 	}
 
+	// Cleanup Cache
+	if err := p.preferenceRepository.DeletePreferenceFromRedis(); err != nil {
+		slog.Error("not able to delete preference from redis", err)
+		return err
+	}
+
+	if err := p.preferenceRepository.DeleteKubernetesVersionsFromRedis(); err != nil {
+		slog.Error("not able to delete kubernetes versions from redis", err)
+		return err
+	}
+
 	if err := p.preferenceRepository.PutPreferenceInRedis(string(out)); err != nil {
 		slog.Error("not able to put preference in redis", err)
 		return err

@@ -52,10 +52,10 @@ fi
 
 rm one-click-aks-server
 
-docker tag repro:${TAG} actlab.azurecr.io/repro:${TAG}
+docker tag repro:${TAG} actlabs.azurecr.io/repro:${TAG}
 
-az acr login --name actlab --subscription ACT-CSS-Readiness
-docker push actlab.azurecr.io/repro:${TAG}
+az acr login --name actlabs --subscription ACT-CSS-Readiness-NPRD
+docker push actlabs.azurecr.io/repro:${TAG}
 
 docker tag repro:${TAG} ashishvermapu/repro:${TAG}
 docker push ashishvermapu/repro:${TAG}
