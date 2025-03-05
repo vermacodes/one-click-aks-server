@@ -33,8 +33,8 @@ resource "azurerm_virtual_machine" "this" {
 
   storage_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
+    offer     = "ubuntu-24_04-lts"
+    sku       = "server"
     version   = "latest"
   }
   storage_os_disk {
