@@ -13,3 +13,13 @@ variable "created_by" {
   type        = string
   default     = "ACTLabs"
 }
+variable "security_control" {
+  description = "Security Control"
+  type        = string
+  default     = "Ignore"
+}
+variable "cost_control" {
+  description = "Cost Control"
+  type        = string
+  default     = "Ignore"
+}
