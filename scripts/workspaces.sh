@@ -19,9 +19,9 @@ function enableSharedKeyAccess() {
 
 function enablePublicNetworkAccess() {
   # Enable public network access to storage account if not already enabled
-  publicNetworkAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "networkRuleSet.defaultAction" --output tsv 2>>$LOG_FILE)
-  if [[ ${publicNetworkAccess} == "Deny" ]]; then
-    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --default-action Allow >>$LOG_FILE 2>&1
+  publicNetworkAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "publicNetworkAccess" --output tsv 2>>$LOG_FILE)
+  if [[ ${publicNetworkAccess} != "Enabled" ]]; then
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --public-network-access Enabled >>$LOG_FILE 2>&1
   fi
 }
 
