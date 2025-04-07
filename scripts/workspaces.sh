@@ -17,6 +17,14 @@ function enableSharedKeyAccess() {
   fi
 }
 
+function enablePublicNetworkAccess() {
+  # Enable public network access to storage account if not already enabled
+  publicNetworkAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "networkRuleSet.defaultAction" --output tsv 2>>$LOG_FILE)
+  if [[ ${publicNetworkAccess} == "Deny" ]]; then
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --default-action Allow >>$LOG_FILE 2>&1
+  fi
+}
+
 # We are not using function from helper.sh cause this function needs to be quiet. i.e. no output.
 function init() {
   # Initialize terraform only if not.
@@ -65,6 +73,7 @@ if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
 fi
 
 enableSharedKeyAccess
+enablePublicNetworkAccess
 init
 
 if [[ "$OPTION" == "list" ]]; then
