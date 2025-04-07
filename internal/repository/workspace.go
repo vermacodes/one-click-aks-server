@@ -34,10 +34,11 @@ func newTfWorkspaceRedisClient() *redis.Client {
 func (t *tfWorkspaceRepository) List(storageAccountName string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
-	setEnvironmentVariable("resource_group_name", "repro-project")
-	setEnvironmentVariable("storage_account_name", storageAccountName)
-	setEnvironmentVariable("container_name", "tfstate")
-	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
+	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
+	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
+	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
+	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
+	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
@@ -82,10 +83,11 @@ func (t *tfWorkspaceRepository) Delete(workspace entity.Workspace) error {
 func (t *tfWorkspaceRepository) Resources(storageAccountName string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
-	setEnvironmentVariable("resource_group_name", "repro-project")
-	setEnvironmentVariable("storage_account_name", storageAccountName)
-	setEnvironmentVariable("container_name", "tfstate")
-	setEnvironmentVariable("tf_state_file_name", "terraform.tfstate")
+	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
+	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
+	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
+	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
+	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
