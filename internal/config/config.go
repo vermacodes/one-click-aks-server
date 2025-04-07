@@ -10,6 +10,9 @@ import (
 )
 
 type Config struct {
+	ActLabsHubSubscriptionID        string
+	ActLabsHubResourceGroupName     string
+	ActLabsHubStorageAccountName    string
 	SubscriptionID                  string
 	KubernetesVersionApiUrlTemplate string
 	ArmUserPrincipalName            string
@@ -23,6 +26,7 @@ type Config struct {
 	AzureTenantID                   string
 	ActlabsHubURL                   string
 	HttpRequestTimeoutSeconds       int
+	UserAlias                       string
 	// Add other configuration fields as needed
 }
 
@@ -33,6 +37,27 @@ func NewConfig() *Config {
 	if err != nil {
 		slog.Error("Error loading .env file")
 	}
+
+	actLabsHubSubscriptionID := os.Getenv("ACTLABS_HUB_SUBSCRIPTION_ID")
+	if actLabsHubSubscriptionID == "" {
+		slog.Error("ACTLABS_HUB_SUBSCRIPTION_ID not set")
+		os.Exit(1)
+	}
+	slog.Info("ACTLABS_HUB_SUBSCRIPTION_ID: " + actLabsHubSubscriptionID)
+
+	actLabsHubResourceGroupName := os.Getenv("ACTLABS_HUB_RESOURCE_GROUP_NAME")
+	if actLabsHubResourceGroupName == "" {
+		slog.Error("ACTLABS_HUB_RESOURCE_GROUP_NAME not set")
+		os.Exit(1)
+	}
+	slog.Info("ACTLABS_HUB_RESOURCE_GROUP_NAME: " + actLabsHubResourceGroupName)
+
+	actLabsHubStorageAccountName := os.Getenv("ACTLABS_HUB_STORAGE_ACCOUNT_NAME")
+	if actLabsHubStorageAccountName == "" {
+		slog.Error("ACTLABS_HUB_STORAGE_ACCOUNT_NAME not set")
+		os.Exit(1)
+	}
+	slog.Info("ACTLABS_HUB_STORAGE_ACCOUNT_NAME: " + actLabsHubStorageAccountName)
 
 	armUserPrincipalName := os.Getenv("ARM_USER_PRINCIPAL_NAME")
 	slog.Info("ARM_USER_PRINCIPAL_NAME: " + armUserPrincipalName)
@@ -136,9 +161,20 @@ func NewConfig() *Config {
 			log.Fatalf("Invalid value for HTTP_REQUEST_TIMEOUT_SECONDS: %v", err)
 		}
 	}
+
+	userAlias := os.Getenv("USER_ALIAS")
+	if userAlias == "" {
+		slog.Error("USER_ALIAS not set")
+		os.Exit(1)
+	}
+	slog.Info("USER_ALIAS: " + userAlias)
+
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
+		ActLabsHubSubscriptionID:        actLabsHubSubscriptionID,
+		ActLabsHubResourceGroupName:     actLabsHubResourceGroupName,
+		ActLabsHubStorageAccountName:    actLabsHubStorageAccountName,
 		SubscriptionID:                  subscriptionID,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
 		ArmUserPrincipalName:            armUserPrincipalName,
@@ -152,6 +188,7 @@ func NewConfig() *Config {
 		AzureTenantID:                   azureTenantID,
 		ActlabsHubURL:                   actlabsHubURL,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
+		UserAlias:                       userAlias,
 		// Set other fields
 	}
 }
