@@ -95,6 +95,7 @@ function tf_init() {
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
     terraform init \
       -migrate-state \
+      -backend-config="subscription_id=$subscription_id" \
       -backend-config="resource_group_name=$resource_group_name" \
       -backend-config="storage_account_name=$storage_account_name" \
       -backend-config="container_name=$container_name" \
@@ -145,9 +146,9 @@ function init() {
 
 function enableSharedKeyAccess() {
   # Enable shared key access to storage account if not already enabled
-  sharedKeyAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --query "allowSharedKeyAccess" --output tsv)
+  sharedKeyAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "allowSharedKeyAccess" --output tsv)
   if [[ ${sharedKeyAccess} == "false" ]]; then
-    az storage account update --name "$storage_account_name" -g "$resource_group_name" --allow-shared-key-access true
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --allow-shared-key-access true
   fi
 }
 
