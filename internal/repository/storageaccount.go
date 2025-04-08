@@ -85,7 +85,7 @@ func (s *storageAccountRepository) BreakBlobLease(storageAccountName string, con
 	// Append user alias to blob name
 	blobName = s.config.UserAlias + "-" + blobName
 
-	accountKey, err := s.auth.GetStorageAccountKey(s.config.SubscriptionID, "repro-project", storageAccountName)
+	accountKey, err := s.auth.GetStorageAccountKey(s.config.ActLabsHubSubscriptionID, s.config.ActLabsHubResourceGroupName, storageAccountName)
 	if err != nil {
 		return fmt.Errorf("failed to get storage account key: %w", err)
 	}
