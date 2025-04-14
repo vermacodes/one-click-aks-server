@@ -6,12 +6,27 @@
 OPTION=$1
 WORKSPACE=$2
 
+LOG_FILE="workspaces.log"
+
 # We are not using function from helper.sh cause this function needs to be quiet. i.e. no output.
 function enableSharedKeyAccess() {
   # Enable shared key access to storage account if not already enabled
-  sharedKeyAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --query "allowSharedKeyAccess" --output tsv 2>/dev/null)
+  sharedKeyAccess=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "allowSharedKeyAccess" --output tsv 2>>$LOG_FILE)
   if [[ ${sharedKeyAccess} == "false" ]]; then
-    az storage account update --name "$storage_account_name" -g "$resource_group_name" --allow-shared-key-access true >/dev/null 2>&1
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --allow-shared-key-access true >>$LOG_FILE 2>&1
+  fi
+}
+
+function enablePublicNetworkAccess() {
+  # Fetch public network access and default network rule in a single command
+  networkSettings=$(az storage account show --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --query "{publicNetworkAccess:publicNetworkAccess, defaultAction:networkRuleSet.defaultAction}" --output json 2>>$LOG_FILE)
+
+  publicNetworkAccess=$(echo "$networkSettings" | jq -r '.publicNetworkAccess')
+  defaultAction=$(echo "$networkSettings" | jq -r '.defaultAction')
+
+  # Enable public network access if not already enabled
+  if [[ "$publicNetworkAccess" != "Enabled" || "$defaultAction" != "Allow" ]]; then
+    az storage account update --name "$storage_account_name" -g "$resource_group_name" --subscription "$subscription_id" --public-network-access Enabled --default-action Allow >>$LOG_FILE 2>&1
   fi
 }
 
@@ -21,10 +36,11 @@ function init() {
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
     terraform init \
       -migrate-state \
+      -backend-config="subscription_id=$subscription_id" \
       -backend-config="resource_group_name=$resource_group_name" \
       -backend-config="storage_account_name=$storage_account_name" \
       -backend-config="container_name=$container_name" \
-      -backend-config="key=$tf_state_file_name" >/dev/null 2>&1
+      -backend-config="key=$tf_state_file_name" >>$LOG_FILE 2>&1
   fi
 }
 
@@ -62,6 +78,7 @@ if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
 fi
 
 enableSharedKeyAccess
+enablePublicNetworkAccess
 init
 
 if [[ "$OPTION" == "list" ]]; then

@@ -51,11 +51,11 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 
 	// Download the blob
 	ctx := context.Background()
-	downloadResponse, err := client.DownloadStream(ctx, "tfstate", "preference.json", nil)
+	downloadResponse, err := client.DownloadStream(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", nil)
 	if err != nil {
 		slog.Debug("not able to download stream",
-			slog.String("containerName", "tfstate"),
-			slog.String("blobName", "preference.json"),
+			slog.String("containerName", "repro-project-preferences"),
+			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
 			slog.String("error", err.Error()),
 		)
 		return "", err
@@ -89,11 +89,11 @@ func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountNam
 
 	// Upload the blob
 	ctx := context.Background()
-	_, err = client.UploadBuffer(ctx, "tfstate", "preference.json", []byte(val), nil)
+	_, err = client.UploadBuffer(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", []byte(val), nil)
 	if err != nil {
 		slog.Debug("not able to upload buffer",
-			slog.String("containerName", "tfstate"),
-			slog.String("blobName", "preference.json"),
+			slog.String("containerName", "repro-project-preferences"),
+			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
 			slog.String("error", err.Error()),
 		)
 		return err

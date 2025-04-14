@@ -53,7 +53,7 @@ func (s *StorageAccountHandler) BreakBlobLease(c *gin.Context) {
 		return
 	}
 
-	err = s.storageAccountService.BreakBlobLease(storageAccountName, "tfstate", workspaceName)
+	err = s.storageAccountService.BreakBlobLease(storageAccountName, "repro-project-tf-state-files", workspaceName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
