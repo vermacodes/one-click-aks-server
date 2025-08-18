@@ -7,6 +7,8 @@ import (
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/handler"
 	"one-click-aks-server/internal/logger"
+	"one-click-aks-server/internal/mise"
+	"one-click-aks-server/internal/miseadapter"
 
 	"one-click-aks-server/internal/middleware"
 	"one-click-aks-server/internal/repository"
@@ -38,6 +40,12 @@ func main() {
 	appConfig := config.NewConfig()
 	auth := auth.NewAuth(appConfig)
 	rdb := cache.NewRedisClient()
+
+	// mise
+	miseServer := mise.Server{
+		ContainerClient: miseadapter.NewMISEAdapter(http.DefaultClient, "http://localhost:5000/ValidateRequest"),
+		VerboseLogging:  true,
+	}
 
 	// repositories
 	logStreamRepository := repository.NewLogStreamRepository()
@@ -77,7 +85,7 @@ func main() {
 	router.Use(cors.New(config))
 
 	authRouter := router.Group("/")
-	authRouter.Use(middleware.AuthRequired(authService, logStreamService))
+	authRouter.Use(middleware.AuthRequired(miseServer, authService, logStreamService))
 
 	actionStatusRouter := router.Group("/")
 	actionStatusRouter.Use(middleware.ActionStatusMiddleware(actionStatusService))
