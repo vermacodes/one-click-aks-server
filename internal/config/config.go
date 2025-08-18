@@ -27,6 +27,11 @@ type Config struct {
 	ActlabsHubURL                   string
 	HttpRequestTimeoutSeconds       int
 	UserAlias                       string
+	MiseEndpoint                    string
+	MiseVerboseLogging              bool
+	CorsAllowOrigins                string
+	CorsAllowMethods                string
+	CorsAllowHeaders                string
 	// Add other configuration fields as needed
 }
 
@@ -169,6 +174,46 @@ func NewConfig() *Config {
 	}
 	slog.Info("USER_ALIAS: " + userAlias)
 
+	miseEndpoint := os.Getenv("MISE_ENDPOINT")
+	if miseEndpoint == "" {
+		slog.Error("MISE_ENDPOINT not set")
+		os.Exit(1)
+	}
+	slog.Info("MISE_ENDPOINT: " + miseEndpoint)
+
+	miseVerboseLoggingString := os.Getenv("MISE_VERBOSE_LOGGING")
+	if miseVerboseLoggingString == "" {
+		miseVerboseLoggingString = "false" // default value
+	}
+	miseVerboseLogging := false
+	if miseVerboseLoggingString == "true" {
+		slog.Info("MISE_VERBOSE_LOGGING: true")
+		miseVerboseLogging = true
+	} else {
+		slog.Info("MISE_VERBOSE_LOGGING: false")
+	}
+
+	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
+	if corsAllowOrigins == "" {
+		slog.Error("CORS_ALLOW_ORIGINS not set")
+		os.Exit(1)
+	}
+	slog.Info("CORS_ALLOW_ORIGINS: " + corsAllowOrigins)
+
+	corsAllowMethods := os.Getenv("CORS_ALLOW_METHODS")
+	if corsAllowMethods == "" {
+		slog.Error("CORS_ALLOW_METHODS not set")
+		os.Exit(1)
+	}
+	slog.Info("CORS_ALLOW_METHODS: " + corsAllowMethods)
+
+	corsAllowHeaders := os.Getenv("CORS_ALLOW_HEADERS")
+	if corsAllowHeaders == "" {
+		slog.Error("CORS_ALLOW_HEADERS not set")
+		os.Exit(1)
+	}
+	slog.Info("CORS_ALLOW_HEADERS: " + corsAllowHeaders)
+
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
@@ -189,6 +234,11 @@ func NewConfig() *Config {
 		ActlabsHubURL:                   actlabsHubURL,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
 		UserAlias:                       userAlias,
-		// Set other fields
+		MiseEndpoint:                    miseEndpoint,
+		MiseVerboseLogging:              miseVerboseLogging,
+		CorsAllowOrigins:                corsAllowOrigins,
+		CorsAllowMethods:                corsAllowMethods,
+		CorsAllowHeaders:                corsAllowHeaders,
+		// Add other configuration fields as needed
 	}
 }
