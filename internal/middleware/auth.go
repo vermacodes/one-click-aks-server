@@ -39,10 +39,10 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			return
 		}
 
-		userName, ok := result.SubjectClaims["Preferred_username"]
-		if !ok || userName == "" {
-			slog.Error("Preferred_username claim not found in subject claims", nil)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Preferred_username claim not found in token"})
+		userName, ok := result.SubjectClaims["preferred_username"]
+		if !ok || len(userName) == 0 {
+			slog.Error("preferred_username claim not found in subject claims", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim not found in token"})
 			return
 		}
 		slog.Info("authenticated user", "user", userName)
