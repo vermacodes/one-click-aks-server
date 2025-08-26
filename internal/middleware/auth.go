@@ -39,7 +39,12 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			return
 		}
 
-		userName := result.SubjectClaims["Preferred_username"]
+		userName, ok := result.SubjectClaims["Preferred_username"]
+		if !ok || userName == "" {
+			slog.Error("Preferred_username claim not found in subject claims", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Preferred_username claim not found in token"})
+			return
+		}
 		slog.Info("authenticated user", "user", userName)
 
 		// Keeping the custom auth validation in place, just in case MISE isn't working as expected.
