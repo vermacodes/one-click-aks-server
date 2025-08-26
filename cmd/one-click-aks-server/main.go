@@ -7,6 +7,9 @@ import (
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/handler"
 	"one-click-aks-server/internal/logger"
+	"one-click-aks-server/internal/mise"
+	"one-click-aks-server/internal/miseadapter"
+	"strings"
 
 	"one-click-aks-server/internal/middleware"
 	"one-click-aks-server/internal/repository"
@@ -39,6 +42,12 @@ func main() {
 	auth := auth.NewAuth(appConfig)
 	rdb := cache.NewRedisClient()
 
+	// mise
+	miseServer := mise.Server{
+		ContainerClient: miseadapter.NewMISEAdapter(http.DefaultClient, appConfig.MiseEndpoint),
+		VerboseLogging:  appConfig.MiseVerboseLogging,
+	}
+
 	// repositories
 	logStreamRepository := repository.NewLogStreamRepository()
 	actionStatusRepository := repository.NewActionStatusRepository()
@@ -70,14 +79,14 @@ func main() {
 	router.SetTrustedProxies(nil)
 
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173", "https://ashisverma.z13.web.core.windows.net", "https://actlabsdev.z13.web.core.windows.net", "https://actlabs.z13.web.core.windows.net", "https://actlabsbeta.z13.web.core.windows.net", "https://actlabs.azureedge.net", "https://actlabs-app.azureedge.net", "https://*.azurewebsites.net", "https://app.msftactlabs.com", "https://dev.msftactlabs.com"}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Authorization", "Content-Type"}
+	config.AllowOrigins = strings.Split(appConfig.CorsAllowOrigins, ",")
+	config.AllowMethods = strings.Split(appConfig.CorsAllowMethods, ",")
+	config.AllowHeaders = strings.Split(appConfig.CorsAllowHeaders, ",")
 
 	router.Use(cors.New(config))
 
 	authRouter := router.Group("/")
-	authRouter.Use(middleware.AuthRequired(authService, logStreamService))
+	authRouter.Use(middleware.AuthRequired(miseServer, authService, logStreamService))
 
 	actionStatusRouter := router.Group("/")
 	actionStatusRouter.Use(middleware.ActionStatusMiddleware(actionStatusService))
