@@ -1,18 +1,20 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"strings"
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/mise"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/exp/slog"
 )
 
-func AuthRequired(authService entity.AuthService, logStream entity.LogStreamService) gin.HandlerFunc {
+func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStream entity.LogStreamService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the auth token from the request header
 		authToken := c.GetHeader("Authorization")
@@ -22,6 +24,30 @@ func AuthRequired(authService entity.AuthService, logStream entity.LogStreamServ
 			return
 		}
 
+		// MISE Implementation
+		result, err := miseServer.DelegateAuthToContainer(authToken, c.Request.URL.String(), c.Request.Method, c.ClientIP())
+		if err != nil {
+			var validationErr *mise.ErrTokenValidation
+			if errors.As(err, &validationErr) {
+				// can access validationErr.ErrorDescription, validationErr.WWWAuthenticate, validationErr.StatusCode
+				slog.Error("token validation error", validationErr)
+			} else {
+				slog.Error("error while delegating auth to container", err)
+			}
+
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
+			return
+		}
+
+		userName, ok := result.SubjectClaims["preferred_username"]
+		if !ok || len(userName) == 0 {
+			slog.Error("preferred_username claim not found in subject claims", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim not found in token"})
+			return
+		}
+		slog.Info("authenticated user", "user", userName)
+
+		// Keeping the custom auth validation in place, just in case MISE isn't working as expected.
 		isAADToken, err := helper.VerifyToken(authToken)
 		if err != nil || !isAADToken {
 			slog.Error("invalid auth token", err)
