@@ -18,6 +18,7 @@ type terraformService struct {
 	logStreamService      entity.LogStreamService
 	actionStatusService   entity.ActionStatusService
 	kVersionService       entity.KVersionService
+	aroVersionService     entity.AROVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	authService           entity.AuthService
 }
@@ -29,6 +30,7 @@ func NewTerraformService(
 	logStreamService entity.LogStreamService,
 	actionStatusService entity.ActionStatusService,
 	kVersionService entity.KVersionService,
+	aroVersionService entity.AROVersionService,
 	storageAccountService entity.StorageAccountService,
 	authService entity.AuthService,
 ) entity.TerraformService {
@@ -38,6 +40,7 @@ func NewTerraformService(
 		logStreamService:      logStreamService,
 		actionStatusService:   actionStatusService,
 		kVersionService:       kVersionService,
+		aroVersionService:     aroVersionService,
 		workspaceService:      workspaceService,
 		storageAccountService: storageAccountService,
 		authService:           authService,
@@ -232,6 +235,12 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 	for i, cluster := range tfvar.KubernetesClusters {
 		if !t.kVersionService.DoesVersionExist(cluster.KubernetesVersion) {
 			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion()
+		}
+	}
+
+	for i, cluster := range tfvar.AroClusters {
+		if !t.aroVersionService.DoesVersionExist(cluster.Version) {
+			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion()
 		}
 	}
 

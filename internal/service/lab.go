@@ -12,14 +12,16 @@ import (
 type labService struct {
 	labRepository         entity.LabRepository
 	kVersionService       entity.KVersionService
+	aroVersionService     entity.AROVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	authService           entity.AuthService
 }
 
-func NewLabService(repo entity.LabRepository, kVersionService entity.KVersionService, storageAccountService entity.StorageAccountService, authService entity.AuthService) entity.LabService {
+func NewLabService(repo entity.LabRepository, kVersionService entity.KVersionService, aroVersionService entity.AROVersionService, storageAccountService entity.StorageAccountService, authService entity.AuthService) entity.LabService {
 	return &labService{
 		labRepository:         repo,
 		kVersionService:       kVersionService,
+		aroVersionService:     aroVersionService,
 		storageAccountService: storageAccountService,
 		authService:           authService,
 	}
@@ -60,6 +62,12 @@ func (l *labService) SetLabInRedis(lab entity.LabType) error {
 	for i := range lab.Template.KubernetesClusters {
 		if lab.Template.KubernetesClusters[i].KubernetesVersion == "" {
 			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion()
+		}
+	}
+
+	for i := range lab.Template.AroClusters {
+		if lab.Template.AroClusters[i].Version == "" {
+			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion()
 		}
 	}
 
@@ -209,9 +217,16 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		},
 	}
 
+	var defaultAroCluster = []entity.TfvarAroClusterType{
+		{
+			Version: l.aroVersionService.GetDefaultAROVersion(),
+		},
+	}
+
 	var defaultTfvar = entity.TfvarConfigType{
 		ResourceGroup:         defaultResourceGroup,
 		KubernetesClusters:    defaultKubernetesClusters,
+		AroClusters:           defaultAroCluster,
 		VirtualNetworks:       []entity.TfvarVirtualNetworkType{},
 		NetworkSecurityGroups: []entity.TfvarNetworkSecurityGroupType{},
 		Subnets:               []entity.TfvarSubnetType{},

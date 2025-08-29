@@ -15,37 +15,36 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-type kVersionRepository struct {
+type aroVersionRepository struct {
 	auth      *auth.Auth
 	rdb       *redis.Client
 	appConfig *config.Config
 }
 
-func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis.Client) entity.KVersionRepository {
-	return &kVersionRepository{
+func NewAROVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis.Client) entity.AROVersionRepository {
+	return &aroVersionRepository{
 		auth:      auth,
 		rdb:       rdb,
 		appConfig: appConfig,
 	}
 }
 
-func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
-	slog.Info("Getting Kubernetes versions for location " + location)
+func (a *aroVersionRepository) GetAROVersions(location string) (string, error) {
+	slog.Info("Getting ARO versions for location " + location)
 
 	// Check if the orchestrator versions are already cached in Redis
-	kubernetesVersions, err := k.rdb.Get(context.Background(), "kubernetesVersions").Result()
+	aroVersions, err := a.rdb.Get(context.Background(), "aroVersions").Result()
 	if err == nil {
-		return kubernetesVersions, nil
+		return aroVersions, nil
 	}
 
-	accessToken, err := k.auth.GetARMAccessToken()
+	accessToken, err := a.auth.GetARMAccessToken()
 	if err != nil {
 		return "", err
 	}
 
-	// Make HTTP request to retrieve Kubernetes versions
-	url := fmt.Sprintf(k.appConfig.KubernetesVersionApiUrlTemplate, k.appConfig.SubscriptionID, location)
-	slog.Info("url: " + url)
+	// Make HTTP request to retrieve ARO versions
+	url := fmt.Sprintf(a.appConfig.AroVersionApiUrlTemplate, a.appConfig.SubscriptionID, location)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -53,7 +52,7 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
 	client := &http.Client{
-		Timeout: time.Second * time.Duration(k.appConfig.HttpRequestTimeoutSeconds),
+		Timeout: time.Second * time.Duration(a.appConfig.HttpRequestTimeoutSeconds),
 	}
 
 	resp, err := client.Do(req)
@@ -69,9 +68,9 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	}
 
 	// Set the response body in Redis
-	err = k.rdb.Set(context.Background(), "kubernetesVersions", string(body), 0).Err()
+	err = a.rdb.Set(context.Background(), "aroVersions", string(body), 0).Err()
 	if err != nil {
-		slog.Error("failed to set kubernetes versions in redis", err)
+		slog.Error("failed to set aro versions in redis", err)
 	}
 
 	return string(body), nil

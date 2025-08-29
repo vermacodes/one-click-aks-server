@@ -15,6 +15,7 @@ type Config struct {
 	ActLabsHubStorageAccountName    string
 	SubscriptionID                  string
 	KubernetesVersionApiUrlTemplate string
+	AroVersionApiUrlTemplate        string
 	ArmUserPrincipalName            string
 	AuthTokenAud                    string
 	AuthTokenIss                    string
@@ -151,6 +152,11 @@ func NewConfig() *Config {
 		kubernetesVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.ContainerService/locations/%s/kubernetesVersions?api-version=2023-09-01"
 	}
 
+	aroVersionApiUrlTemplate := os.Getenv("ARO_VERSION_API_URL_TEMPLATE")
+	if aroVersionApiUrlTemplate == "" {
+		aroVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.RedHatOpenShift/locations/%s/openshiftversions?api-version=2024-08-12-preview"
+	}
+
 	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
 	if actlabsHubURL == "" {
 		slog.Error("ACTLABS_HUB_URL not set")
@@ -222,6 +228,7 @@ func NewConfig() *Config {
 		ActLabsHubStorageAccountName:    actLabsHubStorageAccountName,
 		SubscriptionID:                  subscriptionID,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
+		AroVersionApiUrlTemplate:        aroVersionApiUrlTemplate,
 		ArmUserPrincipalName:            armUserPrincipalName,
 		AuthTokenAud:                    authTokenAud,
 		AuthTokenIss:                    authTokenIss,

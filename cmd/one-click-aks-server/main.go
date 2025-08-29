@@ -57,6 +57,7 @@ func main() {
 	workspaceRepository := repository.NewTfWorkspaceRepository(appConfig)
 	prefRepository := repository.NewPreferenceRepository(auth, appConfig)
 	kVersionRepository := repository.NewKVersionRepository(appConfig, auth, rdb)
+	aroVersionRepository := repository.NewAROVersionRepository(appConfig, auth, rdb)
 	labRepository := repository.NewLabRepository(appConfig, auth)
 	terraformRepository := repository.NewTerraformRepository(appConfig)
 	deploymentRepository := repository.NewDeploymentRepository(appConfig, auth, rdb)
@@ -70,8 +71,9 @@ func main() {
 	workspaceService := service.NewWorkspaceService(workspaceRepository, storageAccountService, actionStatusService)
 	prefService := service.NewPreferenceService(prefRepository, storageAccountService)
 	kVersionService := service.NewKVersionService(kVersionRepository, prefService)
-	labService := service.NewLabService(labRepository, kVersionService, storageAccountService, authService)
-	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, storageAccountService, authService)
+	aroVersionService := service.NewAROVersionService(aroVersionRepository, prefService)
+	labService := service.NewLabService(labRepository, kVersionService, aroVersionService, storageAccountService, authService)
+	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, aroVersionService, storageAccountService, authService)
 	deploymentService := service.NewDeploymentService(deploymentRepository, labService, terraformService, actionStatusService, logStreamService, authService, workspaceService, *appConfig)
 
 	// gin routers
@@ -113,6 +115,7 @@ func main() {
 	handler.NewWorkspaceHandler(authRouter, workspaceService)
 	handler.NewPreferenceHandler(authRouter, prefService)
 	handler.NewKVersionHandler(authRouter, kVersionService)
+	handler.NewAROVersionHandler(authRouter, aroVersionService)
 	handler.NewLabHandler(authRouter, labService)
 	handler.NewDeploymentHandler(authRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithActionStatusHandler(authWithActionRouter, deploymentService, terraformService, actionStatusService)
