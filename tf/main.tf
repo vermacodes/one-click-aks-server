@@ -2,6 +2,8 @@ data "http" "my_ip" {
   url = "https://api.ipify.org"
 }
 
+data "azurerm_client_config" "current" {}
+
 resource "random_string" "random" {
   length  = 4
   upper   = false
