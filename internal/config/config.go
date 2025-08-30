@@ -16,6 +16,7 @@ type Config struct {
 	SubscriptionID                  string
 	KubernetesVersionApiUrlTemplate string
 	AroVersionApiUrlTemplate        string
+	AroRpFirstPartySpID             string
 	ArmUserPrincipalName            string
 	AuthTokenAud                    string
 	AuthTokenIss                    string
@@ -157,6 +158,13 @@ func NewConfig() *Config {
 		aroVersionApiUrlTemplate = "https://management.azure.com/subscriptions/%s/providers/Microsoft.RedHatOpenShift/locations/%s/openshiftversions?api-version=2024-08-12-preview"
 	}
 
+	aroRpFirstPartySpID := os.Getenv("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID")
+	if aroRpFirstPartySpID == "" {
+		slog.Error("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID not set")
+		os.Exit(1)
+	}
+	slog.Info("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: " + aroRpFirstPartySpID)
+
 	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
 	if actlabsHubURL == "" {
 		slog.Error("ACTLABS_HUB_URL not set")
@@ -229,6 +237,7 @@ func NewConfig() *Config {
 		SubscriptionID:                  subscriptionID,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
 		AroVersionApiUrlTemplate:        aroVersionApiUrlTemplate,
+		AroRpFirstPartySpID:             aroRpFirstPartySpID,
 		ArmUserPrincipalName:            armUserPrincipalName,
 		AuthTokenAud:                    authTokenAud,
 		AuthTokenIss:                    authTokenIss,

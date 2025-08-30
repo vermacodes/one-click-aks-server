@@ -36,6 +36,7 @@ func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, acti
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
 	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	setEnvironmentVariable("TF_VAR_aro_rp_first_party_service_principal_id", t.appConfig.AroRpFirstPartySpID)
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
@@ -88,6 +89,7 @@ func (t *terraformRepository) ExecuteScript(script string, mode string, storageA
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
 	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
 	setEnvironmentVariable("SCRIPT_MODE", mode)
+	setEnvironmentVariable("TF_VAR_aro_rp_first_party_service_principal_id", t.appConfig.AroRpFirstPartySpID)
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
