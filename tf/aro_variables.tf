@@ -1,7 +1,7 @@
 variable "aro_clusters" {
   description = "AKS Cluster Object"
   type = list(object({
-    aro_version = string
+    version = string
   }))
 }
 

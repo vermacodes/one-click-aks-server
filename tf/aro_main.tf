@@ -1,148 +1,55 @@
+
 # Loop to create all required identities for each cluster
 locals {
-  identity_types = [
-    "aro-cluster",
-    "cloud-controller-manager",
-    "ingress",
-    "machine-api",
-    "disk-csi-driver",
-    "cloud-network-config",
-    "image-registry",
-    "aro-operator"
-  ]
+  identity_roles = {
+    "aro-cluster"              = "Azure Red Hat OpenShift Federated Credential"
+    "cloud-controller-manager" = "Azure Red Hat OpenShift Cloud Controller Manager"
+    "ingress"                  = "Azure Red Hat OpenShift Cluster Ingress Operator"
+    "machine-api"              = "Azure Red Hat OpenShift Machine API Operator"
+    "file-csi-driver"          = "Azure Red Hat OpenShift File Storage Operator"
+    "disk-csi-driver"          = "Azure Red Hat OpenShift Disk Storage Operator"
+    "cloud-network-config"     = "Azure Red Hat OpenShift Network Operator"
+    "image-registry"           = "Azure Red Hat OpenShift Image Registry Operator"
+    "aro-operator"             = "Azure Red Hat OpenShift Service Operator"
+  }
+
+  identity_types = keys(local.identity_roles)
+
+  # Build a map of all assignments needed: key is "identitytype_clusteridx", value is a map with identity_type, cluster_idx, and role
+  identity_assignments = var.aro_clusters == null ? {} : {
+    for pair in setproduct(local.identity_types, range(length(var.aro_clusters))) :
+    "${pair[0]}_${pair[1]}" => {
+      identity_type = pair[0]
+      cluster_idx   = pair[1]
+      role          = local.identity_roles[pair[0]]
+    }
+  }
 }
 
 resource "azurerm_user_assigned_identity" "cluster_identities" {
-  for_each = var.aro_clusters == null ? {} : {
-    for pair in setproduct(range(length(var.aro_clusters)), local.identity_types) :
-    "${pair[0]}_${pair[1]}" => {
-      cluster_idx   = pair[0]
-      identity_type = pair[1]
-    }
-  }
+  for_each            = local.identity_assignments
   name                = "${module.naming.user_assigned_identity.name}-${each.value.identity_type}-${each.value.cluster_idx}"
   resource_group_name = azurerm_resource_group.this.name
   location            = azurerm_resource_group.this.location
 }
 
-resource "azurerm_role_assignment" "aro_operator_azure_red_hat_openshift_federated_credential" {
-  count                = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id         = azurerm_user_assigned_identity.aro_operator_identity[count.index].principal_id
-  scope                = azurerm_resource_group.this.id
-  role_definition_name = "Azure Red Hat OpenShift Federated Credential"
-}
 
-# Repeat role assignment for each required identity
-resource "azurerm_role_assignment" "aro_cluster_identity_azure_red_hat_openshift_federated_credential" {
-  count                = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id         = azurerm_user_assigned_identity.aro_cluster_identity[count.index].principal_id
+# Single role assignment resource for all identities
+resource "azurerm_role_assignment" "identity_roles" {
+  for_each             = local.identity_assignments
+  principal_id         = azurerm_user_assigned_identity.cluster_identities[each.key].principal_id
   scope                = azurerm_resource_group.this.id
-  role_definition_name = "Azure Red Hat OpenShift Federated Credential"
+  role_definition_name = each.value.role
   principal_type       = "ServicePrincipal"
 }
 
-# Role assignment for cloud-controller-manager on master subnet
-resource "azurerm_role_assignment" "cloud_controller_manager_master_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.cloud_controller_manager_identity[count.index].principal_id
-  scope              = azurerm_subnet.master.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/a1f96423-95ce-4224-ab27-4e3dc72facd4"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignment for cloud-controller-manager on worker subnet
-resource "azurerm_role_assignment" "cloud_controller_manager_worker_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.cloud_controller_manager_identity[count.index].principal_id
-  scope              = azurerm_subnet.worker.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/a1f96423-95ce-4224-ab27-4e3dc72facd4"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignments for ingress identity
-resource "azurerm_role_assignment" "ingress_master_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.ingress_identity[count.index].principal_id
-  scope              = azurerm_subnet.master.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/0336e1d3-7a87-462b-b6db-342b63f7802c"
-  principal_type     = "ServicePrincipal"
-}
-
-resource "azurerm_role_assignment" "ingress_worker_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.ingress_identity[count.index].principal_id
-  scope              = azurerm_subnet.worker.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/0336e1d3-7a87-462b-b6db-342b63f7802c"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignments for machine-api identity
-resource "azurerm_role_assignment" "machine_api_master_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.machine_api_identity[count.index].principal_id
-  scope              = azurerm_subnet.master.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/0358943c-7e01-48ba-8889-02cc51d78637"
-  principal_type     = "ServicePrincipal"
-}
-
-resource "azurerm_role_assignment" "machine_api_worker_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.machine_api_identity[count.index].principal_id
-  scope              = azurerm_subnet.worker.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/0358943c-7e01-48ba-8889-02cc51d78637"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignment for cloud-network-config identity on vnet
-resource "azurerm_role_assignment" "cloud_network_config_vnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.cloud_network_config_identity[count.index].principal_id
-  scope              = azurerm_virtual_network.vnet.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/be7a6435-15ae-4171-8f30-4a343eff9e8f"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignment for file-csi-driver identity on vnet
-resource "azurerm_role_assignment" "file_csi_driver_vnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.file_csi_driver_identity[count.index].principal_id
-  scope              = azurerm_virtual_network.vnet.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/0d7aedc0-15fd-4a67-a412-efad370c947e"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignment for image-registry identity on vnet
-resource "azurerm_role_assignment" "image_registry_vnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.image_registry_identity[count.index].principal_id
-  scope              = azurerm_virtual_network.vnet.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/8b32b316-c2f5-4ddf-b05b-83dacd2d08b5"
-  principal_type     = "ServicePrincipal"
-}
-
-# Role assignments for aro-operator identity
-resource "azurerm_role_assignment" "aro_operator_master_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.aro_operator_identity[count.index].principal_id
-  scope              = azurerm_subnet.master.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/4436bae4-7702-4c84-919b-c4069ff25ee2"
-  principal_type     = "ServicePrincipal"
-}
-
-resource "azurerm_role_assignment" "aro_operator_worker_subnet" {
-  count              = var.aro_clusters == null ? 0 : length(var.aro_clusters)
-  principal_id       = azurerm_user_assigned_identity.aro_operator_identity[count.index].principal_id
-  scope              = azurerm_subnet.worker.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/4436bae4-7702-4c84-919b-c4069ff25ee2"
-  principal_type     = "ServicePrincipal"
-}
 
 # Role assignment for ARO RP first-party service principal on vnet
 resource "azurerm_role_assignment" "aro_rp_first_party_vnet" {
-  principal_id       = var.aro_rp_first_party_service_principal_id
-  scope              = azurerm_virtual_network.vnet.id
-  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7"
-  principal_type     = "ServicePrincipal"
+  principal_id         = var.aro_rp_first_party_service_principal_id
+  scope                = azurerm_resource_group.this.id
+  role_definition_name = "Network Contributor"
+  principal_type       = "ServicePrincipal"
 }
 
 
@@ -150,3 +57,49 @@ resource "azurerm_role_assignment" "aro_rp_first_party_vnet" {
 
 # This feature is still in preview. So the APIs are not yet available in Terraform.
 # we will complete this as soon as the apis are available.
+
+# Create ARO cluster using null_resource and local-exec
+resource "null_resource" "create_aro_clusters" {
+  count = var.aro_clusters == null ? 0 : length(var.aro_clusters)
+
+  provisioner "local-exec" {
+    command     = <<EOT
+      az aro create \
+        --resource-group ${azurerm_resource_group.this.name} \
+        --subscription ${data.azurerm_client_config.current.subscription_id} \
+        --name ${replace(module.naming.kubernetes_cluster.name, "aks", "aro")}-${count.index} \
+        --vnet ${azurerm_virtual_network.this[count.index].name} \
+        --master-subnet ${[for s in azurerm_subnet.this : s.id if s.name == "AROMasterSubnet"][count.index]} \
+        --worker-subnet ${[for s in azurerm_subnet.this : s.id if s.name == "AROWorkerSubnet"][count.index]} \
+        --version ${var.aro_clusters[count.index].version} \
+        --enable-managed-identity \
+        --assign-cluster-identity ${azurerm_user_assigned_identity.cluster_identities["aro-cluster_${count.index}"].id} \
+        --assign-platform-workload-identity file-csi-driver ${azurerm_user_assigned_identity.cluster_identities["file-csi-driver_${count.index}"].id} \
+        --assign-platform-workload-identity cloud-controller-manager ${azurerm_user_assigned_identity.cluster_identities["cloud-controller-manager_${count.index}"].id} \
+        --assign-platform-workload-identity ingress ${azurerm_user_assigned_identity.cluster_identities["ingress_${count.index}"].id} \
+        --assign-platform-workload-identity image-registry ${azurerm_user_assigned_identity.cluster_identities["image-registry_${count.index}"].id} \
+        --assign-platform-workload-identity machine-api ${azurerm_user_assigned_identity.cluster_identities["machine-api_${count.index}"].id} \
+        --assign-platform-workload-identity cloud-network-config ${azurerm_user_assigned_identity.cluster_identities["cloud-network-config_${count.index}"].id} \
+        --assign-platform-workload-identity aro-operator ${azurerm_user_assigned_identity.cluster_identities["aro-operator_${count.index}"].id} \
+        --assign-platform-workload-identity disk-csi-driver ${azurerm_user_assigned_identity.cluster_identities["disk-csi-driver_${count.index}"].id}
+    EOT
+    interpreter = ["bash", "-c"]
+  }
+
+  triggers = {
+    resource_group = azurerm_resource_group.this.name
+    cluster_name   = "${replace(module.naming.kubernetes_cluster.name, "aks", "aro")}-${count.index}"
+  }
+  provisioner "local-exec" {
+    when        = destroy
+    command     = <<EOT
+    az aro delete \
+      --resource-group ${self.triggers.resource_group} \
+      --name ${self.triggers.cluster_name} \
+      --yes
+  EOT
+    interpreter = ["bash", "-c"]
+  }
+
+  depends_on = [azurerm_user_assigned_identity.cluster_identities, azurerm_subnet.this, azurerm_virtual_network.this]
+}
