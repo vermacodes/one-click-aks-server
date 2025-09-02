@@ -1,5 +1,5 @@
 output "aks_login" {
-  value       = length(var.kubernetes_clusters) == 0 ? "" : "az aks get-credentials --name ${azurerm_kubernetes_cluster.this[0].name} --resource-group ${azurerm_kubernetes_cluster.this[0].resource_group_name} --overwrite-existing"
+  value       = length(var.kubernetes_clusters) == 0 ? "" : "az aks get-credentials --name ${azurerm_kubernetes_cluster.this[0].name} --resource-group ${azurerm_kubernetes_cluster.this[0].resource_group_name} --subscription ${data.azurerm_client_config.current.subscription_id} --overwrite-existing"
   description = "AKS Get Credentials Command."
 }
 
