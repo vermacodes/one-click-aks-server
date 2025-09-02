@@ -7,11 +7,12 @@ resource "azurerm_virtual_network" "this" {
 }
 
 resource "azurerm_subnet" "this" {
-  count                = var.subnets == null ? 0 : length(var.subnets)
-  name                 = var.subnets[count.index].name
-  resource_group_name  = azurerm_resource_group.this.name
-  address_prefixes     = var.subnets[count.index].address_prefixes
-  virtual_network_name = azurerm_virtual_network.this[0].name
+  count                                         = var.subnets == null ? 0 : length(var.subnets)
+  name                                          = var.subnets[count.index].name
+  resource_group_name                           = azurerm_resource_group.this.name
+  address_prefixes                              = var.subnets[count.index].address_prefixes
+  virtual_network_name                          = azurerm_virtual_network.this[0].name
+  private_link_service_network_policies_enabled = var.subnets[count.index].name == "AROMasterSubnet" ? false : true
 }
 
 resource "azurerm_network_security_group" "this" {
