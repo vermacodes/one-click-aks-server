@@ -232,17 +232,11 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 		return err
 	}
 
-	for i, cluster := range tfvar.KubernetesClusters {
-		if !t.kVersionService.DoesVersionExist(cluster.KubernetesVersion) {
-			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion()
-		}
-	}
+	helperEnsureKubernetesVersion(t, &tfvar)
 
-	for i, cluster := range tfvar.AroClusters {
-		if !t.aroVersionService.DoesVersionExist(cluster.Version) {
-			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion()
-		}
-	}
+	helperEnsureAroVersion(t, &tfvar)
+
+	helperEnsureAro(&tfvar)
 
 	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(tfvar, action, storageAccountName)
 	if err != nil {
@@ -269,6 +263,35 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 	wPipe.Close()
 
 	return err
+}
+
+// Ensure that the version of kubernetes exists.
+// if the version is old, it sets the version to current default.
+// best known use case is when a lab is created with an old version of kubernetes.
+func helperEnsureKubernetesVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
+	for i, cluster := range tfvar.KubernetesClusters {
+		if !t.kVersionService.DoesVersionExist(cluster.KubernetesVersion) {
+			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion()
+		}
+	}
+}
+
+// Ensure that the version of ARO exists.
+func helperEnsureAroVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
+	for i, cluster := range tfvar.AroClusters {
+		if !t.aroVersionService.DoesVersionExist(cluster.Version) {
+			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion()
+		}
+	}
+}
+
+// Ensure ARO exists.
+// ARO is introduced late, so the older lab objects will not have it in them.
+// We just need to add empty array to tfvar object.
+func helperEnsureAro(tfvar *entity.TfvarConfigType) {
+	if tfvar.AroClusters == nil {
+		tfvar.AroClusters = []entity.TfvarAroClusterType{}
+	}
 }
 
 func helperExecuteScript(t *terraformService, script string, mode string) error {
