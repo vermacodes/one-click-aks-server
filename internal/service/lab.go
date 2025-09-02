@@ -217,16 +217,10 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		},
 	}
 
-	var defaultAroCluster = []entity.TfvarAroClusterType{
-		{
-			Version: l.aroVersionService.GetDefaultAROVersion(),
-		},
-	}
-
 	var defaultTfvar = entity.TfvarConfigType{
 		ResourceGroup:         defaultResourceGroup,
 		KubernetesClusters:    defaultKubernetesClusters,
-		AroClusters:           defaultAroCluster,
+		AroClusters:           []entity.TfvarAroClusterType{},
 		VirtualNetworks:       []entity.TfvarVirtualNetworkType{},
 		NetworkSecurityGroups: []entity.TfvarNetworkSecurityGroupType{},
 		Subnets:               []entity.TfvarSubnetType{},
