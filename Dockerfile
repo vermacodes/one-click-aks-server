@@ -6,6 +6,7 @@ ADD entrypoint.sh ./
 
 RUN chmod +x ./entrypoint.sh
 
+ADD ./azurerm-msi-auth-proxy ./ 
 ADD ./one-click-aks-server ./
 ADD /tf ./tf
 ADD /scripts ./scripts

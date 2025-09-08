@@ -62,8 +62,9 @@ func NewAuth(appConfig *config.Config) *Auth {
 
 // login using msi
 func AzureCLILoginByMSI(username string) {
-	out, err := exec.Command("bash", "-c", "az login --identity --username "+username).Output()
+	out, err := exec.Command("bash", "-c", "az login --identity --username "+username+" --verbose").Output()
 	if err != nil {
+		slog.Info("az login --identity --username " + username + " output: " + string(out))
 		slog.Error("not able to login using msi "+username, err)
 		os.Exit(1)
 	}

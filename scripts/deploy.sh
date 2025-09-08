@@ -6,7 +6,7 @@ az containerapp create \
   --subscription ACT-CSS-Readiness \
   --environment actlabs-hub-env-eastus \
   --allow-insecure false \
-  --image ashishvermapu/repro:alpha \
+  --image actlabs.azurecr.io/repro:alpha \
   --ingress 'external' \
   --min-replicas 1 \
   --max-replicas 1 \

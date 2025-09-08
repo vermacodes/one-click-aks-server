@@ -39,6 +39,17 @@ func (t *tfWorkspaceRepository) List(storageAccountName string) (string, error) 
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
 	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	if t.appConfig.UseMsi {
+		setEnvironmentVariable("ARM_USE_MSI", "true")
+		setEnvironmentVariable("ARM_USE_AZUREAD", "true")
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
+		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
+		setEnvironmentVariable("MSI_ENDPOINT", "")
+		setEnvironmentVariable("MSI_SECRET", "")
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
@@ -88,6 +99,17 @@ func (t *tfWorkspaceRepository) Resources(storageAccountName string) (string, er
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
 	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	if t.appConfig.UseMsi {
+		setEnvironmentVariable("ARM_USE_MSI", "true")
+		setEnvironmentVariable("ARM_USE_AZUREAD", "true")
+		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
+		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
+		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
+		setEnvironmentVariable("MSI_ENDPOINT", "")
+		setEnvironmentVariable("MSI_SECRET", "")
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
+	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)

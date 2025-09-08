@@ -89,7 +89,7 @@ function tf_init() {
 
   # Change to TF Directory
   changeToTerraformDirectory
-  enableSharedKeyAccess
+  # enableSharedKeyAccess
 
   # Initialize terraform only if not.
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
@@ -100,7 +100,7 @@ function tf_init() {
       -backend-config="storage_account_name=$storage_account_name" \
       -backend-config="container_name=$container_name" \
       -backend-config="key=$tf_state_file_name"
-    ok "Initialization Complted"
+    ok "Initialization Completed"
   else
     ok "Already Initialized - Skipped"
   fi

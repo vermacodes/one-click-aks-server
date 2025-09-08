@@ -1,6 +1,71 @@
+
 #!/bin/bash
 
-action=$1
+# Usage:
+#   terraform_debug.sh <action> [options]
+#
+# Actions:
+#   plan        Run terraform plan
+#   apply       Run terraform apply
+#   destroy     Run terraform destroy
+#   init        Run terraform init
+#   list        List terraform state resources
+#
+# Options:
+#   -l <level>, --log <level>      Set TF_LOG level (debug, trace)
+#   debug, trace                   Shortcut for log level
+#   -b local, --backend local      Remove azurerm backend for local state
+#   -m, --use-msi                  Enable MSI authentication for Terraform
+#
+# Examples:
+#   ./terraform_debug.sh plan -l debug
+#   ./terraform_debug.sh apply --log trace
+#   ./terraform_debug.sh destroy -b local -m
+#   ./terraform_debug.sh init
+
+
+action=""
+tf_log=""
+backend_local=""
+use_msi=""
+
+# Parse arguments for action, log level, backend, and MSI usage
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    plan|apply|destroy|init|list)
+      action="$1"
+      shift
+      ;;
+    -l|--log)
+      if [[ -n "$2" ]]; then
+        tf_log="$2"
+        shift 2
+      else
+        echo "Error: Missing log level after $1"
+        exit 1
+      fi
+      ;;
+    debug|trace)
+      tf_log="$1"
+      shift
+      ;;
+    -b|--backend)
+      if [[ -n "$2" && "$2" == "local" ]]; then
+        backend_local="true"
+        shift 2
+      else
+        shift
+      fi
+      ;;
+    --use-msi|-m)
+      use_msi="true"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
 
 # Read the instructions very carefully.
 
@@ -8,8 +73,11 @@ action=$1
 export ROOT_DIR=$(pwd)
 source $ROOT_DIR/scripts/helper.sh
 
-# change to 'trace' if thats what you want. But in most cases 'debug' is good enough.
-export TF_LOG=debug
+# Set TF_LOG if requested
+if [[ -n "$tf_log" ]]; then
+  export TF_LOG="$tf_log"
+  echo "Terraform logging enabled: TF_LOG=$TF_LOG"
+fi
 
 # Following variables are used by terraform. Change them as you need.
 # You will get these from the output on the UI.
@@ -24,24 +92,53 @@ export TF_VAR_app_gateways='[]'
 export TF_VAR_jumpservers='[]'
 export TF_VAR_virtual_networks='[]'
 export TF_VAR_kubernetes_clusters='[]'
+export TF_VAR_aro_clusters='[]'
+export TF_VAR_aro_rp_first_party_service_principal_id=$AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID
+
 # Following variables are used by the helper script. No need to change them.
 export terraform_directory="tf"
-export root_directory=$(pwd)
-export resource_group_name="repro-project"
-export container_name="tfstate"
-export tf_state_file_name="terraform.tfstate"
+export root_directory=$ROOT_DIR
+export subscription_id=$ACTLABS_HUB_SUBSCRIPTION_ID
+export resource_group_name=$ACTLABS_HUB_RESOURCE_GROUP_NAME
+export storage_account_name=$ACTLABS_HUB_STORAGE_ACCOUNT_NAME
+export container_name="repro-project-tf-state-files"
+export tf_state_file_name="${USER_ALIAS}-terraform.tfstate"
 
-# add the storage account name here. you will find that on UI in settings.
-export storage_account_name="iv3p7230nbdw"
+# Remove backend config only if requested
+if [[ "$backend_local" == "true" ]]; then
+  sed -i '/backend "azurerm" {}/d' $root_directory/$terraform_directory/providers.tf
+  echo "Removed azurerm backend configuration for local backend."
+fi
 
-# Update tf/provers.tf to remove backend configuration.
-sed -i '/backend "azurerm" {}/d' $root_directory/$terraform_directory/providers.tf
+# Set MSI environment variables only if requested
+if [[ "$use_msi" == "true" ]]; then
+  export ARM_USE_MSI=true
+  export ARM_USE_AZUREAD=true
+  export ARM_CLIENT_ID=589f5c83-f27d-4a89-9dd2-75a11a0c7d6a # only necessary for user assigned identity
+  export ARM_MSI_ENDPOINT="http://localhost:${ARM_MSI_API_PROXY_PORT}/msi/token"
+  export ARM_MSI_API_VERSION="2019-08-01"
+  export MSI_ENDPOINT=""
+  export MSI_SECRET=""
+  echo "MSI environment variables set."
+fi
 
-# Remove existing terraform init
-rm -rf $root_directory/$terraform_directory/.terraform*
+function init() {
+  log "Initializing"
 
-# Terraform Init - Sourced from helper script.
-$root_directory/scripts/terraform.sh init
+  # Initialize terraform only if not.
+  if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
+    terraform init \
+      -migrate-state \
+      -backend-config="subscription_id=$subscription_id" \
+      -backend-config="resource_group_name=$resource_group_name" \
+      -backend-config="storage_account_name=$storage_account_name" \
+      -backend-config="container_name=$container_name" \
+      -backend-config="key=$tf_state_file_name"
+    ok "Initialization Completed"
+  else
+    ok "Already Initialized - Skipped"
+  fi
+}
 
 function plan() {
   log "Planning"
@@ -71,54 +168,10 @@ function list() {
   terraform state list
 }
 
-function getSecertsFromKeyVault() {
-  # Following two are already availabe.
-  export ARM_SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
-  export ARM_TENANT_ID=$(az account show --output json | jq -r .tenantId)
-
-  # Resource group need not be changed.
-  RESOURCE_GROUP_NAME="repro-project"
-
-  log "Pulling secrets from keyvault. This will take just a few moments."
-
-  # Get the name of the Key Vault in the resource group
-  KEY_VAULT_NAME=$(az keyvault list --resource-group "${RESOURCE_GROUP_NAME}" --query "[].name" -o tsv)
-  if [ $? -ne 0 ]; then
-    err "Failed to get key vault name in resource group ${RESOURCE_GROUP_NAME}"
-    return 1
-  fi
-  # Get a list of all secrets in the Key Vault
-  SECRET_NAMES=$(az keyvault secret list --vault-name "${KEY_VAULT_NAME}" --query "[].name" -o tsv)
-  if [ $? -ne 0 ]; then
-    err "Failed to get secrets from key vault ${KEY_VAULT_NAME}"
-    return 1
-  fi
-
-  # Loop through the list of secrets and set them as environment variables
-  for SECRET_NAME in $SECRET_NAMES; do
-    ENV_VAR_NAME=$(echo "$SECRET_NAME" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-    SECRET_VALUE=$(az keyvault secret show --vault-name "${KEY_VAULT_NAME}" --name "${SECRET_NAME}" --query "value" -o tsv)
-    if [ $? -ne 0 ]; then
-      err "Failed to get secret ${SECRET_NAME} from key vault ${KEY_VAULT_NAME}"
-      return 1
-    fi
-    export "${ENV_VAR_NAME}"="${SECRET_VALUE}"
-  done
-
-  return 0
-}
-
 ##
 ## Script starts here.
 ##
 
-# Getting secrets from keyvault.
-# if getSecertsFromKeyVault; then
-#     ok "Secrets pulled from keyvault."
-# else
-#     err "Failed to pull secrets from keyvault."
-#     exit 1
-# fi
 
 if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
   export ARM_SUBSCRIPTION_ID=$(az account show --output json | jq -r .id)
@@ -132,10 +185,11 @@ echo ""
 # Delete existing if init
 if [[ "$action" == "init" ]]; then
   rm -rf .terraform*
+  init
 fi
 
 # Terraform Init - Sourced from helper script.
-tf_init
+# tf_init
 
 if [[ "$action" == "plan" ]]; then
   plan

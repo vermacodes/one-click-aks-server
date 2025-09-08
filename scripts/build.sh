@@ -36,6 +36,14 @@ fi
 
 export VERSION="$(date +%Y%m%d)"
 
+# build proxy
+go build -o azurerm-msi-auth-proxy ../proxy/main.go
+if [ $? -ne 0 ]; then
+  echo "Failed to build azurerm-msi-auth-proxy"
+  exit 1
+fi
+
+# build server
 go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.ProtectedLabSecret=$PROTECTED_LAB_SECRET'" ./cmd/one-click-aks-server
 
 if [ $? -ne 0 ]; then
@@ -50,12 +58,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-rm one-click-aks-server
+rm one-click-aks-server azurerm-msi-auth-proxy
 
 docker tag repro:${TAG} actlabs.azurecr.io/repro:${TAG}
 
 az acr login --name actlabs --subscription ACT-CSS-Readiness-NPRD
 docker push actlabs.azurecr.io/repro:${TAG}
 
-docker tag repro:${TAG} ashishvermapu/repro:${TAG}
-docker push ashishvermapu/repro:${TAG}
+# docker tag repro:${TAG} ashishvermapu/repro:${TAG}
+# docker push ashishvermapu/repro:${TAG}
