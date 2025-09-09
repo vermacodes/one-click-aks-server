@@ -42,7 +42,16 @@ fi
 
 cd $root_directory/$terraform_directory
 log "Terraform Environment Variables"
-env | grep "TF_VAR" | awk -F"=" '{printf "%s=", $1; print $2 | "jq ."; close("jq ."); }'
+env | grep "TF_VAR" | while IFS='=' read -r key val; do
+  # Try to parse as JSON, fallback to printing as a quoted string if jq fails
+  if echo "$val" | jq . >/dev/null 2>&1; then
+    printf "%s=" "$key"
+    echo "$val" | jq .
+  else
+    printf "%s=" "$key"
+    printf '"%s"\n' "$val"
+  fi
+done
 echo ""
 
 if [[ -n "$ARM_USER_PRINCIPAL_NAME" ]]; then

@@ -91,6 +91,10 @@ function tf_init() {
   changeToTerraformDirectory
   # enableSharedKeyAccess
 
+  # Setting MSI variables to blank to allow authentication using MSI
+  export MSI_ENDPOINT=""
+  export MSI_SECRET=""
+
   # Initialize terraform only if not.
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
     terraform init \
@@ -104,6 +108,10 @@ function tf_init() {
   else
     ok "Already Initialized - Skipped"
   fi
+
+  # Setting MSI variables to back to its original value
+  export MSI_ENDPOINT=${IDENTITY_ENDPOINT}
+  export MSI_SECRET=${IDENTITY_HEADER}
 
   # Change to root directory
   # change_to_root_dir

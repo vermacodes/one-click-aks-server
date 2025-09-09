@@ -138,6 +138,10 @@ function init() {
   else
     ok "Already Initialized - Skipped"
   fi
+
+  # Setting MSI variables to back to its original value
+  export MSI_ENDPOINT=${IDENTITY_ENDPOINT}
+  export MSI_SECRET=${IDENTITY_HEADER}
 }
 
 function plan() {
