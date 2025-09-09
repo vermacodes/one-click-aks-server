@@ -85,6 +85,10 @@ func (s *storageAccountRepository) BreakBlobLease(storageAccountName string, con
 	// Append user alias to blob name
 	blobName = s.config.UserAlias + "-" + blobName
 
+	if s.config.UseMsi {
+		return s.BreakBlobLeaseUsingMsi(storageAccountName, containerName, blobName)
+	}
+
 	accountKey, err := s.auth.GetStorageAccountKey(s.config.ActLabsHubSubscriptionID, s.config.ActLabsHubResourceGroupName, storageAccountName)
 	if err != nil {
 		return fmt.Errorf("failed to get storage account key: %w", err)
@@ -124,6 +128,33 @@ func (s *storageAccountRepository) createLeaseBlobClient(storageAccountName stri
 	}
 
 	return leaseBlobClient, nil
+}
+
+// Break blob lease for the given blob name in the given container in the given storage account
+// using MSI authentication
+func (s *storageAccountRepository) BreakBlobLeaseUsingMsi(storageAccountName string, containerName string, blobName string) error {
+	slog.Debug("breaking blob lease for blob", blobName+" in container "+containerName+" in storage account "+storageAccountName)
+
+	url := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", storageAccountName, containerName, blobName)
+
+	blobClient, err := blob.NewClient(url, s.auth.Cred, nil)
+	if err != nil {
+		return fmt.Errorf("not able to create blob client: %w", err)
+	}
+
+	leaseBlobClient, err := lease.NewBlobClient(blobClient, nil)
+	if err != nil {
+		return fmt.Errorf("not able to create lease blob client: %w", err)
+	}
+
+	_, err = leaseBlobClient.BreakLease(context.Background(), &lease.BlobBreakOptions{
+		BreakPeriod: to.Ptr(int32(0)),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to break blob lease: %w", err)
+	}
+
+	return nil
 }
 
 func UserAliasForStorageAccount(userPrincipalName string) string {
