@@ -46,6 +46,7 @@ resource "azurerm_role_assignment" "aro_identity_role" {
 
 # Role assignment for ARO RP first-party service principal on vnet
 resource "azurerm_role_assignment" "aro_rp_first_party_id_network_contributor" {
+  count                = length(var.aro_clusters) >= 1 ? 1 : 0
   principal_id         = var.aro_rp_first_party_service_principal_id
   scope                = azurerm_resource_group.this.id
   role_definition_name = "Network Contributor"
