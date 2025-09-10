@@ -45,7 +45,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 			log.Fatalf("Failed to initialize managed identity auth: %v", err)
 		}
 
-		AzureCLILoginByMSI(appConfig.AzureClientID)
+		AzureCLILoginByMSI(appConfig.AzureClientID, appConfig.SubscriptionID)
 
 	} else {
 
@@ -61,7 +61,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 }
 
 // login using msi
-func AzureCLILoginByMSI(username string) {
+func AzureCLILoginByMSI(username string, subscriptionId string) {
 	out, err := exec.Command("bash", "-c", "az login --identity --username "+username+" --verbose").Output()
 	if err != nil {
 		slog.Info("az login --identity --username " + username + " output: " + string(out))
@@ -70,6 +70,22 @@ func AzureCLILoginByMSI(username string) {
 	}
 
 	slog.Info("az login --identity --username " + username + " output: " + string(out))
+
+	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
+	if err != nil {
+		slog.Error("not able to set subscription", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az account set --subscription output: " + string(out))
+
+	out, err = exec.Command("bash", "-c", "az account show").Output()
+	if err != nil {
+		slog.Error("not able to show account", err)
+		os.Exit(1)
+	}
+
+	slog.Info("az account show output: " + string(out))
 }
 
 // login using service principal
