@@ -52,7 +52,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # build docker image
-docker build -t repro:${TAG} .
+docker build -t actlabs.azurecr.io/repro:${TAG} .
 if [ $? -ne 0 ]; then
   echo "Failed to build docker image"
   exit 1
@@ -60,10 +60,8 @@ fi
 
 rm one-click-aks-server azurerm-msi-auth-proxy
 
-docker tag repro:${TAG} actlabs.azurecr.io/repro:${TAG}
-
 az acr login --name actlabs --subscription ACT-CSS-Readiness-NPRD
 docker push actlabs.azurecr.io/repro:${TAG}
 
-# docker tag repro:${TAG} ashishvermapu/repro:${TAG}
+# docker tag actlabs.azurecr.io/repro:${TAG} ashishvermapu/repro:${TAG}
 # docker push ashishvermapu/repro:${TAG}
