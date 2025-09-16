@@ -77,8 +77,8 @@ if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
   export ARM_SUBSCRIPTION_ID=$(az account show --output json --only-show-error | jq -r .id)
 fi
 
-enableSharedKeyAccess
-enablePublicNetworkAccess
+# enableSharedKeyAccess
+# enablePublicNetworkAccess
 init
 
 if [[ "$OPTION" == "list" ]]; then
