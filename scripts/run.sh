@@ -4,6 +4,9 @@
 
 rm one-click-aks-server
 
+source .env
+source .env.local
+
 export VERSION="$(date +%Y%m%d)"
 
 required_env_vars=("PROTECTED_LAB_SECRET" "VERSION")
