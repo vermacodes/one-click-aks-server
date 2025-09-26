@@ -39,6 +39,11 @@ func newPreferenceRedisClient() *redis.Client {
 func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) (string, error) {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
 
+	// Use this for local emulator
+	if storageAccountName == "devstoreaccount1" {
+		serviceURL = "https://127.0.0.1:10000/devstoreaccount1/"
+	}
+
 	// Create a new Blob Service Client with the AAD credential
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
@@ -76,6 +81,11 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 
 func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountName string) error {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
+
+	// Use this for local emulator
+	if storageAccountName == "devstoreaccount1" {
+		serviceURL = "https://127.0.0.1:10000/devstoreaccount1/"
+	}
 
 	// Create a new Blob Service Client with the AAD credential
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
