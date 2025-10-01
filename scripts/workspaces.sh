@@ -34,13 +34,23 @@ function enablePublicNetworkAccess() {
 function init() {
   # Initialize terraform only if not.
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
-    terraform init \
-      -migrate-state \
-      -backend-config="subscription_id=$subscription_id" \
-      -backend-config="resource_group_name=$resource_group_name" \
-      -backend-config="storage_account_name=$storage_account_name" \
-      -backend-config="container_name=$container_name" \
-      -backend-config="key=$tf_state_file_name" >>$LOG_FILE 2>&1
+    # Check if using local Azurite storage emulator
+    if [[ "$storage_account_name" == "devstoreaccount1" ]]; then
+      # Set terraform backend to local for development
+      sed -i 's/backend "azurerm" {/backend "local" {/' providers.tf
+      terraform init >>$LOG_FILE 2>&1
+
+    else
+      # Set terraform backend to azurerm for production
+      sed -i 's/backend "local" {/backend "azurerm" {/' providers.tf
+      terraform init \
+        -migrate-state \
+        -backend-config="subscription_id=$subscription_id" \
+        -backend-config="resource_group_name=$resource_group_name" \
+        -backend-config="storage_account_name=$storage_account_name" \
+        -backend-config="container_name=$container_name" \
+        -backend-config="key=$tf_state_file_name" >>$LOG_FILE 2>&1
+    fi
   fi
 }
 
@@ -83,7 +93,16 @@ init
 
 if [[ "$OPTION" == "list" ]]; then
   listWorkspaces
+  # Cleanup: Restore providers.tf if we're in development mode
+  if [[ "$storage_account_name" == "devstoreaccount1" ]]; then
+    restore_providers
+  fi
   exit 0
 fi
 
 terraform workspace $OPTION $WORKSPACE
+
+# Cleanup: Restore providers.tf if we're in development mode
+if [[ "$storage_account_name" == "devstoreaccount1" ]]; then
+  restore_providers
+fi

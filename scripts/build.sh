@@ -8,6 +8,9 @@
 # gather input parameters
 # -t tag
 
+source .env
+source .env.local
+
 while getopts ":t:" opt; do
   case $opt in
   t)
@@ -28,6 +31,14 @@ echo "TAG = ${TAG}"
 # remove terraform state
 rm -rf ./tf/.terraform
 rm ./tf/.terraform.lock.hcl
+rm ./tf/terraform.tfstate
+rm ./tf/terraform.tfstate.backup
+
+# remove workspace log file
+rm ./tf/workspaces.log
+
+# remove old build files
+rm one-click-aks-server azurerm-msi-auth-proxy
 
 if [[ "${PROTECTED_LAB_SECRET}" == "" ]]; then
   echo "PROTECTED_LAB_SECRET missing"

@@ -25,7 +25,6 @@
 
 # misc
 .DS_Store
-.env
 npm-debug.log
 
 # If you prefer the allow list template instead of the deny list, see community template:
@@ -130,9 +129,6 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-.env.test
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
