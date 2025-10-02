@@ -41,7 +41,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 	// check if user deployments already exist in redis
 	deploymentsString, err := d.rdb.Get(ctx, userId+"-deployments").Result()
 	if err != nil {
-		logging.LogError(ctx, "error getting deployments from redis continue to get from table storage ",
+		logging.LogDebug(ctx, "error getting deployments from redis continue to get from table storage ",
 			"error", err,
 		)
 	}
@@ -49,7 +49,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 		if err := json.Unmarshal([]byte(deploymentsString), &deployments); err == nil {
 			return deployments, nil
 		}
-		logging.LogError(ctx, "error unmarshal deployment found in redis continue to get from table storage ",
+		logging.LogWarning(ctx, "error unmarshal deployment found in redis continue to get from table storage ",
 			"error", err,
 		)
 	}
@@ -57,7 +57,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 	url := d.appConfig.ActlabsHubURL + "deployments"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		logging.LogError(ctx, "error getting deployments ", err)
+		logging.LogError(ctx, "error creating HTTP request", "error", err)
 		return nil, err
 	}
 
@@ -77,25 +77,25 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.LogError(ctx, "error getting deployments ", err)
+		logging.LogError(ctx, "error making HTTP request", "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.LogError(ctx, "error getting deployments ", err)
+		logging.LogError(ctx, "http request was not successful", "status_code", resp.StatusCode)
 		return nil, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&deployments); err != nil {
-		logging.LogError(ctx, "error unmarshal deployments ", err)
+		logging.LogError(ctx, "error decoding deployments response", "error", err)
 		return nil, err
 	}
 
 	// save deployments to redis
 	marshalledDeployments, err := json.Marshal(deployments)
 	if err != nil {
-		logging.LogError(ctx, "error occurred marshalling the deployments record.",
+		logging.LogError(ctx, "error occurred marshalling the deployments record",
 			"error", err,
 		)
 
@@ -104,7 +104,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 
 	err = d.rdb.Set(ctx, userId+"-deployments", marshalledDeployments, 0).Err()
 	if err != nil {
-		logging.LogError(ctx, "error occurred saving the deployments record to redis.",
+		logging.LogError(ctx, "error occurred saving the deployments record to redis",
 			"error", err,
 		)
 	}
@@ -118,7 +118,7 @@ func (d *deploymentRepository) GetDeployment(ctx context.Context, userId string,
 	// check if deployment already exist in redis
 	deploymentString, err := d.rdb.Get(ctx, userId+"-"+subscriptionId+"-"+workspace).Result()
 	if err != nil {
-		logging.LogError(ctx, "error getting deployment from redis continue to get from table storage ",
+		logging.LogDebug(ctx, "error getting deployment from redis continue to get from table storage ",
 			"subscription_id", subscriptionId,
 			"workspace", workspace,
 			"error", err,
@@ -137,7 +137,6 @@ func (d *deploymentRepository) GetDeployment(ctx context.Context, userId string,
 
 	deployments, err := d.GetMyDeployments(ctx, userId, subscriptionId)
 	if err != nil {
-		logging.LogError(ctx, "error getting deployments ", err)
 		return entity.Deployment{}, err
 	}
 
@@ -149,7 +148,7 @@ func (d *deploymentRepository) GetDeployment(ctx context.Context, userId string,
 			// save deployment to redis
 			marshalledDeployment, err := json.Marshal(deployment)
 			if err != nil {
-				logging.LogError(ctx, "error occurred marshalling the deployment record.",
+				logging.LogError(ctx, "error occurred marshalling the deployment record",
 					"subscription_id", subscriptionId,
 					"workspace", workspace,
 					"error", err,
@@ -160,7 +159,7 @@ func (d *deploymentRepository) GetDeployment(ctx context.Context, userId string,
 
 			err = d.rdb.Set(ctx, userId+"-"+subscriptionId+"-"+workspace, marshalledDeployment, 0).Err()
 			if err != nil {
-				logging.LogError(ctx, "error occurred saving the deployment record to redis.",
+				logging.LogError(ctx, "error occurred saving the deployment record to redis",
 					"subscription_id", subscriptionId,
 					"workspace", workspace,
 					"error", err,
@@ -178,7 +177,7 @@ func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment 
 	url := d.appConfig.ActlabsHubURL + "deployments"
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
-		logging.LogError(ctx, "error creating new request ",
+		logging.LogError(ctx, "error creating new request",
 			"error", err,
 		)
 		return err

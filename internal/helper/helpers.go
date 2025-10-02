@@ -180,3 +180,18 @@ func GetUserIDFromContext(ctx context.Context) string {
 	}
 	return userID
 }
+
+func GetUserAliasFromContext(ctx context.Context) string {
+	userID := GetUserIDFromContext(ctx)
+	if userID == "unknown-user" {
+		return userID
+	}
+
+	// Remove any domain suffix
+	if atIndex := strings.Index(userID, "@"); atIndex != -1 {
+		return userID[:atIndex]
+	}
+
+	// If no @ found, return the full userID
+	return userID
+}

@@ -233,7 +233,7 @@ func LogDebug(ctx context.Context, msg string, args ...any) {
 	_ = logger.Handler().Handle(ctx, r)
 }
 
-func LogWarn(ctx context.Context, msg string, args ...any) {
+func LogWarning(ctx context.Context, msg string, args ...any) {
 	logger := ContextLog(ctx)
 	if !logger.Enabled(ctx, slog.LevelWarn) {
 		return

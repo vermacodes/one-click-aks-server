@@ -1,11 +1,11 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 	"strings"
-
-	"golang.org/x/exp/slog"
 )
 
 type storageAccountService struct {
@@ -18,18 +18,19 @@ func NewStorageAccountService(storageAccountRepo entity.StorageAccountRepository
 	}
 }
 
-func (s *storageAccountService) GetStorageAccountName() (string, error) {
-	storageAccountName, err := s.storageAccountRepository.GetStorageAccountName()
+func (s *storageAccountService) GetStorageAccountName(ctx context.Context) (string, error) {
+	logging.LogInfo(ctx, "getting storage account name")
+	storageAccountName, err := s.storageAccountRepository.GetStorageAccountName(ctx)
 	if err != nil {
-		slog.Error("not able to get storage account name", err)
+		logging.LogError(ctx, "not able to get storage account name", "error", err)
 		return "", err
 	}
 
 	return storageAccountName, nil
 }
 
-func (s *storageAccountService) BreakBlobLease(storageAccountName string, containerName string, workspaceName string) error {
-
+func (s *storageAccountService) BreakBlobLease(ctx context.Context, storageAccountName string, containerName string, workspaceName string) error {
+	logging.LogInfo(ctx, "breaking blob lease", "storage_account_name", storageAccountName, "container_name", containerName, "workspace_name", workspaceName)
 	// If workspace name is default, then blob name is terraform.tfstate
 	// else it is terraform.tfstateenv:<workspaceName>
 	blobName := "terraform.tfstate"
@@ -37,9 +38,9 @@ func (s *storageAccountService) BreakBlobLease(storageAccountName string, contai
 		blobName = "terraform.tfstateenv:" + workspaceName
 	}
 
-	err := s.storageAccountRepository.BreakBlobLease(storageAccountName, containerName, blobName)
+	err := s.storageAccountRepository.BreakBlobLease(ctx, storageAccountName, containerName, blobName)
 	if err != nil {
-		slog.Error("not able to break blob lease", err)
+		logging.LogError(ctx, "not able to break blob lease", "error", err)
 
 		if strings.Contains(err.Error(), "RESPONSE 409: 409 There is currently no lease on the blob") {
 			return errors.New("there is currently no lease on the blob")
@@ -51,6 +52,6 @@ func (s *storageAccountService) BreakBlobLease(storageAccountName string, contai
 		return err
 	}
 
-	slog.Debug("state lease broken for workspace " + workspaceName + " in storage account " + storageAccountName + " in container " + containerName)
+	logging.LogDebug(ctx, "state lease broken for workspace", "workspace_name", workspaceName, "storage_account_name", storageAccountName, "container_name", containerName)
 	return nil
 }

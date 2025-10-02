@@ -36,7 +36,7 @@ func (p *preferenceService) GetPreference(ctx context.Context) (entity.Preferenc
 
 	// Rest of function will execute if issue in getting preference from redis.
 
-	storageAccountName, err := p.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := p.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get storage account name", err)
 		return preference, err
@@ -67,7 +67,7 @@ func (p *preferenceService) GetPreference(ctx context.Context) (entity.Preferenc
 }
 
 func (p *preferenceService) SetPreference(ctx context.Context, preference entity.Preference) error {
-	storageAccountName, err := p.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := p.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get storage account name", err)
 		return err

@@ -34,7 +34,7 @@ func (w *workspaceService) List(ctx context.Context) ([]entity.Workspace, error)
 
 	// rest of the function will be executed only if the workspace was not found in redis.
 
-	storageAccountName, err := w.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
 
 	if err != nil {
 		logging.LogError(ctx, "Not able to get storage account name", "error", err)
@@ -125,7 +125,7 @@ func (w *workspaceService) Resources(ctx context.Context) (string, error) {
 
 	// rest of the function executes only if resources not found in redis.
 
-	storageAccountName, err := w.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
 
 	if err != nil {
 		logging.LogError(ctx, "Not able to get storage account name", "error", err)

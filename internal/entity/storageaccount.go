@@ -1,11 +1,13 @@
 package entity
 
+import "context"
+
 type StorageAccountService interface {
-	GetStorageAccountName() (string, error)
-	BreakBlobLease(storageAccountName string, containerName string, workspaceName string) error
+	GetStorageAccountName(ctx context.Context) (string, error)
+	BreakBlobLease(ctx context.Context, storageAccountName string, containerName string, workspaceName string) error
 }
 
 type StorageAccountRepository interface {
-	GetStorageAccountName() (string, error)
-	BreakBlobLease(storageAccountName string, containerName string, blobName string) error
+	GetStorageAccountName(ctx context.Context) (string, error)
+	BreakBlobLease(ctx context.Context, storageAccountName string, containerName string, blobName string) error
 }

@@ -231,7 +231,7 @@ func (t *terraformService) UpdateChallenge(ctx context.Context, userId string, l
 
 func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entity.TfvarConfigType, action string) error {
 
-	storageAccountName, err := t.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := t.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func helperEnsureAro(ctx context.Context, tfvar *entity.TfvarConfigType) {
 }
 
 func helperExecuteScript(ctx context.Context, t *terraformService, script string, mode string) error {
-	storageAccountName, err := t.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := t.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get storage account name",
 			"error", err,
