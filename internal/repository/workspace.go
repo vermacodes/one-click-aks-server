@@ -7,6 +7,7 @@ import (
 
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -59,17 +60,17 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 
 func (t *tfWorkspaceRepository) GetListFromRedis(ctx context.Context) (string, error) {
 	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(ctx, "terraformWorkspaces").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces").Result()
 }
 
 func (t *tfWorkspaceRepository) AddListToRedis(ctx context.Context, val string) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(ctx, "terraformWorkspaces", val, 0)
+	rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces", val, 0)
 }
 
 func (t *tfWorkspaceRepository) DeleteListFromRedis(ctx context.Context) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(ctx, "terraformWorkspaces")
+	rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces")
 }
 
 func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Workspace) error {

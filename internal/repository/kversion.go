@@ -10,6 +10,7 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
@@ -32,7 +33,7 @@ func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis
 func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location string) (string, error) {
 
 	// Check if the orchestrator versions are already cached in Redis
-	kubernetesVersions, err := k.rdb.Get(ctx, "kubernetesVersions").Result()
+	kubernetesVersions, err := k.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions").Result()
 	if err == nil {
 		return kubernetesVersions, nil
 	}
@@ -68,7 +69,7 @@ func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location strin
 	}
 
 	// Set the response body in Redis
-	err = k.rdb.Set(ctx, "kubernetesVersions", string(body), 0).Err()
+	err = k.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions", string(body), 0).Err()
 	if err != nil {
 		logging.LogError(ctx, "failed to set kubernetes versions in redis", err)
 	}

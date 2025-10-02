@@ -88,7 +88,7 @@ func (a *actionStatusRepository) WaitForTerraformOperationChange(ctx context.Con
 
 func (a *actionStatusRepository) SetServerNotification(ctx context.Context, val string) error {
 	rdb := newActionStatusRedisClient()
-	if err := rdb.Set(ctx, "server-notification", val, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification", val, 0).Err(); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (a *actionStatusRepository) SetServerNotification(ctx context.Context, val 
 
 func (a *actionStatusRepository) GetServerNotification(ctx context.Context) (string, error) {
 	rdb := newActionStatusRedisClient()
-	return rdb.Get(ctx, "server-notification").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification").Result()
 }
 
 func (a *actionStatusRepository) WaitForServerNotificationChange(ctx context.Context) (string, error) {

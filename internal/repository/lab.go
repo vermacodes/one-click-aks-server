@@ -11,6 +11,7 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
@@ -38,17 +39,17 @@ func newLabRedisClient() *redis.Client {
 
 func (l *labRepository) GetLabFromRedis(ctx context.Context) (string, error) {
 	rdb := newLabRedisClient()
-	return rdb.Get(ctx, "lab").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Result()
 }
 
 func (l *labRepository) SetLabInRedis(ctx context.Context, lab string) error {
 	rdb := newLabRedisClient()
-	return rdb.Set(ctx, "lab", lab, 0).Err()
+	return rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-lab", lab, 0).Err()
 }
 
 func (l *labRepository) DeleteLabFromRedis(ctx context.Context) error {
 	rdb := newLabRedisClient()
-	return rdb.Del(ctx, "lab").Err()
+	return rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Err()
 }
 
 func (l *labRepository) GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (string, error) {

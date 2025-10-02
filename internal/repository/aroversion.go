@@ -10,6 +10,7 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
@@ -33,7 +34,7 @@ func NewAROVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *red
 func (a *aroVersionRepository) GetAROVersions(ctx context.Context, location string) (string, error) {
 
 	// Check if the orchestrator versions are already cached in Redis
-	aroVersions, err := a.rdb.Get(ctx, "aroVersions-"+location).Result()
+	aroVersions, err := a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-aroVersions-"+location).Result()
 	if err == nil {
 		return aroVersions, nil
 	}
@@ -88,7 +89,7 @@ func (a *aroVersionRepository) GetAROVersions(ctx context.Context, location stri
 	}
 
 	// Set the response body in Redis
-	err = a.rdb.Set(ctx, "aroVersions-"+location, string(body), 0).Err()
+	err = a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-aroVersions-"+location, string(body), 0).Err()
 	if err != nil {
 		logging.LogError(ctx, "failed to set aro versions in redis",
 			slog.Any("error", err),
