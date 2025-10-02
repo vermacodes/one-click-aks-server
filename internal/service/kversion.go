@@ -25,7 +25,7 @@ func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceServic
 }
 
 func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.KubernetesVersions, error) {
-	logging.LogDebug(ctx, "getting kubernetes versions")
+	logging.LogInfo(ctx, "getting kubernetes versions")
 	kubernetesVersions := entity.KubernetesVersions{}
 
 	preference, err := k.preferenceService.GetPreference(ctx)
