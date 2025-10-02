@@ -15,6 +15,7 @@ import (
 	"unsafe"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/lestrrat-go/jwx/jwa"
@@ -170,4 +171,12 @@ func CalculateNewEpochTimeForDeployment(deployment *entity.Deployment) {
 		epochTime := now.Unix()
 		deployment.DeploymentAutoDeleteUnixTime = deployment.DeploymentLifespan + epochTime
 	}
+}
+
+func GetUserIDFromContext(ctx context.Context) string {
+	userID, ok := ctx.Value(logging.UserIDKey).(string)
+	if !ok {
+		return "unknown-user"
+	}
+	return userID
 }

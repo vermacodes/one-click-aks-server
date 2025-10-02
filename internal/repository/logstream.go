@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -24,26 +25,26 @@ func newLogStreamRedisClient() *redis.Client {
 	})
 }
 
-func (l *logStreamRepository) SetLogsInRedis(logStream string) error {
+func (l *logStreamRepository) SetLogsInRedis(ctx context.Context, logStream string) error {
 	rdb := newLogStreamRedisClient()
-	if err := rdb.Set(logStreamCtx, "logs", logStream, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-logs", logStream, 0).Err(); err != nil {
 		return err
 	}
 
-	if err := rdb.Publish(logStreamCtx, "redis-log-stream-pubsub-channel", logStream).Err(); err != nil {
+	if err := rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel", logStream).Err(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (l *logStreamRepository) GetLogsFromRedis() (string, error) {
+func (l *logStreamRepository) GetLogsFromRedis(ctx context.Context) (string, error) {
 	rdb := newLogStreamRedisClient()
-	return rdb.Get(logStreamCtx, "logs").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-logs").Result()
 }
 
-func (l *logStreamRepository) WaitForLogsChange() (string, error) {
-	rdb := newLogStreamRedisClient().Subscribe(logStreamCtx, "redis-log-stream-pubsub-channel")
+func (l *logStreamRepository) WaitForLogsChange(ctx context.Context) (string, error) {
+	rdb := newLogStreamRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel")
 	defer rdb.Close()
 
 	for {
@@ -58,40 +59,40 @@ func (l *logStreamRepository) WaitForLogsChange() (string, error) {
 
 // User-specific methods
 
-func (l *logStreamRepository) SetLogsInRedisForUser(userID, logStream string) error {
-	rdb := newLogStreamRedisClient()
-	userLogKey := "logs:" + userID
-	userChannelKey := "redis-log-stream-pubsub-channel:" + userID
+// func (l *logStreamRepository) SetLogsInRedisForUser(ctx context.Context, userID, logStream string) error {
+// 	rdb := newLogStreamRedisClient()
+// 	userLogKey := helper.GetUserIDFromContext(ctx) + "-logs"
+// 	userChannelKey := helper.GetUserIDFromContext(ctx) + "-redis-log-stream-pubsub-channel"
 
-	if err := rdb.Set(logStreamCtx, userLogKey, logStream, 0).Err(); err != nil {
-		return err
-	}
+// 	if err := rdb.Set(ctx, userLogKey, logStream, 0).Err(); err != nil {
+// 		return err
+// 	}
 
-	if err := rdb.Publish(logStreamCtx, userChannelKey, logStream).Err(); err != nil {
-		return err
-	}
+// 	if err := rdb.Publish(ctx, userChannelKey, logStream).Err(); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (l *logStreamRepository) GetLogsFromRedisForUser(userID string) (string, error) {
-	rdb := newLogStreamRedisClient()
-	userLogKey := "logs:" + userID
-	return rdb.Get(logStreamCtx, userLogKey).Result()
-}
+// func (l *logStreamRepository) GetLogsFromRedisForUser(ctx context.Context, userID string) (string, error) {
+// 	rdb := newLogStreamRedisClient()
+// 	userLogKey := helper.GetUserIDFromContext(ctx) + "-logs"
+// 	return rdb.Get(ctx, userLogKey).Result()
+// }
 
-func (l *logStreamRepository) WaitForLogsChangeForUser(userID string) (string, error) {
-	rdb := newLogStreamRedisClient()
-	userChannelKey := "redis-log-stream-pubsub-channel:" + userID
-	pubsub := rdb.Subscribe(logStreamCtx, userChannelKey)
-	defer pubsub.Close()
+// func (l *logStreamRepository) WaitForLogsChangeForUser(ctx context.Context, userID string) (string, error) {
+// 	rdb := newLogStreamRedisClient()
+// 	userChannelKey := helper.GetUserIDFromContext(ctx) + "-redis-log-stream-pubsub-channel"
+// 	pubsub := rdb.Subscribe(ctx, userChannelKey)
+// 	defer pubsub.Close()
 
-	for {
-		msg, err := pubsub.ReceiveMessage(logStreamCtx)
-		if err != nil {
-			return "", err
-		}
+// 	for {
+// 		msg, err := pubsub.ReceiveMessage(ctx)
+// 		if err != nil {
+// 			return "", err
+// 		}
 
-		return msg.Payload, nil
-	}
-}
+// 		return msg.Payload, nil
+// 	}
+// }

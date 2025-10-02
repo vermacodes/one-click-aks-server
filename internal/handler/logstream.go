@@ -9,10 +9,10 @@ import (
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"golang.org/x/exp/slog"
 )
 
 type logStreamHandler struct {
@@ -34,17 +34,7 @@ func NewLogStreamHandler(r *gin.Engine, service entity.LogStreamService) {
 }
 
 func (l *logStreamHandler) GetLogs(c *gin.Context) {
-	userID := c.Query("user")
-	var logStream entity.LogStream
-	var err error
-
-	if userID != "" {
-		// Get user-specific logs
-		logStream, err = l.logStreamService.GetLogsForUser(userID)
-	} else {
-		// Get global logs (backward compatibility)
-		logStream, err = l.logStreamService.GetLogs()
-	}
+	logStream, err := l.logStreamService.GetLogs(c.Request.Context())
 
 	if err != nil {
 		c.Status(http.StatusNotFound)
@@ -61,17 +51,7 @@ func (l *logStreamHandler) AppendLogs(c *gin.Context) {
 		return
 	}
 
-	userID := c.Query("user")
-	var err error
-
-	if userID != "" {
-		// Append to user-specific logs
-		err = l.logStreamService.AppendLogsForUser(userID, logs)
-	} else {
-		// Append to global logs (backward compatibility)
-		err = l.logStreamService.AppendLogs(logs)
-	}
-
+	err := l.logStreamService.AppendLogs(c.Request.Context(), logs)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -86,10 +66,10 @@ func (l *logStreamHandler) DeleteLogs(c *gin.Context) {
 
 	if userID != "" {
 		// Clear user-specific logs
-		err = l.logStreamService.ClearLogsForUser(userID)
+		err = l.logStreamService.ClearLogs(c.Request.Context())
 	} else {
 		// Clear global logs (backward compatibility)
-		err = l.logStreamService.ClearLogs()
+		err = l.logStreamService.ClearLogs(c.Request.Context())
 	}
 
 	if err != nil {
@@ -107,16 +87,7 @@ func (l *logStreamHandler) SetLogs(c *gin.Context) {
 		return
 	}
 
-	userID := c.Query("user")
-	var err error
-
-	if userID != "" {
-		// Set user-specific logs
-		err = l.logStreamService.SetLogsForUser(userID, logStream.Logs)
-	} else {
-		// Set global logs (backward compatibility)
-		err = l.logStreamService.SetLogs(logStream.Logs)
-	}
+	err := l.logStreamService.SetLogs(c.Request.Context(), logStream.Logs)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -198,22 +169,25 @@ func (l *logStreamHandler) sendErrorMessage(ws *websocket.Conn, errorMsg string)
 func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 	ws, err := logStreamUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("failed to upgrade log stream web socket connection", err)
+		logging.LogError(r.Context(), "failed to upgrade log stream web socket connection", "error", err)
 		return
 	}
 	defer ws.Close()
 
-	slog.Info("WebSocket connection established, waiting for authentication")
+	logging.LogInfo(r.Context(), "webSocket connection established, waiting for authentication")
 
 	// Wait for authentication message
 	userID, err := l.authenticateWebSocketConnection(ws)
 	if err != nil {
-		slog.Error("WebSocket authentication failed", "error", err)
+		logging.LogError(r.Context(), "webSocket authentication failed", "error", err)
 		l.sendErrorMessage(ws, "Authentication failed: "+err.Error())
 		return
 	}
 
-	slog.Info("WebSocket authenticated successfully", "userID", userID)
+	// now that we have user id, add it to context
+	ctx := logging.WithUserID(r.Context(), userID)
+
+	logging.LogInfo(ctx, "webSocket authenticated successfully", "userID", userID)
 
 	// Send authentication success response
 	authResp := entity.WSAuthResponse{
@@ -221,39 +195,40 @@ func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 		UserID:  userID,
 	}
 	if err := l.sendMessage(ws, entity.WSMsgTypeAuthResp, authResp); err != nil {
-		slog.Error("failed to send auth response", "userID", userID, "error", err)
+		logging.LogError(ctx, "failed to send auth response", "error", err)
 		return
 	}
 
 	// Get initial logs for this specific user
-	initialLogs, err := l.logStreamService.GetLogsForUser(userID)
+	initialLogs, err := l.logStreamService.GetLogs(ctx)
 	if err != nil {
-		slog.Error("failed to retrieve initial logs for user", "userID", userID, "error", err)
+		logging.LogError(ctx, "failed to retrieve initial logs for user", "error", err)
 		l.sendErrorMessage(ws, "Failed to retrieve initial logs")
 		return
 	}
 
 	// Send initial logs
 	if err := l.sendMessage(ws, entity.WSMsgTypeLogs, initialLogs); err != nil {
-		slog.Error("failed to write initial logs to websocket", "userID", userID, "error", err)
+		logging.LogError(ctx, "failed to write initial logs to websocket", "error", err)
 		return
 	}
 
-	slog.Info("Initial Logs Sent",
-		slog.String("logs", initialLogs.Logs),
-	)
+	logging.LogInfo(ctx, "initial logs sent")
+
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(ctx)
 
 	// Start listening for log changes
 	for {
-		logStream, err := l.logStreamService.WaitForLogsChangeForUser(userID)
+		logStream, err := l.logStreamService.WaitForLogsChange(bgCtx)
 		if err != nil {
-			slog.Error("failed to wait for logs change for user", "userID", userID, "error", err)
+			logging.LogError(bgCtx, "failed to wait for logs change for user", "error", err)
 			l.sendErrorMessage(ws, "Failed to get log updates")
 			return
 		}
 
 		if err := l.sendMessage(ws, entity.WSMsgTypeLogs, logStream); err != nil {
-			slog.Error("failed to write logs to websocket for user", "userID", userID, "error", err)
+			logging.LogError(bgCtx, "failed to write logs to websocket for user", "error", err)
 			return
 		}
 	}

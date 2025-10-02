@@ -248,7 +248,7 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 	}
 
 	// Getting current logs.
-	if _, err := t.logStreamService.GetLogs(); err != nil {
+	if _, err := t.logStreamService.GetLogs(ctx); err != nil {
 		return err
 	}
 
@@ -258,7 +258,7 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 
 		for in.Scan() {
 			// Appending logs to redis.
-			t.logStreamService.AppendLogs(fmt.Sprintf("%s\n", in.Text()))
+			t.logStreamService.AppendLogs(ctx, fmt.Sprintf("%s\n", in.Text()))
 		}
 		input.Close()
 	}(rPipe)
@@ -320,7 +320,7 @@ func helperExecuteScript(ctx context.Context, t *terraformService, script string
 		in := bufio.NewScanner(input)
 
 		for in.Scan() {
-			t.logStreamService.AppendLogs(fmt.Sprintf("%s\n", in.Text()))
+			t.logStreamService.AppendLogs(ctx, fmt.Sprintf("%s\n", in.Text()))
 		}
 		input.Close()
 	}(rPipe)

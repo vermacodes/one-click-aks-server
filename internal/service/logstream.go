@@ -1,11 +1,11 @@
 package service
 
 import (
+	"context"
 	"encoding/base64"
 
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 type logStreamService struct {
@@ -19,27 +19,27 @@ func NewLogStreamService(logStreamRepository entity.LogStreamRepository) entity.
 }
 
 // Appends to already set logs in redis.
-func (l *logStreamService) AppendLogs(logs string) error {
-	logStream, err := l.GetLogs()
+func (l *logStreamService) AppendLogs(ctx context.Context, logs string) error {
+	logStream, err := l.GetLogs(ctx)
 	if err != nil {
-		slog.Debug("not able to get logs from redis. setting new")
+		logging.LogDebug(ctx, "not able to get logs from redis. setting new")
 		logStream.Logs = ""
 	}
 
 	logStream.Logs += logs
 
-	return l.SetLogs(logStream.Logs)
+	return l.SetLogs(ctx, logStream.Logs)
 }
 
-func (l *logStreamService) ClearLogs() error {
-	return l.SetLogs("")
+func (l *logStreamService) ClearLogs(ctx context.Context) error {
+	return l.SetLogs(ctx, "")
 }
 
 // sets the logs in redis.
-func (l *logStreamService) SetLogs(logs string) error {
+func (l *logStreamService) SetLogs(ctx context.Context, logs string) error {
 	// this is a hack to continue the logs from where they are right now.
 	if logs == "continue" {
-		prevLogStream, err := l.GetLogs()
+		prevLogStream, err := l.GetLogs(ctx)
 		if err != nil {
 			logs = ""
 		} else {
@@ -49,22 +49,22 @@ func (l *logStreamService) SetLogs(logs string) error {
 
 	// encode the logs string and store it in redis.
 	encodedLogs := base64.StdEncoding.EncodeToString([]byte(logs))
-	return l.logStreamRepository.SetLogsInRedis(encodedLogs)
+	return l.logStreamRepository.SetLogsInRedis(ctx, encodedLogs)
 }
 
 // gets the logs from redis and returns the object.
-func (l *logStreamService) GetLogs() (entity.LogStream, error) {
-	encodedLogs, err := l.logStreamRepository.GetLogsFromRedis()
+func (l *logStreamService) GetLogs(ctx context.Context) (entity.LogStream, error) {
+	encodedLogs, err := l.logStreamRepository.GetLogsFromRedis(ctx)
 	if err != nil {
-		slog.Info("not able to get logs from redis")
+		logging.LogDebug(ctx, "not able to get logs from redis")
 
 		// Default to empty.
 		defaultLogStream := entity.LogStream{
 			Logs: "",
 		}
 
-		if err := l.SetLogs(""); err != nil {
-			slog.Error("not able to set default log stream", err)
+		if err := l.SetLogs(ctx, ""); err != nil {
+			logging.LogError(ctx, "not able to set default log stream", err)
 			return defaultLogStream, err
 		}
 
@@ -72,94 +72,94 @@ func (l *logStreamService) GetLogs() (entity.LogStream, error) {
 	}
 
 	// decode the logs string and return the object.
-	return helperEncodedStringToLogStreamObject(encodedLogs)
+	return helperEncodedStringToLogStreamObject(ctx, encodedLogs)
 }
 
 // waits for the logs to change and returns the new logs.
-func (l *logStreamService) WaitForLogsChange() (entity.LogStream, error) {
-	logsString, err := l.logStreamRepository.WaitForLogsChange()
+func (l *logStreamService) WaitForLogsChange(ctx context.Context) (entity.LogStream, error) {
+	logsString, err := l.logStreamRepository.WaitForLogsChange(ctx)
 	if err != nil {
 		return entity.LogStream{}, err
 	}
 
-	return helperEncodedStringToLogStreamObject(logsString)
+	return helperEncodedStringToLogStreamObject(ctx, logsString)
 }
 
 // User-specific methods
 
-// AppendLogsForUser appends logs for a specific user
-func (l *logStreamService) AppendLogsForUser(userID, logs string) error {
-	logStream, err := l.GetLogsForUser(userID)
-	if err != nil {
-		slog.Debug("not able to get logs from redis for user. setting new", "userID", userID)
-		logStream.Logs = ""
-	}
+// // AppendLogsForUser appends logs for a specific user
+// func (l *logStreamService) AppendLogsForUser(ctx context.Context, userID, logs string) error {
+// 	logStream, err := l.GetLogsForUser(ctx, userID)
+// 	if err != nil {
+// 		logging.LogDebug(ctx, "not able to get logs from redis for user. setting new", "userID", userID)
+// 		logStream.Logs = ""
+// 	}
 
-	logStream.Logs += logs
+// 	logStream.Logs += logs
 
-	return l.SetLogsForUser(userID, logStream.Logs)
-}
+// 	return l.SetLogsForUser(ctx, userID, logStream.Logs)
+// }
 
-// SetLogsForUser sets the logs for a specific user in redis
-func (l *logStreamService) SetLogsForUser(userID, logs string) error {
-	// this is a hack to continue the logs from where they are right now.
-	if logs == "continue" {
-		prevLogStream, err := l.GetLogsForUser(userID)
-		if err != nil {
-			logs = ""
-		} else {
-			logs = prevLogStream.Logs
-		}
-	}
+// // SetLogsForUser sets the logs for a specific user in redis
+// func (l *logStreamService) SetLogsForUser(ctx context.Context, userID, logs string) error {
+// 	// this is a hack to continue the logs from where they are right now.
+// 	if logs == "continue" {
+// 		prevLogStream, err := l.GetLogsForUser(ctx, userID)
+// 		if err != nil {
+// 			logs = ""
+// 		} else {
+// 			logs = prevLogStream.Logs
+// 		}
+// 	}
 
-	// encode the logs string and store it in redis.
-	encodedLogs := base64.StdEncoding.EncodeToString([]byte(logs))
-	return l.logStreamRepository.SetLogsInRedisForUser(userID, encodedLogs)
-}
+// 	// encode the logs string and store it in redis.
+// 	encodedLogs := base64.StdEncoding.EncodeToString([]byte(logs))
+// 	return l.logStreamRepository.SetLogsInRedisForUser(ctx, userID, encodedLogs)
+// }
 
-// GetLogsForUser gets the logs for a specific user from redis and returns the object
-func (l *logStreamService) GetLogsForUser(userID string) (entity.LogStream, error) {
-	encodedLogs, err := l.logStreamRepository.GetLogsFromRedisForUser(userID)
-	if err != nil {
-		slog.Info("not able to get logs from redis for user", "userID", userID)
+// // GetLogsForUser gets the logs for a specific user from redis and returns the object
+// func (l *logStreamService) GetLogsForUser(ctx context.Context, userID string) (entity.LogStream, error) {
+// 	encodedLogs, err := l.logStreamRepository.GetLogsFromRedisForUser(ctx, userID)
+// 	if err != nil {
+// 		logging.LogDebug(ctx, "not able to get logs from redis for user", "userID", userID)
 
-		// Default to empty.
-		defaultLogStream := entity.LogStream{
-			Logs: "",
-		}
+// 		// Default to empty.
+// 		defaultLogStream := entity.LogStream{
+// 			Logs: "",
+// 		}
 
-		if err := l.SetLogsForUser(userID, ""); err != nil {
-			slog.Error("not able to set default log stream for user", "userID", userID, "error", err)
-			return defaultLogStream, err
-		}
+// 		if err := l.SetLogsForUser(ctx, userID, ""); err != nil {
+// 			logging.LogError(ctx, "not able to set default log stream for user", "userID", userID, "error", err)
+// 			return defaultLogStream, err
+// 		}
 
-		return defaultLogStream, nil
-	}
+// 		return defaultLogStream, nil
+// 	}
 
-	// decode the logs string and return the object.
-	return helperEncodedStringToLogStreamObject(encodedLogs)
-}
+// 	// decode the logs string and return the object.
+// 	return helperEncodedStringToLogStreamObject(ctx, encodedLogs)
+// }
 
-// ClearLogsForUser clears the logs for a specific user
-func (l *logStreamService) ClearLogsForUser(userID string) error {
-	return l.SetLogsForUser(userID, "")
-}
+// // ClearLogsForUser clears the logs for a specific user
+// func (l *logStreamService) ClearLogsForUser(ctx context.Context, userID string) error {
+// 	return l.SetLogsForUser(ctx, userID, "")
+// }
 
-// WaitForLogsChangeForUser waits for the logs to change for a specific user and returns the new logs
-func (l *logStreamService) WaitForLogsChangeForUser(userID string) (entity.LogStream, error) {
-	logsString, err := l.logStreamRepository.WaitForLogsChangeForUser(userID)
-	if err != nil {
-		return entity.LogStream{}, err
-	}
+// // WaitForLogsChangeForUser waits for the logs to change for a specific user and returns the new logs
+// func (l *logStreamService) WaitForLogsChangeForUser(ctx context.Context, userID string) (entity.LogStream, error) {
+// 	logsString, err := l.logStreamRepository.WaitForLogsChangeForUser(ctx, userID)
+// 	if err != nil {
+// 		return entity.LogStream{}, err
+// 	}
 
-	return helperEncodedStringToLogStreamObject(logsString)
-}
+// 	return helperEncodedStringToLogStreamObject(ctx, logsString)
+// }
 
 // decodes the encoded string and returns the object.
-func helperEncodedStringToLogStreamObject(encodedLogs string) (entity.LogStream, error) {
+func helperEncodedStringToLogStreamObject(ctx context.Context, encodedLogs string) (entity.LogStream, error) {
 	logBytes, err := base64.StdEncoding.DecodeString(encodedLogs)
 	if err != nil {
-		slog.Error("not able to decode logs", err)
+		logging.LogError(ctx, "not able to decode logs", err)
 		return entity.LogStream{}, err
 	}
 

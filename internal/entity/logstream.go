@@ -1,5 +1,7 @@
 package entity
 
+import "context"
+
 type LogStream struct {
 	Logs string `json:"logs"`
 }
@@ -38,27 +40,27 @@ type WSErrorMessage struct {
 }
 
 type LogStreamService interface {
-	AppendLogs(logs string) error
-	SetLogs(logs string) error
-	GetLogs() (LogStream, error)
-	ClearLogs() error
-	WaitForLogsChange() (LogStream, error)
+	AppendLogs(ctx context.Context, logs string) error
+	SetLogs(ctx context.Context, logs string) error
+	GetLogs(ctx context.Context) (LogStream, error)
+	ClearLogs(ctx context.Context) error
+	WaitForLogsChange(ctx context.Context) (LogStream, error)
 
 	// User-specific methods
-	AppendLogsForUser(userID, logs string) error
-	SetLogsForUser(userID, logs string) error
-	GetLogsForUser(userID string) (LogStream, error)
-	ClearLogsForUser(userID string) error
-	WaitForLogsChangeForUser(userID string) (LogStream, error)
+	// AppendLogsForUser(ctx context.Context, userID, logs string) error
+	// SetLogsForUser(ctx context.Context, userID, logs string) error
+	// GetLogsForUser(ctx context.Context, userID string) (LogStream, error)
+	// ClearLogsForUser(ctx context.Context, userID string) error
+	// WaitForLogsChangeForUser(ctx context.Context, userID string) (LogStream, error)
 }
 
 type LogStreamRepository interface {
-	SetLogsInRedis(logStream string) error
-	GetLogsFromRedis() (string, error)
-	WaitForLogsChange() (string, error)
+	SetLogsInRedis(ctx context.Context, logStream string) error
+	GetLogsFromRedis(ctx context.Context) (string, error)
+	WaitForLogsChange(ctx context.Context) (string, error)
 
 	// User-specific methods
-	SetLogsInRedisForUser(userID, logStream string) error
-	GetLogsFromRedisForUser(userID string) (string, error)
-	WaitForLogsChangeForUser(userID string) (string, error)
+	// SetLogsInRedisForUser(ctx context.Context, userID, logStream string) error
+	// GetLogsFromRedisForUser(ctx context.Context, userID string) (string, error)
+	// WaitForLogsChangeForUser(ctx context.Context, userID string) (string, error)
 }
