@@ -1,5 +1,7 @@
 package entity
 
+import "context"
+
 // var SasToken string
 // var StorageAccountName string
 var ProtectedLabSecret string
@@ -134,20 +136,20 @@ type BlobType struct {
 }
 
 type LabService interface {
-	GetLabFromRedis() (LabType, error)
-	SetLabInRedis(LabType) error
-	DeleteLabFromRedis() error
+	GetLabFromRedis(ctx context.Context) (LabType, error)
+	SetLabInRedis(ctx context.Context, lab LabType) error
+	DeleteLabFromRedis(ctx context.Context) error
 
-	GetProtectedLab(typeOfLab string, labId string) (LabType, error)
-	HelperDefaultLab() (LabType, error)
+	GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (LabType, error)
+	HelperDefaultLab(ctx context.Context) (LabType, error)
 }
 
 type LabRepository interface {
-	GetLabFromRedis() (string, error)
-	SetLabInRedis(string) error
-	DeleteLabFromRedis() error
+	GetLabFromRedis(ctx context.Context) (string, error)
+	SetLabInRedis(ctx context.Context, lab string) error
+	DeleteLabFromRedis(ctx context.Context) error
 
-	GetProtectedLab(typeOfLab string, labId string) (string, error)
+	GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (string, error)
 
-	GetExtendScriptTemplate() (string, error)
+	GetExtendScriptTemplate(ctx context.Context) (string, error)
 }

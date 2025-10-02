@@ -50,7 +50,7 @@ func NewTerraformService(
 }
 
 func (t *terraformService) Init() error {
-	lab, err := t.labService.GetLabFromRedis()
+	lab, err := t.labService.GetLabFromRedis(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 
 	// Getting back redacted values
 	if lab.ExtendScript == "redacted" {
-		lab, err := t.labService.GetProtectedLab(lab.Type, lab.Id)
+		lab, err := t.labService.GetProtectedLab(context.TODO(), lab.Type, lab.Id)
 		if err != nil {
 			return err
 		}

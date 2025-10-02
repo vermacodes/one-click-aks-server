@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"strconv"
 	"time"
@@ -72,7 +73,7 @@ func (d *DeploymentService) GetMyDeployments(userId string) ([]entity.Deployment
 	// if no deployments found for active account, create default deployment.
 	if len(filteredDeployments) == 0 {
 
-		defaultLab, err := d.labService.HelperDefaultLab()
+		defaultLab, err := d.labService.HelperDefaultLab(context.TODO())
 		if err != nil {
 			return nil, err
 		}
