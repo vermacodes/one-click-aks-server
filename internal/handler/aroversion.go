@@ -21,7 +21,7 @@ func NewAROVersionHandler(router *gin.RouterGroup, aroVersionService entity.AROV
 }
 
 func (a *aroVersionHandler) GetAROVersions(c *gin.Context) {
-	aroVersions, err := a.aroVersionService.GetAROVersions()
+	aroVersions, err := a.aroVersionService.GetAROVersions(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -30,7 +30,7 @@ func (a *aroVersionHandler) GetAROVersions(c *gin.Context) {
 }
 
 func (a *aroVersionHandler) GetDefaultAROVersion(c *gin.Context) {
-	defaultVersion := a.aroVersionService.GetDefaultAROVersion()
+	defaultVersion := a.aroVersionService.GetDefaultAROVersion(c.Request.Context())
 	if defaultVersion == "" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "default version not found"})
 		return

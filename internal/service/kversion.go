@@ -28,7 +28,7 @@ func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.Kubernete
 	logging.LogDebug(ctx, "Getting Kubernetes versions")
 	kubernetesVersions := entity.KubernetesVersions{}
 
-	preference, err := k.preferenceService.GetPreference()
+	preference, err := k.preferenceService.GetPreference(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get user's preference", err)
 		return kubernetesVersions, err

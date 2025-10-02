@@ -68,7 +68,7 @@ func (l *labService) SetLabInRedis(lab entity.LabType) error {
 
 	for i := range lab.Template.AroClusters {
 		if lab.Template.AroClusters[i].Version == "" {
-			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion()
+			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion(context.Background())
 		}
 	}
 

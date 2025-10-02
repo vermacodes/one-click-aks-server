@@ -1,5 +1,7 @@
 package entity
 
+import "context"
+
 // AROVersions represents the structure of the ARO versions API response.
 type AROVersions struct {
 	Value []struct {
@@ -13,12 +15,12 @@ type AROVersions struct {
 
 // AROVersionService defines the interface for fetching ARO versions.
 type AROVersionService interface {
-	GetAROVersions() (AROVersions, error)
-	GetDefaultAROVersion() string
-	DoesVersionExist(version string) bool
+	GetAROVersions(ctx context.Context) (AROVersions, error)
+	GetDefaultAROVersion(ctx context.Context) string
+	DoesVersionExist(ctx context.Context, version string) bool
 }
 
 // AROVersionRepository defines the interface for interacting with ARO version data.
 type AROVersionRepository interface {
-	GetAROVersions(location string) (string, error)
+	GetAROVersions(ctx context.Context, location string) (string, error)
 }

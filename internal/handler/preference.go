@@ -22,7 +22,7 @@ func NewPreferenceHandler(r *gin.RouterGroup, preferenceService entity.Preferenc
 }
 
 func (p *preferenceHandler) GetPreference(c *gin.Context) {
-	preference, err := p.preferenceService.GetPreference()
+	preference, err := p.preferenceService.GetPreference(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -37,7 +37,7 @@ func (p *preferenceHandler) SetPreference(c *gin.Context) {
 		return
 	}
 
-	if err := p.preferenceService.SetPreference(preference); err != nil {
+	if err := p.preferenceService.SetPreference(c.Request.Context(), preference); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

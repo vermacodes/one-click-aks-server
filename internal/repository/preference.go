@@ -9,6 +9,7 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/redis/go-redis/v9"
@@ -26,8 +27,6 @@ func NewPreferenceRepository(auth *auth.Auth, appConfig *config.Config) entity.P
 	}
 }
 
-var preferenceCtx = context.Background()
-
 func newPreferenceRedisClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -36,7 +35,7 @@ func newPreferenceRedisClient() *redis.Client {
 	})
 }
 
-func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) (string, error) {
+func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storageAccountName string) (string, error) {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
 
 	// Use this for local emulator
@@ -47,7 +46,7 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 	// Create a new Blob Service Client with the AAD credential
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
-		slog.Debug("not able to create blob client",
+		logging.LogError(ctx, "not able to create blob client",
 			slog.String("serviceURL", serviceURL),
 			slog.String("error", err.Error()),
 		)
@@ -55,10 +54,9 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 	}
 
 	// Download the blob
-	ctx := context.Background()
 	downloadResponse, err := client.DownloadStream(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", nil)
 	if err != nil {
-		slog.Debug("not able to download stream",
+		logging.LogError(ctx, "not able to download stream",
 			slog.String("containerName", "repro-project-preferences"),
 			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
 			slog.String("error", err.Error()),
@@ -70,7 +68,7 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 	// Read the blob content
 	actualBlobData, err := io.ReadAll(downloadResponse.Body)
 	if err != nil {
-		slog.Debug("not able to read all from download response",
+		logging.LogError(ctx, "not able to read all from download response",
 			slog.String("error", err.Error()),
 		)
 		return "", err
@@ -79,7 +77,7 @@ func (p *preferenceRepository) GetPreferenceFromBlob(storageAccountName string) 
 	return string(actualBlobData), nil
 }
 
-func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountName string) error {
+func (p *preferenceRepository) PutPreferenceInBlob(ctx context.Context, val string, storageAccountName string) error {
 	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net/", storageAccountName)
 
 	// Use this for local emulator
@@ -90,7 +88,7 @@ func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountNam
 	// Create a new Blob Service Client with the AAD credential
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
-		slog.Debug("not able to create blob client",
+		logging.LogError(ctx, "not able to create blob client",
 			slog.String("serviceURL", serviceURL),
 			slog.String("error", err.Error()),
 		)
@@ -98,10 +96,9 @@ func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountNam
 	}
 
 	// Upload the blob
-	ctx := context.Background()
 	_, err = client.UploadBuffer(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", []byte(val), nil)
 	if err != nil {
-		slog.Debug("not able to upload buffer",
+		logging.LogError(ctx, "not able to upload buffer",
 			slog.String("containerName", "repro-project-preferences"),
 			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
 			slog.String("error", err.Error()),
@@ -112,22 +109,22 @@ func (p *preferenceRepository) PutPreferenceInBlob(val string, storageAccountNam
 	return nil
 }
 
-func (p *preferenceRepository) GetPreferenceFromRedis() (string, error) {
+func (p *preferenceRepository) GetPreferenceFromRedis(ctx context.Context) (string, error) {
 	rdb := newPreferenceRedisClient()
-	return rdb.Get(preferenceCtx, "preference").Result()
+	return rdb.Get(ctx, "preference").Result()
 }
 
-func (p *preferenceRepository) PutPreferenceInRedis(val string) error {
+func (p *preferenceRepository) PutPreferenceInRedis(ctx context.Context, val string) error {
 	rdb := newPreferenceRedisClient()
-	return rdb.Set(preferenceCtx, "preference", val, 0).Err()
+	return rdb.Set(ctx, "preference", val, 0).Err()
 }
 
-func (p *preferenceRepository) DeletePreferenceFromRedis() error {
+func (p *preferenceRepository) DeletePreferenceFromRedis(ctx context.Context) error {
 	rdb := newPreferenceRedisClient()
-	return rdb.Del(preferenceCtx, "preference").Err()
+	return rdb.Del(ctx, "preference").Err()
 }
 
-func (p *preferenceRepository) DeleteKubernetesVersionsFromRedis() error {
+func (p *preferenceRepository) DeleteKubernetesVersionsFromRedis(ctx context.Context) error {
 	rdb := newPreferenceRedisClient()
-	return rdb.Del(preferenceCtx, "kubernetesVersions").Err()
+	return rdb.Del(ctx, "kubernetesVersions").Err()
 }

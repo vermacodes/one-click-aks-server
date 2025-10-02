@@ -284,8 +284,8 @@ func helperEnsureKubernetesVersion(t *terraformService, tfvar *entity.TfvarConfi
 // Ensure that the version of ARO exists.
 func helperEnsureAroVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
 	for i, cluster := range tfvar.AroClusters {
-		if !t.aroVersionService.DoesVersionExist(cluster.Version) {
-			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion()
+		if !t.aroVersionService.DoesVersionExist(context.TODO(), cluster.Version) {
+			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion(context.TODO())
 		}
 	}
 }
