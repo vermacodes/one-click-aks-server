@@ -160,3 +160,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Ignore tmp directory and contents
+tmp/

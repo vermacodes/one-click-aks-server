@@ -1,5 +1,7 @@
 package entity
 
+import "context"
+
 type Upgrade struct {
 	IsPreview           interface{} `json:"isPreview"`
 	OrchestratorType    string      `json:"orchestratorType"`
@@ -41,12 +43,12 @@ type KubernetesVersions struct {
 }
 
 type KVersionService interface {
-	GetOrchestrator() (KubernetesVersions, error)
-	GetDefaultVersion() string
-	DoesVersionExist(string) bool
+	GetOrchestrator(ctx context.Context) (KubernetesVersions, error)
+	GetDefaultVersion(ctx context.Context) string
+	DoesVersionExist(ctx context.Context, version string) bool
 }
 
 type KVersionRepository interface {
 	//GetDefaultOrchestrator(string) (string, error)
-	GetOrchestrator(string) (string, error)
+	GetOrchestrator(ctx context.Context, region string) (string, error)
 }

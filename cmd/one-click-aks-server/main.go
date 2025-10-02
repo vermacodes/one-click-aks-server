@@ -6,7 +6,7 @@ import (
 	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/handler"
-	"one-click-aks-server/internal/logger"
+	"one-click-aks-server/internal/logging"
 	"one-click-aks-server/internal/mise"
 	"one-click-aks-server/internal/miseadapter"
 	"strings"
@@ -36,7 +36,10 @@ func status(c *gin.Context) {
 }
 
 func main() {
-	logger.SetupLogger()
+	logging.SetupLogger()
+
+	// Disable Gin's default logging and use our custom logger
+	middleware.DisableGinDefaultLogging()
 
 	appConfig := config.NewConfig()
 	auth := auth.NewAuth(appConfig)
@@ -77,8 +80,13 @@ func main() {
 	deploymentService := service.NewDeploymentService(deploymentRepository, labService, terraformService, actionStatusService, logStreamService, authService, workspaceService, *appConfig)
 
 	// gin routers
-	router := gin.Default()
+	router := gin.New() // Use gin.New() instead of gin.Default() to avoid default middleware
 	router.SetTrustedProxies(nil)
+
+	// Add our custom middlewares in order
+	router.Use(middleware.ContextMiddleware())    // First: Generate trace ID
+	router.Use(middleware.GinLoggerWithTraceID()) // Second: Log with trace ID
+	router.Use(gin.Recovery())                    // Third: Recovery middleware
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = strings.Split(appConfig.CorsAllowOrigins, ",")

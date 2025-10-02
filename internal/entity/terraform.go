@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"os"
 	"os/exec"
 )
@@ -10,7 +11,7 @@ type TerraformService interface {
 	Init() error
 
 	// Streams logs
-	Plan(LabType) error
+	Plan(ctx context.Context, lab LabType) error
 
 	// Apply terraform and then run extend script if any
 	// This streams logs.

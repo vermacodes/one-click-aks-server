@@ -2,11 +2,13 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"golang.org/x/exp/slog"
 )
@@ -71,7 +73,10 @@ func (t *terraformService) Init() error {
 	return nil
 }
 
-func (t *terraformService) Plan(lab entity.LabType) error {
+func (t *terraformService) Plan(ctx context.Context, lab entity.LabType) error {
+
+	logging.LogInfo(ctx, "running terraform plan", slog.String("labId", lab.Id))
+
 	if err := helperTerraformAction(t, lab.Template, "plan"); err != nil {
 		slog.Error("terraform plan failed",
 			slog.String("labId", lab.Id),
@@ -270,8 +275,8 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 // best known use case is when a lab is created with an old version of kubernetes.
 func helperEnsureKubernetesVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
 	for i, cluster := range tfvar.KubernetesClusters {
-		if !t.kVersionService.DoesVersionExist(cluster.KubernetesVersion) {
-			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion()
+		if !t.kVersionService.DoesVersionExist(context.Background(), cluster.KubernetesVersion) {
+			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion(context.Background())
 		}
 	}
 }

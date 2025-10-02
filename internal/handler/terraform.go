@@ -93,7 +93,7 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 	// Start the long-running operation in a goroutine
 	go func() {
 		t.actionStatusService.SetActionStart()
-		if err := t.terraformService.Plan(lab); err != nil {
+		if err := t.terraformService.Plan(c.Request.Context(), lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.PlanFailed)
 		} else {

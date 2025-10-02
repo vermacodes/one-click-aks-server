@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -61,7 +62,7 @@ func (l *labService) SetLabInRedis(lab entity.LabType) error {
 
 	for i := range lab.Template.KubernetesClusters {
 		if lab.Template.KubernetesClusters[i].KubernetesVersion == "" {
-			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion()
+			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion(context.Background())
 		}
 	}
 
@@ -204,7 +205,7 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 
 	var defaultKubernetesClusters = []entity.TfvarKubernetesClusterType{
 		{
-			KubernetesVersion:       l.kVersionService.GetDefaultVersion(),
+			KubernetesVersion:       l.kVersionService.GetDefaultVersion(context.Background()),
 			NetworkPlugin:           "kubenet",
 			NetworkPolicy:           "null",
 			NetworkPluginMode:       "null",

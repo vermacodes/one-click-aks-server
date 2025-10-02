@@ -8,6 +8,7 @@ import (
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 	"one-click-aks-server/internal/mise"
 
 	"github.com/gin-gonic/gin"
@@ -45,7 +46,6 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim not found in token"})
 			return
 		}
-		slog.Info("authenticated user", "user", userName)
 
 		// Keeping the custom auth validation in place, just in case MISE isn't working as expected.
 		isAADToken, err := helper.VerifyToken(authToken)
@@ -69,9 +69,20 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			return
 		}
 
+		// Set user ID in context for tracing and user-specific operations
+		SetUserIDInGin(c, userPrincipal)
+		ctx := GetContextFromGin(c)
+
+		// Log authentication success with context (includes trace_id and user_id)
+		logging.LogDebug(ctx, "user authenticated successfully",
+			"user", userName,
+			"user_principal", userPrincipal)
+
 		// ensure user principal matches with the one in env
 		if userPrincipal != os.Getenv("ARM_USER_PRINCIPAL_NAME") {
-			slog.Error("principal mismatch : token issued to "+userPrincipal+" but found user "+os.Getenv("ARM_USER_PRINCIPAL_NAME"), nil)
+			logging.LogError(ctx, "principal mismatch",
+				"token_principal", userPrincipal,
+				"env_principal", os.Getenv("ARM_USER_PRINCIPAL_NAME"))
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "principal mismatch : token issued to " + userPrincipal + " but found user " + os.Getenv("ARM_USER_PRINCIPAL_NAME")})
 			return
 		}

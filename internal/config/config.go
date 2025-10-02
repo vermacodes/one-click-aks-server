@@ -1,12 +1,13 @@
 package config
 
 import (
+	"context"
 	"log"
+	"one-click-aks-server/internal/logging"
 	"os"
 	"strconv"
 
 	"github.com/joho/godotenv"
-	"golang.org/x/exp/slog"
 )
 
 type Config struct {
@@ -42,109 +43,109 @@ func NewConfig() *Config {
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		slog.Error("Error loading .env file")
+		logging.LogError(context.Background(), "Error loading .env file")
 	}
 
 	actLabsHubSubscriptionID := os.Getenv("ACTLABS_HUB_SUBSCRIPTION_ID")
 	if actLabsHubSubscriptionID == "" {
-		slog.Error("ACTLABS_HUB_SUBSCRIPTION_ID not set")
+		logging.LogError(context.Background(), "ACTLABS_HUB_SUBSCRIPTION_ID not set")
 		os.Exit(1)
 	}
-	slog.Info("ACTLABS_HUB_SUBSCRIPTION_ID: " + actLabsHubSubscriptionID)
+	logging.LogDebug(context.Background(), "ACTLABS_HUB_SUBSCRIPTION_ID: "+actLabsHubSubscriptionID)
 
 	actLabsHubResourceGroupName := os.Getenv("ACTLABS_HUB_RESOURCE_GROUP_NAME")
 	if actLabsHubResourceGroupName == "" {
-		slog.Error("ACTLABS_HUB_RESOURCE_GROUP_NAME not set")
+		logging.LogError(context.Background(), "ACTLABS_HUB_RESOURCE_GROUP_NAME not set")
 		os.Exit(1)
 	}
-	slog.Info("ACTLABS_HUB_RESOURCE_GROUP_NAME: " + actLabsHubResourceGroupName)
+	logging.LogDebug(context.Background(), "ACTLABS_HUB_RESOURCE_GROUP_NAME: "+actLabsHubResourceGroupName)
 
 	actLabsHubStorageAccountName := os.Getenv("ACTLABS_HUB_STORAGE_ACCOUNT_NAME")
 	if actLabsHubStorageAccountName == "" {
-		slog.Error("ACTLABS_HUB_STORAGE_ACCOUNT_NAME not set")
+		logging.LogError(context.Background(), "ACTLABS_HUB_STORAGE_ACCOUNT_NAME not set")
 		os.Exit(1)
 	}
-	slog.Info("ACTLABS_HUB_STORAGE_ACCOUNT_NAME: " + actLabsHubStorageAccountName)
+	logging.LogDebug(context.Background(), "ACTLABS_HUB_STORAGE_ACCOUNT_NAME: "+actLabsHubStorageAccountName)
 
 	armUserPrincipalName := os.Getenv("ARM_USER_PRINCIPAL_NAME")
-	slog.Info("ARM_USER_PRINCIPAL_NAME: " + armUserPrincipalName)
+	logging.LogDebug(context.Background(), "ARM_USER_PRINCIPAL_NAME: "+armUserPrincipalName)
 
 	if armUserPrincipalName == "" {
-		slog.Error("ARM_USER_PRINCIPAL_NAME not set")
+		logging.LogError(context.Background(), "ARM_USER_PRINCIPAL_NAME not set")
 		os.Exit(1)
 	}
-	slog.Info("ARM_USER_PRINCIPAL_NAME: " + armUserPrincipalName)
+	logging.LogDebug(context.Background(), "ARM_USER_PRINCIPAL_NAME: "+armUserPrincipalName)
 
 	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
 	if subscriptionID == "" {
-		slog.Error("AZURE_SUBSCRIPTION_ID not set")
+		logging.LogError(context.Background(), "AZURE_SUBSCRIPTION_ID not set")
 		os.Exit(1)
 	}
-	slog.Info("AZURE_SUBSCRIPTION_ID: " + subscriptionID)
+	logging.LogDebug(context.Background(), "AZURE_SUBSCRIPTION_ID: "+subscriptionID)
 
 	authTokenAud := os.Getenv("AUTH_TOKEN_AUD")
 	if authTokenAud == "" {
-		slog.Error("AUTH_TOKEN_AUD not set")
+		logging.LogError(context.Background(), "AUTH_TOKEN_AUD not set")
 		os.Exit(1)
 	}
-	slog.Info("AUTH_TOKEN_AUD: " + authTokenAud)
+	logging.LogDebug(context.Background(), "AUTH_TOKEN_AUD: "+authTokenAud)
 
 	authTokenIss := os.Getenv("AUTH_TOKEN_ISS")
 	if authTokenIss == "" {
-		slog.Error("AUTH_TOKEN_ISS not set")
+		logging.LogError(context.Background(), "AUTH_TOKEN_ISS not set")
 		os.Exit(1)
 	}
-	slog.Info("AUTH_TOKEN_ISS: " + authTokenIss)
+	logging.LogDebug(context.Background(), "AUTH_TOKEN_ISS: "+authTokenIss)
 
 	rootDir := os.Getenv("ROOT_DIR")
 	if rootDir == "" {
-		slog.Error("ROOT_DIR not set")
+		logging.LogError(context.Background(), "ROOT_DIR not set")
 		os.Exit(1)
 	}
-	slog.Info("ROOT_DIR: " + rootDir)
+	logging.LogDebug(context.Background(), "ROOT_DIR: "+rootDir)
 
 	useMsiString := os.Getenv("USE_MSI")
 	if useMsiString == "" {
-		slog.Error("USE_MSI not set")
+		logging.LogError(context.Background(), "USE_MSI not set")
 		os.Exit(1)
 	}
 	useMsi := false
 	if useMsiString == "true" {
-		slog.Info("USE_MSI: true")
+		logging.LogDebug(context.Background(), "USE_MSI: true")
 		useMsi = true
 	} else {
-		slog.Info("USE_MSI: false")
+		logging.LogDebug(context.Background(), "USE_MSI: false")
 	}
 
 	useServicePrincipalString := os.Getenv("USE_SERVICE_PRINCIPAL")
 	if useServicePrincipalString == "" {
-		slog.Error("USE_SERVICE_PRINCIPAL not set")
+		logging.LogError(context.Background(), "USE_SERVICE_PRINCIPAL not set")
 		os.Exit(1)
 	}
 
 	useServicePrincipal := false
 	if useServicePrincipalString == "true" {
-		slog.Info("USE_SERVICE_PRINCIPAL: true")
+		logging.LogDebug(context.Background(), "USE_SERVICE_PRINCIPAL: true")
 		useServicePrincipal = true
 	} else {
-		slog.Info("USE_SERVICE_PRINCIPAL: false")
+		logging.LogDebug(context.Background(), "USE_SERVICE_PRINCIPAL: false")
 	}
 
 	azureClientId := os.Getenv("AZURE_CLIENT_ID")
 	if azureClientId == "" && useServicePrincipal {
-		slog.Error("AZURE_CLIENT_ID not set")
+		logging.LogError(context.Background(), "AZURE_CLIENT_ID not set")
 		os.Exit(1)
 	}
 
 	azureClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	if azureClientSecret == "" && useServicePrincipal {
-		slog.Error("AZURE_CLIENT_SECRET not set")
+		logging.LogError(context.Background(), "AZURE_CLIENT_SECRET not set")
 		os.Exit(1)
 	}
 
 	azureTenantID := os.Getenv("AZURE_TENANT_ID")
 	if azureTenantID == "" && useServicePrincipal {
-		slog.Error("AZURE_TENANT_ID not set")
+		logging.LogError(context.Background(), "AZURE_TENANT_ID not set")
 		os.Exit(1)
 	}
 
@@ -160,14 +161,14 @@ func NewConfig() *Config {
 
 	aroRpFirstPartySpID := os.Getenv("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID")
 	if aroRpFirstPartySpID == "" {
-		slog.Error("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID not set")
+		logging.LogError(context.Background(), "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID not set")
 		os.Exit(1)
 	}
-	slog.Info("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: " + aroRpFirstPartySpID)
+	logging.LogDebug(context.Background(), "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: "+aroRpFirstPartySpID)
 
 	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
 	if actlabsHubURL == "" {
-		slog.Error("ACTLABS_HUB_URL not set")
+		logging.LogError(context.Background(), "ACTLABS_HUB_URL not set")
 		os.Exit(1)
 	}
 
@@ -183,17 +184,17 @@ func NewConfig() *Config {
 
 	userAlias := os.Getenv("USER_ALIAS")
 	if userAlias == "" {
-		slog.Error("USER_ALIAS not set")
+		logging.LogError(context.Background(), "USER_ALIAS not set")
 		os.Exit(1)
 	}
-	slog.Info("USER_ALIAS: " + userAlias)
+	logging.LogDebug(context.Background(), "USER_ALIAS: "+userAlias)
 
 	miseEndpoint := os.Getenv("MISE_ENDPOINT")
 	if miseEndpoint == "" {
-		slog.Error("MISE_ENDPOINT not set")
+		logging.LogError(context.Background(), "MISE_ENDPOINT not set")
 		os.Exit(1)
 	}
-	slog.Info("MISE_ENDPOINT: " + miseEndpoint)
+	logging.LogDebug(context.Background(), "MISE_ENDPOINT: "+miseEndpoint)
 
 	miseVerboseLoggingString := os.Getenv("MISE_VERBOSE_LOGGING")
 	if miseVerboseLoggingString == "" {
@@ -201,32 +202,32 @@ func NewConfig() *Config {
 	}
 	miseVerboseLogging := false
 	if miseVerboseLoggingString == "true" {
-		slog.Info("MISE_VERBOSE_LOGGING: true")
+		logging.LogDebug(context.Background(), "MISE_VERBOSE_LOGGING: true")
 		miseVerboseLogging = true
 	} else {
-		slog.Info("MISE_VERBOSE_LOGGING: false")
+		logging.LogDebug(context.Background(), "MISE_VERBOSE_LOGGING: false")
 	}
 
 	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
 	if corsAllowOrigins == "" {
-		slog.Error("CORS_ALLOW_ORIGINS not set")
+		logging.LogError(context.Background(), "CORS_ALLOW_ORIGINS not set")
 		os.Exit(1)
 	}
-	slog.Info("CORS_ALLOW_ORIGINS: " + corsAllowOrigins)
+	logging.LogDebug(context.Background(), "CORS_ALLOW_ORIGINS: "+corsAllowOrigins)
 
 	corsAllowMethods := os.Getenv("CORS_ALLOW_METHODS")
 	if corsAllowMethods == "" {
-		slog.Error("CORS_ALLOW_METHODS not set")
+		logging.LogError(context.Background(), "CORS_ALLOW_METHODS not set")
 		os.Exit(1)
 	}
-	slog.Info("CORS_ALLOW_METHODS: " + corsAllowMethods)
+	logging.LogDebug(context.Background(), "CORS_ALLOW_METHODS: "+corsAllowMethods)
 
 	corsAllowHeaders := os.Getenv("CORS_ALLOW_HEADERS")
 	if corsAllowHeaders == "" {
-		slog.Error("CORS_ALLOW_HEADERS not set")
+		logging.LogError(context.Background(), "CORS_ALLOW_HEADERS not set")
 		os.Exit(1)
 	}
-	slog.Info("CORS_ALLOW_HEADERS: " + corsAllowHeaders)
+	logging.LogDebug(context.Background(), "CORS_ALLOW_HEADERS: "+corsAllowHeaders)
 
 	// Retrieve other environment variables and check them as needed
 

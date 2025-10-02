@@ -10,9 +10,9 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/exp/slog"
 )
 
 type kVersionRepository struct {
@@ -29,11 +29,11 @@ func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis
 	}
 }
 
-func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
-	slog.Info("Getting Kubernetes versions for location " + location)
+func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location string) (string, error) {
+	logging.LogInfo(ctx, "Getting Kubernetes versions for location "+location)
 
 	// Check if the orchestrator versions are already cached in Redis
-	kubernetesVersions, err := k.rdb.Get(context.Background(), "kubernetesVersions").Result()
+	kubernetesVersions, err := k.rdb.Get(ctx, "kubernetesVersions").Result()
 	if err == nil {
 		return kubernetesVersions, nil
 	}
@@ -45,7 +45,7 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 
 	// Make HTTP request to retrieve Kubernetes versions
 	url := fmt.Sprintf(k.appConfig.KubernetesVersionApiUrlTemplate, k.appConfig.SubscriptionID, location)
-	slog.Info("url: " + url)
+	logging.LogInfo(ctx, "url: "+url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
@@ -69,9 +69,9 @@ func (k *kVersionRepository) GetOrchestrator(location string) (string, error) {
 	}
 
 	// Set the response body in Redis
-	err = k.rdb.Set(context.Background(), "kubernetesVersions", string(body), 0).Err()
+	err = k.rdb.Set(ctx, "kubernetesVersions", string(body), 0).Err()
 	if err != nil {
-		slog.Error("failed to set kubernetes versions in redis", err)
+		logging.LogError(ctx, "failed to set kubernetes versions in redis", err)
 	}
 
 	return string(body), nil
