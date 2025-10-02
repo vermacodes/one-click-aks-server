@@ -20,7 +20,7 @@ func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preference
 }
 
 func (a *aroVersionService) GetAROVersions(ctx context.Context) (entity.AROVersions, error) {
-	logging.LogInfo(ctx, "Fetching ARO versions")
+	logging.LogInfo(ctx, "getting aro versions")
 	aroVersions := entity.AROVersions{}
 
 	preference, err := a.preferenceService.GetPreference(ctx)
@@ -29,7 +29,7 @@ func (a *aroVersionService) GetAROVersions(ctx context.Context) (entity.AROVersi
 		return aroVersions, err
 	}
 
-	logging.LogInfo(ctx, "Getting ARO versions for location "+preference.AzureRegion)
+	logging.LogInfo(ctx, "getting aro versions for location "+preference.AzureRegion)
 	out, err := a.aroVersionRepository.GetAROVersions(ctx, preference.AzureRegion)
 	if err != nil {
 		logging.LogError(ctx, "not able to get ARO versions for location "+preference.AzureRegion, err)
@@ -45,7 +45,7 @@ func (a *aroVersionService) GetAROVersions(ctx context.Context) (entity.AROVersi
 }
 
 func (a *aroVersionService) GetDefaultAROVersion(ctx context.Context) string {
-	logging.LogInfo(ctx, "Fetching default ARO version")
+	logging.LogInfo(ctx, "getting default aro version")
 	aroVersions, err := a.GetAROVersions(ctx)
 	if err != nil {
 		return ""
@@ -60,7 +60,7 @@ func (a *aroVersionService) GetDefaultAROVersion(ctx context.Context) string {
 }
 
 func (a *aroVersionService) DoesVersionExist(ctx context.Context, version string) bool {
-	logging.LogInfo(ctx, "Checking if ARO version exists: "+version)
+	logging.LogInfo(ctx, "checking if aro version exists: "+version)
 	aroVersions, err := a.GetAROVersions(ctx)
 	if err != nil {
 		return false

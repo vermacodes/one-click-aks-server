@@ -25,7 +25,7 @@ func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceServic
 }
 
 func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.KubernetesVersions, error) {
-	logging.LogDebug(ctx, "Getting Kubernetes versions")
+	logging.LogDebug(ctx, "getting kubernetes versions")
 	kubernetesVersions := entity.KubernetesVersions{}
 
 	preference, err := k.preferenceService.GetPreference(ctx)
@@ -34,7 +34,7 @@ func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.Kubernete
 		return kubernetesVersions, err
 	}
 
-	logging.LogInfo(ctx, "Getting Kubernetes versions for location "+preference.AzureRegion)
+	logging.LogDebug(ctx, "getting kubernetes versions for location "+preference.AzureRegion)
 	out, err := k.kVersionRepository.GetOrchestrator(ctx, preference.AzureRegion)
 	if err != nil {
 		logging.LogError(ctx, "not able to get orchestrator", err)
@@ -51,7 +51,7 @@ func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.Kubernete
 	for _, version := range kubernetesVersions.Values {
 		for _, capability := range version.Capabilities.SupportPlan {
 			if capability == "KubernetesOfficial" {
-				logging.LogDebug(ctx, "Adding version "+version.Version)
+				logging.LogDebug(ctx, "adding version "+version.Version)
 				filteredVersions.Values = append(filteredVersions.Values, version)
 				break
 			}
@@ -174,7 +174,7 @@ func (k *kVersionService) DoesVersionExist(ctx context.Context, version string) 
 	for _, v := range o.Values {
 		// Iterate over PatchVersions
 		for patchVersion := range v.PatchVersions {
-			logging.LogDebug(ctx, "Patch Version "+patchVersion)
+			logging.LogDebug(ctx, "patch version "+patchVersion)
 			if patchVersion == version {
 				return true
 			}
