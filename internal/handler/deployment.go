@@ -157,18 +157,17 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	fmt.Println(d.actionStatusService)
 	fmt.Println(terraformOperation)
 
-	if err := d.actionStatusService.SetTerraformOperation(terraformOperation); err != nil {
+	if err := d.actionStatusService.SetTerraformOperation(c.Request.Context(), terraformOperation); err != nil {
 		slog.Error("error setting terraform operation ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	// Start the long-running operation in a goroutine
 	go func() {
-
-		// background context with values for long running operations independent of http request.
-		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
-
-		if err := d.actionStatusService.SetActionStart(); err != nil {
+		if err := d.actionStatusService.SetActionStart(bgCtx); err != nil {
 			slog.Error("error setting action start ", err)
 		}
 
@@ -179,7 +178,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 		}
 
 		terraformOperation.InProgress = false
-		if err := d.actionStatusService.SetTerraformOperation(terraformOperation); err != nil {
+		if err := d.actionStatusService.SetTerraformOperation(bgCtx, terraformOperation); err != nil {
 			slog.Error("error setting terraform operation ", err)
 		}
 
@@ -188,7 +187,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 			slog.Error("error deleting deployment ", err)
 		}
 
-		if err := d.actionStatusService.SetActionEnd(); err != nil {
+		if err := d.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			slog.Error("error setting action end ", err)
 		}
 

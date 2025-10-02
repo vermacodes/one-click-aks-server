@@ -193,7 +193,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 		for _, deployment := range deployments {
 			logging.LogInfo(ctx, "deleting deployment "+deployment.DeploymentWorkspace)
 
-			actionStatus, err := d.actionStatusService.GetActionStatus()
+			actionStatus, err := d.actionStatusService.GetActionStatus(ctx)
 			if err != nil {
 				logging.LogError(ctx, "not able to get action status", err)
 				continue
@@ -205,7 +205,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 				if actionStatus.InProgress {
 					logging.LogInfo(ctx, "action in progress. waiting for 60 seconds")
 					time.Sleep(60 * time.Second)
-					actionStatus, err = d.actionStatusService.GetActionStatus()
+					actionStatus, err = d.actionStatusService.GetActionStatus(ctx)
 					if err != nil {
 						logging.LogError(ctx, "not able to get action status", err)
 						continue
@@ -236,7 +236,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 			}
 
 			// Update action status to in progress.
-			d.actionStatusService.SetActionStart()
+			d.actionStatusService.SetActionStart(ctx)
 
 			//Run extend script in 'destroy' mode.
 			if err := d.terraformService.Extend(ctx, deployment.DeploymentLab, "destroy"); err != nil {
@@ -248,7 +248,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 					logging.LogError(ctx, "not able to update deployment", "error", err)
 				}
 
-				d.actionStatusService.SetActionEnd()
+				d.actionStatusService.SetActionEnd(ctx)
 				continue
 			}
 
@@ -262,7 +262,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 					logging.LogError(ctx, "not able to update deployment", err)
 				}
 
-				d.actionStatusService.SetActionEnd()
+				d.actionStatusService.SetActionEnd(ctx)
 				continue
 			}
 
@@ -270,7 +270,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 			deployment.DeploymentStatus = entity.DestroyCompleted
 			if err := d.UpsertDeployment(ctx, deployment); err != nil {
 				logging.LogError(ctx, "not able to update deployment", err)
-				d.actionStatusService.SetActionEnd()
+				d.actionStatusService.SetActionEnd(ctx)
 				continue
 			}
 
@@ -280,7 +280,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 				continue
 			}
 
-			d.actionStatusService.SetActionEnd()
+			d.actionStatusService.SetActionEnd(ctx)
 		}
 	}
 }

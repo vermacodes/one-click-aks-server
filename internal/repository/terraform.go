@@ -66,7 +66,7 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 		// Set the environment variable of resource.
 		encoded, _ := json.Marshal(conjson.NewMarshaler(value.Interface(), transform.ConventionalKeys()))
 
-		logging.LogError(ctx, "Field :"+field.Name+" Encoded String : "+string(encoded))
+		logging.LogDebug(ctx, "Field :"+field.Name+" Encoded String : "+string(encoded))
 
 		// If a variable doesn't exist, just skip it and let terraform default do the magic.
 		if string(encoded) != "null" {

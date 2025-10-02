@@ -14,8 +14,6 @@ func NewActionStatusRepository() entity.ActionStatusRepository {
 	return &actionStatusRepository{}
 }
 
-var actionStatusCtx = context.Background()
-
 func newActionStatusRedisClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -24,33 +22,33 @@ func newActionStatusRedisClient() *redis.Client {
 	})
 }
 
-func (a *actionStatusRepository) GetActionStatus() (string, error) {
+func (a *actionStatusRepository) GetActionStatus(ctx context.Context) (string, error) {
 	rdb := newActionStatusRedisClient()
-	return rdb.Get(actionStatusCtx, "actionstatus").Result()
+	return rdb.Get(ctx, "actionstatus").Result()
 }
 
-func (a *actionStatusRepository) SetActionStatus(val string) error {
+func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string) error {
 	rdb := newActionStatusRedisClient()
 
 	// Set the value in redis.
-	if err := rdb.Set(actionStatusCtx, "actionstatus", val, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, "actionstatus", val, 0).Err(); err != nil {
 		return err
 	}
 
 	// Publish the value to the pubsub channel.
-	if err := rdb.Publish(actionStatusCtx, "redis-action-status-pubsub-channel", val).Err(); err != nil {
+	if err := rdb.Publish(ctx, "redis-action-status-pubsub-channel", val).Err(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (a *actionStatusRepository) WaitForActionStatusChange() (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(actionStatusCtx, "redis-action-status-pubsub-channel")
+func (a *actionStatusRepository) WaitForActionStatusChange(ctx context.Context) (string, error) {
+	rdb := newActionStatusRedisClient().Subscribe(ctx, "redis-action-status-pubsub-channel")
 	defer rdb.Close()
 
 	for {
-		msg, err := rdb.ReceiveMessage(actionStatusCtx)
+		msg, err := rdb.ReceiveMessage(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -59,26 +57,26 @@ func (a *actionStatusRepository) WaitForActionStatusChange() (string, error) {
 	}
 }
 
-func (a *actionStatusRepository) SetTerraformOperation(val string) error {
+func (a *actionStatusRepository) SetTerraformOperation(ctx context.Context, val string) error {
 	rdb := newActionStatusRedisClient()
-	if err := rdb.Set(actionStatusCtx, "terraform-operation", val, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, "terraform-operation", val, 0).Err(); err != nil {
 		return err
 	}
 
-	return rdb.Publish(actionStatusCtx, "redis-terraform-operation-pubsub-channel", val).Err()
+	return rdb.Publish(ctx, "redis-terraform-operation-pubsub-channel", val).Err()
 }
 
-func (a *actionStatusRepository) GetTerraformOperation() (string, error) {
+func (a *actionStatusRepository) GetTerraformOperation(ctx context.Context) (string, error) {
 	rdb := newActionStatusRedisClient()
-	return rdb.Get(actionStatusCtx, "terraform-operation").Result()
+	return rdb.Get(ctx, "terraform-operation").Result()
 }
 
-func (a *actionStatusRepository) WaitForTerraformOperationChange() (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(actionStatusCtx, "redis-terraform-operation-pubsub-channel")
+func (a *actionStatusRepository) WaitForTerraformOperationChange(ctx context.Context) (string, error) {
+	rdb := newActionStatusRedisClient().Subscribe(ctx, "redis-terraform-operation-pubsub-channel")
 	defer rdb.Close()
 
 	for {
-		msg, err := rdb.ReceiveMessage(actionStatusCtx)
+		msg, err := rdb.ReceiveMessage(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -87,26 +85,26 @@ func (a *actionStatusRepository) WaitForTerraformOperationChange() (string, erro
 	}
 }
 
-func (a *actionStatusRepository) SetServerNotification(val string) error {
+func (a *actionStatusRepository) SetServerNotification(ctx context.Context, val string) error {
 	rdb := newActionStatusRedisClient()
-	if err := rdb.Set(actionStatusCtx, "server-notification", val, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, "server-notification", val, 0).Err(); err != nil {
 		return err
 	}
 
-	return rdb.Publish(actionStatusCtx, "redis-server-notification-pubsub-channel", val).Err()
+	return rdb.Publish(ctx, "redis-server-notification-pubsub-channel", val).Err()
 }
 
-func (a *actionStatusRepository) GetServerNotification() (string, error) {
+func (a *actionStatusRepository) GetServerNotification(ctx context.Context) (string, error) {
 	rdb := newActionStatusRedisClient()
-	return rdb.Get(actionStatusCtx, "server-notification").Result()
+	return rdb.Get(ctx, "server-notification").Result()
 }
 
-func (a *actionStatusRepository) WaitForServerNotificationChange() (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(actionStatusCtx, "redis-server-notification-pubsub-channel")
+func (a *actionStatusRepository) WaitForServerNotificationChange(ctx context.Context) (string, error) {
+	rdb := newActionStatusRedisClient().Subscribe(ctx, "redis-server-notification-pubsub-channel")
 	defer rdb.Close()
 
 	for {
-		msg, err := rdb.ReceiveMessage(actionStatusCtx)
+		msg, err := rdb.ReceiveMessage(ctx)
 		if err != nil {
 			return "", err
 		}

@@ -13,7 +13,7 @@ import (
 func ActionStatusMiddleware(actionStatusService entity.ActionStatusService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		actionStatus, err := actionStatusService.GetActionStatus()
+		actionStatus, err := actionStatusService.GetActionStatus(c.Request.Context())
 		if err != nil {
 			slog.Error("not able to get current action status", err)
 
@@ -21,7 +21,7 @@ func ActionStatusMiddleware(actionStatusService entity.ActionStatusService) gin.
 			actionStatus := entity.ActionStatus{
 				InProgress: false,
 			}
-			if err := actionStatusService.SetActionStatus(actionStatus); err != nil {
+			if err := actionStatusService.SetActionStatus(c.Request.Context(), actionStatus); err != nil {
 				slog.Error("not able to set default action status.", err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
@@ -35,11 +35,11 @@ func ActionStatusMiddleware(actionStatusService entity.ActionStatusService) gin.
 		}
 
 		// set action status
-		actionStatusService.SetActionStart()
+		actionStatusService.SetActionStart(c.Request.Context())
 
 		defer func() {
 			// reset action status
-			actionStatusService.SetActionEnd()
+			actionStatusService.SetActionEnd(c.Request.Context())
 		}()
 
 		c.Next()

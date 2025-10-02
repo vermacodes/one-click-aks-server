@@ -45,13 +45,13 @@ func (t *terraformHandler) Init(c *gin.Context) {
 		AutoClose:        2000,
 	}
 
-	if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+	if err := t.actionStatusService.SetServerNotification(c.Request.Context(), notification); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
 	// Start the long-running operation in a goroutine
 	go func() {
-		t.actionStatusService.SetActionStart()
+		t.actionStatusService.SetActionStart(c.Request.Context())
 		if err := t.terraformService.Init(logging.CreateBackgroundContextWithValues(c.Request.Context())); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.InitFailed)
@@ -59,10 +59,10 @@ func (t *terraformHandler) Init(c *gin.Context) {
 			notification.NotificationType = entity.Success
 			notification.Message = string(entity.InitCompleted)
 		}
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		if err := t.actionStatusService.SetServerNotification(c.Request.Context(), notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.actionStatusService.SetActionEnd(); err != nil {
+		if err := t.actionStatusService.SetActionEnd(c.Request.Context()); err != nil {
 			slog.Error("Error setting action end", err)
 		}
 	}()
@@ -87,24 +87,27 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 		AutoClose:        2000,
 	}
 
-	if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+	if err := t.actionStatusService.SetServerNotification(c.Request.Context(), notification); err != nil {
 		slog.Error("Error setting server notification", err)
 	}
 
 	// Start the long-running operation in a goroutine
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	go func() {
-		t.actionStatusService.SetActionStart()
-		if err := t.terraformService.Plan(logging.CreateBackgroundContextWithValues(c.Request.Context()), lab); err != nil {
+		// background context for long running operation
+		t.actionStatusService.SetActionStart(bgCtx)
+		if err := t.terraformService.Plan(bgCtx, lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.PlanFailed)
 		} else {
 			notification.NotificationType = entity.Success
 			notification.Message = string(entity.PlanCompleted)
 		}
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.actionStatusService.SetActionEnd(); err != nil {
+		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			slog.Error("Error setting action end", err)
 		}
 	}()
@@ -130,16 +133,18 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 		AutoClose:        2000,
 	}
 
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	// Start the long-running operation in a goroutine
 	go func() {
 		deployment.DeploymentStatus = entity.DeploymentInProgress
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
-		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
-		t.actionStatusService.SetActionStart()
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		t.actionStatusService.SetActionStart(bgCtx)
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
 		if err := t.terraformService.Apply(bgCtx, lab); err != nil {
@@ -152,14 +157,14 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 			notification.Message = string(entity.DeploymentCompleted)
 			deployment.DeploymentStatus = entity.DeploymentCompleted
 		}
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
-		if err := t.actionStatusService.SetActionEnd(); err != nil {
+		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			slog.Error("Error setting action end", err)
 		}
 	}()
@@ -186,19 +191,22 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 		AutoClose:        2000,
 	}
 
-	if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+	if err := t.actionStatusService.SetServerNotification(c.Request.Context(), notification); err != nil {
 		slog.Error("Error setting server notification", err)
 	}
 
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	// Start the long-running operation in a goroutine
 	go func() {
-		if err := t.actionStatusService.SetActionStart(); err != nil {
+		if err := t.actionStatusService.SetActionStart(bgCtx); err != nil {
 			slog.Error("Error setting action start", err)
 			notification.NotificationType = entity.Error
 			notification.Message = mode + " failed : Not able to update action status."
 			return
 		}
-		if err := t.terraformService.Extend(logging.CreateBackgroundContextWithValues(c.Request.Context()), lab, mode); err != nil {
+		if err := t.terraformService.Extend(bgCtx, lab, mode); err != nil {
 			notification.NotificationType = entity.Error
 			notification.AutoClose = 5000
 			notification.Message = mode + " failed. " + err.Error()
@@ -206,10 +214,10 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 			notification.NotificationType = entity.Success
 			notification.Message = mode + " completed."
 		}
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.actionStatusService.SetActionEnd(); err != nil {
+		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			slog.Error("Error setting action end", err)
 		}
 	}()
@@ -234,15 +242,17 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		AutoClose:        2000,
 	}
 
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	// Start the long-running operation in a goroutine
 	go func() {
 		deployment.DeploymentStatus = entity.DestroyInProgress
-		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
-		t.actionStatusService.SetActionStart()
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		t.actionStatusService.SetActionStart(bgCtx)
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
 
@@ -255,13 +265,13 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 			notification.Message = string(entity.DestroyCompleted)
 			deployment.DeploymentStatus = entity.DestroyCompleted
 		}
-		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
-		if err := t.actionStatusService.SetActionEnd(); err != nil {
+		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			slog.Error("Error setting action end", err)
 		}
 	}()

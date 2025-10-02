@@ -44,7 +44,7 @@ func NewAuthActionStatusHandler(r *gin.RouterGroup, service entity.ActionStatusS
 }
 
 func (a *actionStatusHandler) GetActionStatus(c *gin.Context) {
-	actionStatus, err := a.actionStatusService.GetActionStatus()
+	actionStatus, err := a.actionStatusService.GetActionStatus(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -60,12 +60,12 @@ func (a *actionStatusHandler) SetActionStatus(c *gin.Context) {
 		return
 	}
 
-	a.actionStatusService.SetActionStatus(actionStatus)
+	a.actionStatusService.SetActionStatus(c.Request.Context(), actionStatus)
 	c.Status(http.StatusOK)
 }
 
 func (a *actionStatusHandler) GetTerraformOperationStatus(c *gin.Context) {
-	terraformOperation, err := a.actionStatusService.GetTerraformOperation()
+	terraformOperation, err := a.actionStatusService.GetTerraformOperation(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -92,7 +92,7 @@ func (a *actionStatusHandler) GetActionStatusWs(w http.ResponseWriter, r *http.R
 	defer conn.Close()
 
 	// Get initial action status
-	initialActionStatus, err := a.actionStatusService.GetActionStatus()
+	initialActionStatus, err := a.actionStatusService.GetActionStatus(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		slog.Error("Failed to retrieve initial action status:", err)
@@ -109,7 +109,7 @@ func (a *actionStatusHandler) GetActionStatusWs(w http.ResponseWriter, r *http.R
 
 	for {
 		// Get the current action status
-		actionStatus, err := a.actionStatusService.WaitForActionStatusChange()
+		actionStatus, err := a.actionStatusService.WaitForActionStatusChange(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.Error("Failed to retrieve action status:", err)
@@ -136,7 +136,7 @@ func (a *actionStatusHandler) GetTerraformOperationWs(w http.ResponseWriter, r *
 
 	for {
 		// Get the current action status
-		actionStatus, err := a.actionStatusService.WaitForTerraformOperationChange()
+		actionStatus, err := a.actionStatusService.WaitForTerraformOperationChange(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.Error("Failed to retrieve action status:", err)
@@ -162,7 +162,7 @@ func (a *actionStatusHandler) GetServerNotificationWs(w http.ResponseWriter, r *
 
 	for {
 		// Get the current server notification
-		actionStatus, err := a.actionStatusService.WaitForServerNotificationChange()
+		actionStatus, err := a.actionStatusService.WaitForServerNotificationChange(r.Context())
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.Error("Failed to retrieve server notification:", err)
