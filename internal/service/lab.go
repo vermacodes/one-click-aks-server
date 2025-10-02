@@ -63,13 +63,13 @@ func (l *labService) SetLabInRedis(ctx context.Context, lab entity.LabType) erro
 
 	for i := range lab.Template.KubernetesClusters {
 		if lab.Template.KubernetesClusters[i].KubernetesVersion == "" {
-			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion(context.Background())
+			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion(ctx)
 		}
 	}
 
 	for i := range lab.Template.AroClusters {
 		if lab.Template.AroClusters[i].Version == "" {
-			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion(context.Background())
+			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion(ctx)
 		}
 	}
 
@@ -206,7 +206,7 @@ func (l *labService) HelperDefaultLab(ctx context.Context) (entity.LabType, erro
 
 	var defaultKubernetesClusters = []entity.TfvarKubernetesClusterType{
 		{
-			KubernetesVersion:       l.kVersionService.GetDefaultVersion(context.Background()),
+			KubernetesVersion:       l.kVersionService.GetDefaultVersion(ctx),
 			NetworkPlugin:           "kubenet",
 			NetworkPolicy:           "null",
 			NetworkPluginMode:       "null",

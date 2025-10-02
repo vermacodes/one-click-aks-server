@@ -1,14 +1,10 @@
 package handler
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"strings"
-	"time"
 
+	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/entity"
-	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
@@ -105,50 +101,6 @@ var logStreamUpgrader = websocket.Upgrader{
 	},
 }
 
-// authenticateWebSocketConnection handles WebSocket authentication via messages
-func (l *logStreamHandler) authenticateWebSocketConnection(ws *websocket.Conn) (string, error) {
-	// Set read timeout for authentication
-	ws.SetReadDeadline(time.Now().Add(30 * time.Second))
-
-	var authMsg entity.WSMessage
-	if err := ws.ReadJSON(&authMsg); err != nil {
-		return "", fmt.Errorf("failed to read auth message: %w", err)
-	}
-
-	if authMsg.Type != entity.WSMsgTypeAuth {
-		return "", fmt.Errorf("expected auth message, got: %s", authMsg.Type)
-	}
-
-	// Extract auth data
-	authDataBytes, err := json.Marshal(authMsg.Data)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal auth data: %w", err)
-	}
-
-	var authData entity.WSAuthMessage
-	if err := json.Unmarshal(authDataBytes, &authData); err != nil {
-		return "", fmt.Errorf("failed to unmarshal auth data: %w", err)
-	}
-
-	if authData.Token == "" {
-		return "", fmt.Errorf("no token provided")
-	}
-
-	// Remove Bearer prefix if present
-	token := strings.TrimPrefix(authData.Token, "Bearer ")
-
-	// Extract user principal from token
-	userPrincipal, err := helper.GetUserPrincipalFromMSALAuthToken(token)
-	if err != nil {
-		return "", fmt.Errorf("failed to extract user principal: %w", err)
-	}
-
-	// Clear read timeout after successful authentication
-	ws.SetReadDeadline(time.Time{})
-
-	return userPrincipal, nil
-}
-
 // sendMessage sends a structured message via WebSocket
 func (l *logStreamHandler) sendMessage(ws *websocket.Conn, msgType entity.WSMessageType, data interface{}) error {
 	msg := entity.WSMessage{
@@ -177,7 +129,7 @@ func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 	logging.LogInfo(r.Context(), "webSocket connection established, waiting for authentication")
 
 	// Wait for authentication message
-	userID, err := l.authenticateWebSocketConnection(ws)
+	userID, err := auth.AuthenticateWebSocketConnection(ws)
 	if err != nil {
 		logging.LogError(r.Context(), "webSocket authentication failed", "error", err)
 		l.sendErrorMessage(ws, "Authentication failed: "+err.Error())

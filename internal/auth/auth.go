@@ -2,16 +2,24 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"one-click-aks-server/internal/config"
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"
 	"golang.org/x/exp/slog"
+
+	"github.com/gorilla/websocket"
 )
 
 type Auth struct {
@@ -155,4 +163,48 @@ func (a *Auth) GetStorageAccountKey(subscriptionId string, resourceGroup string,
 	}
 
 	return *resp.Keys[0].Value, nil
+}
+
+// AuthenticateWebSocketConnection handles WebSocket authentication via messages
+func AuthenticateWebSocketConnection(ws *websocket.Conn) (string, error) {
+	// Set read timeout for authentication
+	ws.SetReadDeadline(time.Now().Add(30 * time.Second))
+
+	var authMsg entity.WSMessage
+	if err := ws.ReadJSON(&authMsg); err != nil {
+		return "", fmt.Errorf("failed to read auth message: %w", err)
+	}
+
+	if authMsg.Type != entity.WSMsgTypeAuth {
+		return "", fmt.Errorf("expected auth message, got: %s", authMsg.Type)
+	}
+
+	// Extract auth data
+	authDataBytes, err := json.Marshal(authMsg.Data)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal auth data: %w", err)
+	}
+
+	var authData entity.WSAuthMessage
+	if err := json.Unmarshal(authDataBytes, &authData); err != nil {
+		return "", fmt.Errorf("failed to unmarshal auth data: %w", err)
+	}
+
+	if authData.Token == "" {
+		return "", fmt.Errorf("no token provided")
+	}
+
+	// Remove Bearer prefix if present
+	token := strings.TrimPrefix(authData.Token, "Bearer ")
+
+	// Extract user principal from token
+	userPrincipal, err := helper.GetUserPrincipalFromMSALAuthToken(token)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract user principal: %w", err)
+	}
+
+	// Clear read timeout after successful authentication
+	ws.SetReadDeadline(time.Time{})
+
+	return userPrincipal, nil
 }

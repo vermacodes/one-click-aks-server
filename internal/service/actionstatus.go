@@ -19,6 +19,7 @@ func NewActionStatusService(actionStatusRepository entity.ActionStatusRepository
 }
 
 func (a *actionStatusService) GetActionStatus(ctx context.Context) (entity.ActionStatus, error) {
+	logging.LogInfo(ctx, "getting action status")
 	actionStatus := entity.ActionStatus{}
 	val, err := a.actionStatusRepository.GetActionStatus(ctx)
 	if err != nil {
@@ -45,6 +46,7 @@ func (a *actionStatusService) GetActionStatus(ctx context.Context) (entity.Actio
 }
 
 func (a *actionStatusService) SetActionStatus(ctx context.Context, actionStatus entity.ActionStatus) error {
+	logging.LogInfo(ctx, "setting action status")
 	val, err := json.Marshal(actionStatus)
 	if err != nil {
 		logging.LogError(ctx, "not able to marshal object to string", "error", err)
@@ -59,6 +61,7 @@ func (a *actionStatusService) SetActionStatus(ctx context.Context, actionStatus 
 }
 
 func (a *actionStatusService) SetActionStart(ctx context.Context) error {
+	logging.LogInfo(ctx, "setting action status start")
 	actionStatus, err := a.GetActionStatus(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get current action status", "error", err)
@@ -77,6 +80,7 @@ func (a *actionStatusService) SetActionStart(ctx context.Context) error {
 }
 
 func (a *actionStatusService) SetActionEnd(ctx context.Context) error {
+	logging.LogInfo(ctx, "setting action status end")
 	actionStatus, err := a.GetActionStatus(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get current action status", "error", err)
@@ -95,6 +99,7 @@ func (a *actionStatusService) SetActionEnd(ctx context.Context) error {
 }
 
 func (a *actionStatusService) WaitForActionStatusChange(ctx context.Context) (entity.ActionStatus, error) {
+	logging.LogInfo(ctx, "waiting for action status change")
 	actionStatus := entity.ActionStatus{}
 	val, err := a.actionStatusRepository.WaitForActionStatusChange(ctx)
 	if err != nil {
@@ -111,6 +116,7 @@ func (a *actionStatusService) WaitForActionStatusChange(ctx context.Context) (en
 }
 
 func (a *actionStatusService) SetTerraformOperation(ctx context.Context, terraformOperation entity.TerraformOperation) error {
+	logging.LogInfo(ctx, "setting terraform operation")
 	val, err := json.Marshal(terraformOperation)
 	if err != nil {
 		logging.LogError(ctx, "not able to marshal object to string", "error", err)
@@ -125,6 +131,7 @@ func (a *actionStatusService) SetTerraformOperation(ctx context.Context, terrafo
 }
 
 func (a *actionStatusService) GetTerraformOperation(ctx context.Context) (entity.TerraformOperation, error) {
+	logging.LogInfo(ctx, "getting terraform operation")
 	terraformOperation := entity.TerraformOperation{}
 	val, err := a.actionStatusRepository.GetTerraformOperation(ctx)
 	if err != nil {
@@ -141,6 +148,7 @@ func (a *actionStatusService) GetTerraformOperation(ctx context.Context) (entity
 }
 
 func (a *actionStatusService) WaitForTerraformOperationChange(ctx context.Context) (entity.TerraformOperation, error) {
+	logging.LogInfo(ctx, "waiting for terraform operation change")
 	terraformOperation := entity.TerraformOperation{}
 	val, err := a.actionStatusRepository.WaitForTerraformOperationChange(ctx)
 	if err != nil {
@@ -157,6 +165,7 @@ func (a *actionStatusService) WaitForTerraformOperationChange(ctx context.Contex
 }
 
 func (a *actionStatusService) SetServerNotification(ctx context.Context, serverNotification entity.ServerNotification) error {
+	logging.LogInfo(ctx, "setting server notification")
 	val, err := json.Marshal(serverNotification)
 	if err != nil {
 		logging.LogError(ctx, "not able to marshal object to string", "error", err)
@@ -171,6 +180,7 @@ func (a *actionStatusService) SetServerNotification(ctx context.Context, serverN
 }
 
 func (a *actionStatusService) GetServerNotification(ctx context.Context) (entity.ServerNotification, error) {
+	logging.LogInfo(ctx, "getting server notification")
 	serverNotification := entity.ServerNotification{}
 	val, err := a.actionStatusRepository.GetServerNotification(ctx)
 	if err != nil {
@@ -187,6 +197,7 @@ func (a *actionStatusService) GetServerNotification(ctx context.Context) (entity
 }
 
 func (a *actionStatusService) WaitForServerNotificationChange(ctx context.Context) (entity.ServerNotification, error) {
+	logging.LogInfo(ctx, "waiting for server notification change")
 	serverNotification := entity.ServerNotification{}
 	val, err := a.actionStatusRepository.WaitForServerNotificationChange(ctx)
 	if err != nil {

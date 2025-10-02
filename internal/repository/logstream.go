@@ -15,8 +15,6 @@ func NewLogStreamRepository() entity.LogStreamRepository {
 	return &logStreamRepository{}
 }
 
-var logStreamCtx = context.Background()
-
 func newLogStreamRedisClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -48,7 +46,7 @@ func (l *logStreamRepository) WaitForLogsChange(ctx context.Context) (string, er
 	defer rdb.Close()
 
 	for {
-		msg, err := rdb.ReceiveMessage(logStreamCtx)
+		msg, err := rdb.ReceiveMessage(ctx)
 		if err != nil {
 			return "", err
 		}
