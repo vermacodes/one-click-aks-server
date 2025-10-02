@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -24,19 +25,19 @@ func newActionStatusRedisClient() *redis.Client {
 
 func (a *actionStatusRepository) GetActionStatus(ctx context.Context) (string, error) {
 	rdb := newActionStatusRedisClient()
-	return rdb.Get(ctx, "actionstatus").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus").Result()
 }
 
 func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string) error {
 	rdb := newActionStatusRedisClient()
 
 	// Set the value in redis.
-	if err := rdb.Set(ctx, "actionstatus", val, 0).Err(); err != nil {
+	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus", val, 0).Err(); err != nil {
 		return err
 	}
 
 	// Publish the value to the pubsub channel.
-	if err := rdb.Publish(ctx, "redis-action-status-pubsub-channel", val).Err(); err != nil {
+	if err := rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel", val).Err(); err != nil {
 		return err
 	}
 
@@ -44,7 +45,7 @@ func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string
 }
 
 func (a *actionStatusRepository) WaitForActionStatusChange(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(ctx, "redis-action-status-pubsub-channel")
+	rdb := newActionStatusRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel")
 	defer rdb.Close()
 
 	for {
