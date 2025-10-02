@@ -7,6 +7,7 @@ import (
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/exp/slog"
@@ -69,7 +70,7 @@ func (d *deploymentHandler) GetMyDeployments(c *gin.Context) {
 	authToken = strings.Split(authToken, "Bearer ")[1]
 	userPrincipal, _ := helper.GetUserPrincipalFromMSALAuthToken(authToken)
 
-	deployments, err := d.deploymentService.GetMyDeployments(userPrincipal)
+	deployments, err := d.deploymentService.GetMyDeployments(c.Request.Context(), userPrincipal)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,7 +83,7 @@ func (d *deploymentHandler) GetDeployment(c *gin.Context) {
 	userId := c.Param("userId")
 	workspace := c.Param("workspace")
 	subscriptionId := c.Param("subscriptionId")
-	deployment, err := d.deploymentService.GetDeployment(userId, workspace, subscriptionId)
+	deployment, err := d.deploymentService.GetDeployment(c.Request.Context(), userId, workspace, subscriptionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,7 +99,7 @@ func (d *deploymentHandler) SelectDeployment(c *gin.Context) {
 		return
 	}
 
-	if err := d.deploymentService.SelectDeployment(deployment); err != nil {
+	if err := d.deploymentService.SelectDeployment(c.Request.Context(), deployment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -121,7 +122,7 @@ func (d *deploymentHandler) UpsertDeployment(c *gin.Context) {
 	deployment.DeploymentId = userPrincipal + "-" + deployment.DeploymentWorkspace + "-" + deployment.DeploymentSubscriptionId
 	deployment.DeploymentUserId = userPrincipal
 
-	if err := d.deploymentService.UpsertDeployment(deployment); err != nil {
+	if err := d.deploymentService.UpsertDeployment(c.Request.Context(), deployment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -141,7 +142,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	authToken = strings.Split(authToken, "Bearer ")[1]
 	userPrincipal, _ := helper.GetUserPrincipalFromMSALAuthToken(authToken)
 
-	deployment, err := d.deploymentService.GetDeployment(userPrincipal, workspace, subscriptionId)
+	deployment, err := d.deploymentService.GetDeployment(c.Request.Context(), userPrincipal, workspace, subscriptionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -163,11 +164,15 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
+
+		// background context with values for long running operations independent of http request.
+		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 		if err := d.actionStatusService.SetActionStart(); err != nil {
 			slog.Error("error setting action start ", err)
 		}
 
-		if err := d.terraformService.Destroy(deployment.DeploymentLab); err != nil {
+		if err := d.terraformService.Destroy(bgCtx, deployment.DeploymentLab); err != nil {
 			terraformOperation.Status = entity.DestroyFailed
 		} else {
 			terraformOperation.Status = entity.DestroyCompleted
@@ -179,7 +184,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 		}
 
 		// Delete the deployment
-		if err := d.deploymentService.DeleteDeployment(userPrincipal, workspace, subscriptionId); err != nil {
+		if err := d.deploymentService.DeleteDeployment(bgCtx, userPrincipal, workspace, subscriptionId); err != nil {
 			slog.Error("error deleting deployment ", err)
 		}
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -51,7 +52,7 @@ func (t *terraformHandler) Init(c *gin.Context) {
 	// Start the long-running operation in a goroutine
 	go func() {
 		t.actionStatusService.SetActionStart()
-		if err := t.terraformService.Init(); err != nil {
+		if err := t.terraformService.Init(logging.CreateBackgroundContextWithValues(c.Request.Context())); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.InitFailed)
 		} else {
@@ -93,7 +94,7 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 	// Start the long-running operation in a goroutine
 	go func() {
 		t.actionStatusService.SetActionStart()
-		if err := t.terraformService.Plan(c.Request.Context(), lab); err != nil {
+		if err := t.terraformService.Plan(logging.CreateBackgroundContextWithValues(c.Request.Context()), lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.PlanFailed)
 		} else {
@@ -133,14 +134,15 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 	go func() {
 		deployment.DeploymentStatus = entity.DeploymentInProgress
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
-		if err := t.deploymentService.UpsertDeployment(deployment); err != nil {
+		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
 		t.actionStatusService.SetActionStart()
 		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.terraformService.Apply(lab); err != nil {
+		if err := t.terraformService.Apply(bgCtx, lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.DeploymentFailed) + ". " + err.Error()
 			notification.AutoClose = 5000
@@ -154,7 +156,7 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 			slog.Error("Error setting server notification", err)
 		}
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
-		if err := t.deploymentService.UpsertDeployment(deployment); err != nil {
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
 		if err := t.actionStatusService.SetActionEnd(); err != nil {
@@ -196,7 +198,7 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 			notification.Message = mode + " failed : Not able to update action status."
 			return
 		}
-		if err := t.terraformService.Extend(lab, mode); err != nil {
+		if err := t.terraformService.Extend(logging.CreateBackgroundContextWithValues(c.Request.Context()), lab, mode); err != nil {
 			notification.NotificationType = entity.Error
 			notification.AutoClose = 5000
 			notification.Message = mode + " failed. " + err.Error()
@@ -235,14 +237,16 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 	// Start the long-running operation in a goroutine
 	go func() {
 		deployment.DeploymentStatus = entity.DestroyInProgress
-		if err := t.deploymentService.UpsertDeployment(deployment); err != nil {
+		bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
 		t.actionStatusService.SetActionStart()
 		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.terraformService.Destroy(lab); err != nil {
+
+		if err := t.terraformService.Destroy(bgCtx, lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.DestroyFailed)
 			deployment.DeploymentStatus = entity.DestroyFailed
@@ -254,7 +258,7 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		if err := t.actionStatusService.SetServerNotification(notification); err != nil {
 			slog.Error("Error setting server notification", err)
 		}
-		if err := t.deploymentService.UpsertDeployment(deployment); err != nil {
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			slog.Error("Error updating deployment", err)
 		}
 		if err := t.actionStatusService.SetActionEnd(); err != nil {

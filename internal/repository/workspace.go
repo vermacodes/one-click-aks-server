@@ -21,8 +21,6 @@ func NewTfWorkspaceRepository(appConfig *config.Config) entity.WorkspaceReposito
 	}
 }
 
-var tfWorkspaceCtx = context.Background()
-
 func newTfWorkspaceRedisClient() *redis.Client {
 	return redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -31,7 +29,7 @@ func newTfWorkspaceRedisClient() *redis.Client {
 	})
 }
 
-func (t *tfWorkspaceRepository) List(storageAccountName string) (string, error) {
+func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
 	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
@@ -59,37 +57,37 @@ func (t *tfWorkspaceRepository) List(storageAccountName string) (string, error) 
 	return string(out), err
 }
 
-func (t *tfWorkspaceRepository) GetListFromRedis() (string, error) {
+func (t *tfWorkspaceRepository) GetListFromRedis(ctx context.Context) (string, error) {
 	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(tfWorkspaceCtx, "terraformWorkspaces").Result()
+	return rdb.Get(ctx, "terraformWorkspaces").Result()
 }
 
-func (t *tfWorkspaceRepository) AddListToRedis(val string) {
+func (t *tfWorkspaceRepository) AddListToRedis(ctx context.Context, val string) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(tfWorkspaceCtx, "terraformWorkspaces", val, 0)
+	rdb.Set(ctx, "terraformWorkspaces", val, 0)
 }
 
-func (t *tfWorkspaceRepository) DeleteListFromRedis() {
+func (t *tfWorkspaceRepository) DeleteListFromRedis(ctx context.Context) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(tfWorkspaceCtx, "terraformWorkspaces")
+	rdb.Del(ctx, "terraformWorkspaces")
 }
 
-func (t *tfWorkspaceRepository) Add(workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Workspace) error {
 	_, err := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "new", workspace.Name).Output()
 	return err
 }
 
-func (t *tfWorkspaceRepository) Select(workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Workspace) error {
 	_, err := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "select", workspace.Name).Output()
 	return err
 }
 
-func (t *tfWorkspaceRepository) Delete(workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Workspace) error {
 	_, err := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "delete", workspace.Name).Output()
 	return err
 }
 
-func (t *tfWorkspaceRepository) Resources(storageAccountName string) (string, error) {
+func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountName string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
 	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
@@ -117,17 +115,17 @@ func (t *tfWorkspaceRepository) Resources(storageAccountName string) (string, er
 	return string(out), err
 }
 
-func (t *tfWorkspaceRepository) GetResourcesFromRedis() (string, error) {
+func (t *tfWorkspaceRepository) GetResourcesFromRedis(ctx context.Context) (string, error) {
 	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(tfWorkspaceCtx, "terraformResources").Result()
+	return rdb.Get(ctx, "terraformResources").Result()
 }
 
-func (t *tfWorkspaceRepository) AddResourcesToRedis(val string) {
+func (t *tfWorkspaceRepository) AddResourcesToRedis(ctx context.Context, val string) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(tfWorkspaceCtx, "terraformResources", val, 0)
+	rdb.Set(ctx, "terraformResources", val, 0)
 }
 
-func (t *tfWorkspaceRepository) DeleteResourcesFromRedis() {
+func (t *tfWorkspaceRepository) DeleteResourcesFromRedis(ctx context.Context) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(tfWorkspaceCtx, "terraformResources")
+	rdb.Del(ctx, "terraformResources")
 }

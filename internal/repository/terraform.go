@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,10 +12,10 @@ import (
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/Rican7/conjson"
 	"github.com/Rican7/conjson/transform"
-	"golang.org/x/exp/slog"
 )
 
 type terraformRepository struct {
@@ -27,7 +28,7 @@ func NewTerraformRepository(appConfig *config.Config) entity.TerraformRepository
 	}
 }
 
-func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, action string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.TfvarConfigType, action string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
 
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
@@ -65,7 +66,7 @@ func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, acti
 		// Set the environment variable of resource.
 		encoded, _ := json.Marshal(conjson.NewMarshaler(value.Interface(), transform.ConventionalKeys()))
 
-		slog.Debug("Field :" + field.Name + " Encoded String : " + string(encoded))
+		logging.LogError(ctx, "Field :"+field.Name+" Encoded String : "+string(encoded))
 
 		// If a variable doesn't exist, just skip it and let terraform default do the magic.
 		if string(encoded) != "null" {
@@ -89,7 +90,7 @@ func (t *terraformRepository) TerraformAction(tfvar entity.TfvarConfigType, acti
 	return cmd, rPipe, wPipe, nil
 }
 
-func (t *terraformRepository) ExecuteScript(script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
 	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
@@ -131,7 +132,7 @@ func (t *terraformRepository) ExecuteScript(script string, mode string, storageA
 	return cmd, rPipe, wPipe, nil
 }
 
-func (t *terraformRepository) UpdateAssignment(userId string, labId string, status string) error {
+func (t *terraformRepository) UpdateAssignment(ctx context.Context, userId string, labId string, status string) error {
 
 	// http call to actlabs-hub
 	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"assignment/"+userId+"/"+labId+"/"+status, nil)
@@ -157,7 +158,7 @@ func (t *terraformRepository) UpdateAssignment(userId string, labId string, stat
 	return nil
 }
 
-func (t *terraformRepository) UpdateChallenge(userId string, labId string, status string) error {
+func (t *terraformRepository) UpdateChallenge(ctx context.Context, userId string, labId string, status string) error {
 
 	// http call to actlabs-hub
 	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"challenge/"+userId+"/"+labId+"/"+status, nil)

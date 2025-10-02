@@ -248,3 +248,17 @@ func LogWarn(ctx context.Context, msg string, args ...any) {
 	r.Add(args...)
 	_ = logger.Handler().Handle(ctx, r)
 }
+
+// CreateBackgroundContextWithValues creates a background context preserving trace and user IDs
+func CreateBackgroundContextWithValues(sourceCtx context.Context) context.Context {
+	bgCtx := context.Background()
+
+	if traceID := GetTraceID(sourceCtx); traceID != "" {
+		bgCtx = context.WithValue(bgCtx, TraceIDKey, traceID)
+	}
+	if userID := GetUserID(sourceCtx); userID != "" {
+		bgCtx = WithUserID(bgCtx, userID)
+	}
+
+	return bgCtx
+}

@@ -95,11 +95,11 @@ func GinLoggerWithConfig(config LoggingConfig) gin.HandlerFunc {
 
 		// Log based on determined level
 		logAttributes := []any{
+			"path", path,
 			"status", statusCode,
 			"latency", latency.String(),
 			"client_ip", clientIP,
 			"method", method,
-			"path", path,
 			"body_size", bodySize,
 		}
 

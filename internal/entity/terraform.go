@@ -8,14 +8,14 @@ import (
 
 type TerraformService interface {
 	// Terraform Init
-	Init() error
+	Init(ctx context.Context) error
 
 	// Streams logs
 	Plan(ctx context.Context, lab LabType) error
 
 	// Apply terraform and then run extend script if any
 	// This streams logs.
-	Apply(LabType) error
+	Apply(ctx context.Context, lab LabType) error
 
 	// Apply terraform and then run extend script if any
 	// This is async and doesn't stream logs.
@@ -24,7 +24,7 @@ type TerraformService interface {
 	// Executes shell script to run extension of infra.
 	// runs against selected workspace. This doesn't send any response body
 	// and logs are streamed.
-	Extend(LabType, string) error
+	Extend(ctx context.Context, lab LabType, mode string) error
 
 	// Executes shell script to run extension of infra.
 	// runs against selected workspace. This is async and doesn't stream logs.
@@ -32,7 +32,7 @@ type TerraformService interface {
 
 	// destroy the resources in current workspace.
 	// Streams logs
-	Destroy(LabType) error
+	Destroy(ctx context.Context, lab LabType) error
 
 	// destroy the resources in current workspace.
 	// This is async and doesn't stream logs.
@@ -43,14 +43,14 @@ type TerraformService interface {
 	// and logs are streamed.
 	// Validate(LabType) error
 
-	UpdateAssignment(userId string, labId string, status string) error
-	UpdateChallenge(userId string, labId string, status string) error
+	UpdateAssignment(ctx context.Context, userId string, labId string, status string) error
+	UpdateChallenge(ctx context.Context, userId string, labId string, status string) error
 }
 
 type TerraformRepository interface {
-	TerraformAction(TfvarConfigType, string, string) (*exec.Cmd, *os.File, *os.File, error)
-	ExecuteScript(script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error)
+	TerraformAction(ctx context.Context, tfvar TfvarConfigType, action string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error)
+	ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error)
 
-	UpdateAssignment(userId string, labId string, status string) error
-	UpdateChallenge(userId string, labId string, status string) error
+	UpdateAssignment(ctx context.Context, userId string, labId string, status string) error
+	UpdateChallenge(ctx context.Context, userId string, labId string, status string) error
 }
