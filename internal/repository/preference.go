@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
@@ -48,8 +47,8 @@ func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storag
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to create blob client",
-			slog.String("serviceURL", serviceURL),
-			slog.String("error", err.Error()),
+			"serviceURL", serviceURL,
+			"error", err.Error(),
 		)
 		return "", err
 	}
@@ -58,9 +57,9 @@ func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storag
 	downloadResponse, err := client.DownloadStream(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to download stream",
-			slog.String("containerName", "repro-project-preferences"),
-			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
-			slog.String("error", err.Error()),
+			"containerName", "repro-project-preferences",
+			"blobName", p.appConfig.UserAlias+"-preference.json",
+			"error", err.Error(),
 		)
 		return "", err
 	}
@@ -70,7 +69,7 @@ func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storag
 	actualBlobData, err := io.ReadAll(downloadResponse.Body)
 	if err != nil {
 		logging.LogError(ctx, "not able to read all from download response",
-			slog.String("error", err.Error()),
+			"error", err.Error(),
 		)
 		return "", err
 	}
@@ -90,8 +89,8 @@ func (p *preferenceRepository) PutPreferenceInBlob(ctx context.Context, val stri
 	client, err := azblob.NewClient(serviceURL, p.auth.Cred, nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to create blob client",
-			slog.String("serviceURL", serviceURL),
-			slog.String("error", err.Error()),
+			"serviceURL", serviceURL,
+			"error", err.Error(),
 		)
 		return err
 	}
@@ -100,9 +99,9 @@ func (p *preferenceRepository) PutPreferenceInBlob(ctx context.Context, val stri
 	_, err = client.UploadBuffer(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", []byte(val), nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to upload buffer",
-			slog.String("containerName", "repro-project-preferences"),
-			slog.String("blobName", p.appConfig.UserAlias+"-preference.json"),
-			slog.String("error", err.Error()),
+			"containerName", "repro-project-preferences",
+			"blobName", p.appConfig.UserAlias+"-preference.json",
+			"error", err.Error(),
 		)
 		return err
 	}

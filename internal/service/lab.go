@@ -7,8 +7,6 @@ import (
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/logging"
-
-	"golang.org/x/exp/slog"
 )
 
 type labService struct {
@@ -40,12 +38,12 @@ func (l *labService) GetLabFromRedis(ctx context.Context) (entity.LabType, error
 
 		defaultLab, err := l.HelperDefaultLab(ctx)
 		if err != nil {
-			logging.LogError(ctx, "not able to generate default lab", err)
+			logging.LogError(ctx, "not able to generate default lab", "error", err)
 			return lab, err
 		}
 
 		if err := l.SetLabInRedis(ctx, defaultLab); err != nil {
-			logging.LogError(ctx, "not able to set default lab in redis.", err)
+			logging.LogError(ctx, "not able to set default lab in redis.", "error", err)
 		}
 
 		return defaultLab, nil
@@ -53,7 +51,7 @@ func (l *labService) GetLabFromRedis(ctx context.Context) (entity.LabType, error
 	logging.LogDebug(ctx, "lab found in redis")
 
 	if err := json.Unmarshal([]byte(out), &lab); err != nil {
-		logging.LogError(ctx, "not able to unmarshal lab in redis to object", err)
+		logging.LogError(ctx, "not able to unmarshal lab in redis to object", "error", err)
 	}
 
 	return lab, nil
@@ -75,12 +73,12 @@ func (l *labService) SetLabInRedis(ctx context.Context, lab entity.LabType) erro
 
 	val, err := json.Marshal(lab)
 	if err != nil || string(val) == "" {
-		logging.LogError(ctx, "not able to marshal object", err)
+		logging.LogError(ctx, "not able to marshal object", "error", err)
 		return err
 	}
 
 	if err := l.labRepository.SetLabInRedis(ctx, string(val)); err != nil {
-		logging.LogError(ctx, "not able set lab in redis", err)
+		logging.LogError(ctx, "not able set lab in redis", "error", "error", err)
 		return err
 	}
 
@@ -93,16 +91,16 @@ func (l *labService) DeleteLabFromRedis(ctx context.Context) error {
 
 func (l *labService) GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (entity.LabType, error) {
 	logging.LogInfo(ctx, "getting protected lab",
-		slog.String("typeOfLab", typeOfLab),
-		slog.String("labId", labId),
+		"typeOfLab", typeOfLab,
+		"labId", labId,
 	)
 
 	lab := entity.LabType{}
 
 	if labId == "" || typeOfLab == "" {
-		slog.Error("required typeOfLab or labId is empty",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
+		logging.LogError(ctx, "required typeOfLab or labId is empty",
+			"typeOfLab", typeOfLab,
+			"labId", labId,
 		)
 		return lab, fmt.Errorf("required typeOfLab or labId is empty")
 	}
@@ -110,36 +108,36 @@ func (l *labService) GetProtectedLab(ctx context.Context, typeOfLab string, labI
 	typeOfLab = l.OriginalTypeOfLab(ctx, typeOfLab)
 
 	logging.LogInfo(ctx, "getting protected lab (original typeOfLab)",
-		slog.String("typeOfLab", typeOfLab),
-		slog.String("labId", labId),
+		"typeOfLab", typeOfLab,
+		"labId", labId,
 	)
 
 	// http call to actlabs-auth
 	labString, err := l.labRepository.GetProtectedLab(ctx, typeOfLab, labId)
 	if err != nil {
 		logging.LogError(ctx, "not able to get protected lab request",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
-			slog.String("error", err.Error()),
+			"typeOfLab", typeOfLab,
+			"labId", labId,
+			"error", err.Error(),
 		)
 		return lab, fmt.Errorf("not able to get protected %s", err.Error())
 	}
 
 	if err := json.Unmarshal([]byte(labString), &lab); err != nil {
 		logging.LogError(ctx, "not able to unmarshal lab object",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
-			slog.String("error", err.Error()),
+			"typeOfLab", typeOfLab,
+			"labId", labId,
+			"error", err.Error(),
 		)
 		return lab, fmt.Errorf("not able to unmarshal lab object %s", err.Error())
 	}
 
 	if lab.ExtendScript == "redacted" || lab.ExtendScript == "" {
 		logging.LogError(ctx, "got the lab, but the extend script is redacted or empty",
-			slog.String("labId", labId),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("extendScript", lab.ExtendScript),
+			"labId", labId,
+			"labName", lab.Name,
+			"labType", lab.Type,
+			"extendScript", lab.ExtendScript,
 		)
 
 		return lab, fmt.Errorf("got the lab, but the extend script is redacted or empty")

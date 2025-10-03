@@ -71,7 +71,7 @@ func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location strin
 	// Set the response body in Redis
 	err = k.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions", string(body), 0).Err()
 	if err != nil {
-		logging.LogError(ctx, "failed to set kubernetes versions in redis", err)
+		logging.LogError(ctx, "failed to set kubernetes versions in redis", "error", err)
 	}
 
 	return string(body), nil
