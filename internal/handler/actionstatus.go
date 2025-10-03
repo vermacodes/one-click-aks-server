@@ -20,9 +20,6 @@ func NewActionStatusHandler(r *gin.Engine, service entity.ActionStatusService) {
 		actionStatusService: service,
 	}
 
-	r.GET("/actionstatus", handler.GetActionStatus)
-	r.PUT("/actionstatus", handler.SetActionStatus)
-	r.GET("/terraform/status", handler.GetTerraformOperationStatus)
 	r.GET("/terraform/statusws", func(c *gin.Context) {
 		handler.GetTerraformOperationWs(c.Writer, c.Request)
 	})
@@ -33,15 +30,20 @@ func NewActionStatusHandler(r *gin.Engine, service entity.ActionStatusService) {
 	r.GET("/serverNotificationWs", func(c *gin.Context) {
 		handler.GetServerNotificationWs(c.Writer, c.Request)
 	})
+
+	r.GET("/secureServerNotificationWs", func(c *gin.Context) {
+		handler.GetServerNotificationWs(c.Writer, c.Request)
+	})
 }
 
 func NewAuthActionStatusHandler(r *gin.RouterGroup, service entity.ActionStatusService) {
 	handler := &actionStatusHandler{
 		actionStatusService: service,
 	}
-	r.GET("/secureServerNotificationWs", func(c *gin.Context) {
-		handler.GetServerNotificationWs(c.Writer, c.Request)
-	})
+
+	r.GET("/actionstatus", handler.GetActionStatus)
+	r.PUT("/actionstatus", handler.SetActionStatus)
+	r.GET("/terraform/status", handler.GetTerraformOperationStatus)
 }
 
 func (a *actionStatusHandler) GetActionStatus(c *gin.Context) {

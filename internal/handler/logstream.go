@@ -20,13 +20,20 @@ func NewLogStreamHandler(r *gin.Engine, service entity.LogStreamService) {
 		logStreamService: service,
 	}
 
+	r.GET("/logsws", func(c *gin.Context) {
+		handler.GetLogsWs(c.Writer, c.Request)
+	})
+}
+
+func NewAuthLogStreamHandler(r *gin.RouterGroup, service entity.LogStreamService) {
+	handler := &logStreamHandler{
+		logStreamService: service,
+	}
+
 	r.GET("/logs", handler.GetLogs)
 	r.PUT("/logs", handler.SetLogs)
 	r.PUT("/logs/append", handler.AppendLogs)
 	r.DELETE("/logs", handler.DeleteLogs)
-	r.GET("/logsws", func(c *gin.Context) {
-		handler.GetLogsWs(c.Writer, c.Request)
-	})
 }
 
 func (l *logStreamHandler) GetLogs(c *gin.Context) {

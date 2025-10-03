@@ -115,6 +115,7 @@ func main() {
 	handler.NewActionStatusHandler(router, actionStatusService)
 	handler.NewRedisHandler(actionStatusRouter, redisService)
 	// handler.NewLoginHandler(router, authService)
+	handler.NewAuthLogStreamHandler(authRouter, logStreamService)
 	handler.NewAuthActionStatusHandler(authRouter, actionStatusService)
 	handler.NewAuthHandler(authRouter, authService)
 	// handler.NewAuthWithActionStatusHandler(authWithActionRouter, authService)
