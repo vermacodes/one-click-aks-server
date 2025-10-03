@@ -10,7 +10,6 @@ import (
 	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slog"
 )
 
 type deploymentHandler struct {
@@ -158,7 +157,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	fmt.Println(terraformOperation)
 
 	if err := d.actionStatusService.SetTerraformOperation(c.Request.Context(), terraformOperation); err != nil {
-		slog.Error("error setting terraform operation ", err)
+		logging.LogError(c.Request.Context(), "error setting terraform operation", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
@@ -168,7 +167,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	// Start the long-running operation in a goroutine
 	go func() {
 		if err := d.actionStatusService.SetActionStart(bgCtx); err != nil {
-			slog.Error("error setting action start ", err)
+			logging.LogError(bgCtx, "error setting action start", "error", err)
 		}
 
 		if err := d.terraformService.Destroy(bgCtx, deployment.DeploymentLab); err != nil {
@@ -179,16 +178,16 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 
 		terraformOperation.InProgress = false
 		if err := d.actionStatusService.SetTerraformOperation(bgCtx, terraformOperation); err != nil {
-			slog.Error("error setting terraform operation ", err)
+			logging.LogError(bgCtx, "error setting terraform operation", "error", err)
 		}
 
 		// Delete the deployment
 		if err := d.deploymentService.DeleteDeployment(bgCtx, userPrincipal, workspace, subscriptionId); err != nil {
-			slog.Error("error deleting deployment ", err)
+			logging.LogError(bgCtx, "error deleting deployment", "error", err)
 		}
 
 		if err := d.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			slog.Error("error setting action end ", err)
+			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 
 	}()

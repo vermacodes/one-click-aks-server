@@ -1,9 +1,10 @@
 package service
 
 import (
-	"one-click-aks-server/internal/entity"
+	"context"
 
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 )
 
 type authService struct {
@@ -17,9 +18,10 @@ func NewAuthService(authRepository entity.AuthRepository) entity.AuthService {
 }
 
 func (a *authService) GetSubscriptionDetails() (entity.Account, error) {
+	ctx := context.Background()
 	subscription, err := a.authRepository.GetSubscriptionDetails()
 	if err != nil {
-		slog.Error("not able to get subscription details", err)
+		logging.LogError(ctx, "not able to get subscription details", "error", err)
 		return entity.Account{}, err
 	}
 
