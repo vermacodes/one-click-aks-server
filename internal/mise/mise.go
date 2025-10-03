@@ -62,7 +62,7 @@ func (s Server) DelegateAuthToContainer(authHeader, uri, method, ipAddr string) 
 	if s.VerboseLogging {
 		json, err := json.MarshalIndent(result, "", "   ")
 		if err != nil {
-			logging.LogError(context.Background(), "error marshalling json of result object err=%v\n", err)
+			logging.LogError(context.Background(), "error marshalling json of result object", "error", err)
 		} else {
 			logging.LogDebug(context.Background(), "result struct:\n%s", string(json))
 		}

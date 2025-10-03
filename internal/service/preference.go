@@ -55,7 +55,7 @@ func (p *preferenceService) GetPreference(ctx context.Context) (entity.Preferenc
 
 	// Add preference to redis.
 	if err := p.preferenceRepository.PutPreferenceInRedis(ctx, preferenceString); err != nil {
-		logging.LogError(ctx, "not able to put preference in redis.", err)
+		logging.LogError(ctx, "not able to put preference in redis", "error", err)
 	}
 
 	if err := json.Unmarshal([]byte(preferenceString), &preference); err != nil {
@@ -76,7 +76,7 @@ func (p *preferenceService) SetPreference(ctx context.Context, preference entity
 
 	out, err := json.Marshal(preference)
 	if err != nil || string(out) == "" {
-		logging.LogError(ctx, "Error marshaling json", err)
+		logging.LogError(ctx, "error marshaling json", "error", err)
 		return err
 	}
 

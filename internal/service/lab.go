@@ -78,7 +78,7 @@ func (l *labService) SetLabInRedis(ctx context.Context, lab entity.LabType) erro
 	}
 
 	if err := l.labRepository.SetLabInRedis(ctx, string(val)); err != nil {
-		logging.LogError(ctx, "not able set lab in redis", "error", "error", err)
+		logging.LogError(ctx, "not able set lab in redis", "error", err)
 		return err
 	}
 
@@ -232,7 +232,7 @@ func (l *labService) HelperDefaultLab(ctx context.Context) (entity.LabType, erro
 
 	extendScript, err := l.labRepository.GetExtendScriptTemplate(ctx)
 	if err != nil {
-		logging.LogError(ctx, "Not able to get extend script template. Defaulting to empty string.", err)
+		logging.LogError(ctx, "not able to get extend script template, defaulting to empty string", "error", err)
 		extendScript = ""
 	}
 

@@ -8,6 +8,7 @@ import (
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 	"os"
 	"os/exec"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/storage/armstorage"
-	"golang.org/x/exp/slog"
 
 	"github.com/gorilla/websocket"
 )
@@ -32,7 +32,8 @@ func NewAuth(appConfig *config.Config) *Auth {
 
 	if appConfig.UseServicePrincipal {
 
-		slog.Debug("Using service principal for auth")
+		ctx := context.Background()
+		logging.LogDebug(ctx, "using service principal for auth")
 
 		cred, err = azidentity.NewClientSecretCredential(appConfig.AzureTenantID, appConfig.AzureClientID, appConfig.AzureClientSecret, nil)
 		if err != nil {
@@ -43,7 +44,8 @@ func NewAuth(appConfig *config.Config) *Auth {
 
 	} else if appConfig.UseMsi {
 
-		slog.Debug("Using managed identity for auth")
+		ctx := context.Background()
+		logging.LogDebug(ctx, "using managed identity for auth")
 
 		cred, err = azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(appConfig.AzureClientID),
@@ -57,7 +59,8 @@ func NewAuth(appConfig *config.Config) *Auth {
 
 	} else {
 
-		slog.Debug("Using default auth")
+		ctx := context.Background()
+		logging.LogDebug(ctx, "using default auth")
 
 		cred, err = azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
@@ -70,57 +73,59 @@ func NewAuth(appConfig *config.Config) *Auth {
 
 // login using msi
 func AzureCLILoginByMSI(username string, subscriptionId string) {
+	ctx := context.Background()
 	out, err := exec.Command("bash", "-c", "az login --identity --username "+username+" --verbose").Output()
 	if err != nil {
-		slog.Info("az login --identity --username " + username + " output: " + string(out))
-		slog.Error("not able to login using msi "+username, err)
+		logging.LogInfo(ctx, "az login --identity --username "+username+" output", "output", string(out))
+		logging.LogError(ctx, "not able to login using msi", "username", username, "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az login --identity --username " + username + " output: " + string(out))
+	logging.LogInfo(ctx, "az login --identity --username "+username+" output", "output", string(out))
 
 	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
 	if err != nil {
-		slog.Error("not able to set subscription", err)
+		logging.LogError(ctx, "not able to set subscription", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az account set --subscription output: " + string(out))
+	logging.LogInfo(ctx, "az account set --subscription output", "output", string(out))
 
 	out, err = exec.Command("bash", "-c", "az account show").Output()
 	if err != nil {
-		slog.Error("not able to show account", err)
+		logging.LogError(ctx, "not able to show account", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az account show output: " + string(out))
+	logging.LogInfo(ctx, "az account show output", "output", string(out))
 }
 
 // login using service principal
 func AzureCLILoginByServicePrincipal(username string, password string, subscriptionId string, tenant string) {
+	ctx := context.Background()
 	out, err := exec.Command("bash", "-c", "az login --service-principal -u "+username+" -p "+password+" --tenant "+tenant).Output()
 	if err != nil {
-		slog.Error("not able to login using service principal", err)
+		logging.LogError(ctx, "not able to login using service principal", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az login --service-principal output: " + string(out))
+	logging.LogInfo(ctx, "az login --service-principal output", "output", string(out))
 
 	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
 	if err != nil {
-		slog.Error("not able to set subscription", err)
+		logging.LogError(ctx, "not able to set subscription", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az account set --subscription output: " + string(out))
+	logging.LogInfo(ctx, "az account set --subscription output", "output", string(out))
 
 	out, err = exec.Command("bash", "-c", "az account show").Output()
 	if err != nil {
-		slog.Error("not able to show account", err)
+		logging.LogError(ctx, "not able to show account", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("az account show output: " + string(out))
+	logging.LogInfo(ctx, "az account show output", "output", string(out))
 }
 
 func (a *Auth) GetARMAccessToken() (string, error) {
@@ -145,20 +150,21 @@ func (a *Auth) GetStorageAccessToken() (string, error) {
 }
 
 func (a *Auth) GetStorageAccountKey(subscriptionId string, resourceGroup string, storageAccountName string) (string, error) {
+	ctx := context.Background()
 	client, err := armstorage.NewAccountsClient(subscriptionId, a.Cred, nil)
 	if err != nil {
-		slog.Error("not able to create client factory to get storage account key", err)
+		logging.LogError(ctx, "not able to create client factory to get storage account key", "error", err)
 		return "", err
 	}
 
 	resp, err := client.ListKeys(context.Background(), resourceGroup, storageAccountName, nil)
 	if err != nil {
-		slog.Error("not able to get storage account key", err)
+		logging.LogError(ctx, "not able to get storage account key", "error", err)
 		return "", err
 	}
 
 	if len(resp.Keys) == 0 {
-		slog.Error("no storage account key found")
+		logging.LogError(ctx, "no storage account key found")
 		return "", nil
 	}
 

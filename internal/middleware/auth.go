@@ -12,7 +12,6 @@ import (
 	"one-click-aks-server/internal/mise"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slog"
 )
 
 func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStream entity.LogStreamService) gin.HandlerFunc {
@@ -31,9 +30,9 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			var validationErr *mise.ErrTokenValidation
 			if errors.As(err, &validationErr) {
 				// can access validationErr.ErrorDescription, validationErr.WWWAuthenticate, validationErr.StatusCode
-				slog.Error("token validation error", validationErr)
+				logging.LogError(c.Request.Context(), "token validation error", "error", validationErr)
 			} else {
-				slog.Error("error while delegating auth to container", err)
+				logging.LogError(c.Request.Context(), "error while delegating auth to container", "error", err)
 			}
 
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication failed"})
@@ -42,7 +41,7 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 
 		userName, ok := result.SubjectClaims["preferred_username"]
 		if !ok || len(userName) == 0 {
-			slog.Error("preferred_username claim not found in subject claims", nil)
+			logging.LogError(c.Request.Context(), "preferred_username claim not found in subject claims")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim not found in token"})
 			return
 		}
@@ -50,7 +49,7 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 		// Keeping the custom auth validation in place, just in case MISE isn't working as expected.
 		isAADToken, err := helper.VerifyToken(authToken)
 		if err != nil || !isAADToken {
-			slog.Error("invalid auth token", err)
+			logging.LogError(c.Request.Context(), "invalid auth token", "error", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid auth token" + err.Error()})
 			return
 		}
@@ -86,19 +85,6 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "principal mismatch : token issued to " + userPrincipal + " but found user " + os.Getenv("ARM_USER_PRINCIPAL_NAME")})
 			return
 		}
-
-		// loginStatus, err := authService.ServicePrincipalLoginStatus()
-		// if err != nil {
-		// 	slog.Error("not able to get auth status", err)
-		// 	c.AbortWithStatus(http.StatusUnauthorized)
-		// 	return
-		// }
-
-		// if !loginStatus.IsLoggedIn {
-		// 	slog.Info("authentication required")
-		// 	c.AbortWithStatus(http.StatusUnauthorized)
-		// 	return
-		// }
 
 		os.Setenv("ACTLABS_AUTH_TOKEN", authToken) // used by repositories to authenticate with other services
 

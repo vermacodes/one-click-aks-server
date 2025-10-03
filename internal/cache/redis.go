@@ -4,8 +4,9 @@ import (
 	"context"
 	"os"
 
+	"one-click-aks-server/internal/logging"
+
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/exp/slog"
 )
 
 func NewRedisClient() *redis.Client {
@@ -17,7 +18,7 @@ func NewRedisClient() *redis.Client {
 
 	_, err := client.Ping(context.Background()).Result()
 	if err != nil {
-		slog.Error("failed to connect to redis", err)
+		logging.LogError(context.Background(), "failed to connect to redis", "error", err)
 		os.Exit(1)
 	}
 

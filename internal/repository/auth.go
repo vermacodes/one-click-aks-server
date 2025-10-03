@@ -7,10 +7,10 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/subscription/armsubscription"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/exp/slog"
 )
 
 type authRepository struct {
@@ -64,11 +64,11 @@ func (a *authRepository) GetSubscriptionDetails() (*armsubscription.Subscription
 func (a *authRepository) getSubscriptionFromRedis() (*armsubscription.Subscription, bool) {
 	subscription, err := a.rdb.Get(context.Background(), "subscription").Result()
 	if err == nil {
-		slog.Debug("subscription found in redis.")
+		logging.LogDebug(context.Background(), "subscription found in redis")
 		var sub armsubscription.Subscription
 		err = json.Unmarshal([]byte(subscription), &sub)
 		if err != nil {
-			slog.Error("failed to unmarshal subscription", err)
+			logging.LogError(context.Background(), "failed to unmarshal subscription", "error", err)
 			return nil, false
 		}
 		return &sub, true

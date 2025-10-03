@@ -1,14 +1,15 @@
 package repository
 
 import (
+	"context"
 	"os"
 
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 func setEnvironmentVariable(key string, value string) {
 	err := os.Setenv(key, value)
 	if err != nil {
-		slog.Error("not able to set environment variable", err)
+		logging.LogError(context.Background(), "not able to set environment variable", "error", err)
 	}
 }
