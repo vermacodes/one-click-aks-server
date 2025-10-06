@@ -21,7 +21,7 @@ func NewRedisHandler(r *gin.RouterGroup, redisService entity.RedisService) {
 }
 
 func (r *RedisHandler) DeleteServerCache(c *gin.Context) {
-	if err := r.RedisService.ResetServerCache(); err != nil {
+	if err := r.RedisService.ResetServerCache(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

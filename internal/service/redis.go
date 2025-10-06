@@ -17,10 +17,9 @@ func NewRedisService(redisRepository entity.RedisRepository) entity.RedisService
 	}
 }
 
-func (r *redisService) ResetServerCache() error {
-	ctx := context.Background()
+func (r *redisService) ResetServerCache(ctx context.Context) error {
 	logging.LogInfo(ctx, "resetting server cache")
-	if err := r.redisRepository.ResetServerCache(); err != nil {
+	if err := r.redisRepository.ResetServerCache(ctx); err != nil {
 		logging.LogError(ctx, "not able to reset server cache", "error", err)
 		return err
 	}
