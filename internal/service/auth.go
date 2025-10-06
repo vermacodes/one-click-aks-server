@@ -17,9 +17,8 @@ func NewAuthService(authRepository entity.AuthRepository) entity.AuthService {
 	}
 }
 
-func (a *authService) GetSubscriptionDetails() (entity.Account, error) {
-	ctx := context.Background()
-	subscription, err := a.authRepository.GetSubscriptionDetails()
+func (a *authService) GetSubscriptionDetails(ctx context.Context) (entity.Account, error) {
+	subscription, err := a.authRepository.GetSubscriptionDetails(ctx)
 	if err != nil {
 		logging.LogError(ctx, "not able to get subscription details", "error", err)
 		return entity.Account{}, err
@@ -30,5 +29,14 @@ func (a *authService) GetSubscriptionDetails() (entity.Account, error) {
 		IsDefault: true,
 		Name:      *subscription.DisplayName,
 	}, nil
+}
 
+func (a *authService) GetSubscriptionId(ctx context.Context) string {
+	subscriptionId, err := a.authRepository.GetSubscriptionId(ctx)
+	if err != nil {
+		logging.LogError(ctx, "not able to get subscription id", "error", err)
+		return ""
+	}
+
+	return subscriptionId
 }
