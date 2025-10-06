@@ -18,10 +18,11 @@ type kVersionService struct {
 	authService        entity.AuthService
 }
 
-func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceService entity.PreferenceService) entity.KVersionService {
+func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceService entity.PreferenceService, authService entity.AuthService) entity.KVersionService {
 	return &kVersionService{
 		kVersionRepository: kVersionRepo,
 		preferenceService:  preferenceService,
+		authService:        authService,
 	}
 }
 

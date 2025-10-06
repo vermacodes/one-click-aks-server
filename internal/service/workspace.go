@@ -15,11 +15,12 @@ type workspaceService struct {
 	authService           entity.AuthService
 }
 
-func NewWorkspaceService(workspaceRepo entity.WorkspaceRepository, storageAccountService entity.StorageAccountService, actionStatusService entity.ActionStatusService) entity.WorkspaceService {
+func NewWorkspaceService(workspaceRepo entity.WorkspaceRepository, storageAccountService entity.StorageAccountService, actionStatusService entity.ActionStatusService, authService entity.AuthService) entity.WorkspaceService {
 	return &workspaceService{
 		workspaceRepository:   workspaceRepo,
 		storageAccountService: storageAccountService,
 		actionStatusService:   actionStatusService,
+		authService:           authService,
 	}
 }
 

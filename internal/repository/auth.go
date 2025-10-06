@@ -157,7 +157,7 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 
 // Get subscription from redis, return ok if found
 func (a *authRepository) getSubscriptionFromRedis(ctx context.Context) (*armsubscription.Subscription, bool) {
-	subscription, err := a.rdb.Get(ctx, "subscription").Result()
+	subscription, err := a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-subscription").Result()
 	if err == nil {
 		logging.LogDebug(ctx, "subscription found in redis")
 		var sub armsubscription.Subscription
@@ -177,7 +177,7 @@ func (a *authRepository) addSubscriptionToRedis(ctx context.Context, subscriptio
 	if err != nil {
 		return fmt.Errorf("failed to marshal subscription: %w", err)
 	}
-	err = a.rdb.Set(ctx, "subscription", subscriptionJson, 0).Err()
+	err = a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-subscription", subscriptionJson, 0).Err()
 	if err != nil {
 		return fmt.Errorf("failed to set subscription in redis: %w", err)
 	}

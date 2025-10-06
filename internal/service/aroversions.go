@@ -13,10 +13,11 @@ type aroVersionService struct {
 	authService          entity.AuthService
 }
 
-func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preferenceService entity.PreferenceService) entity.AROVersionService {
+func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preferenceService entity.PreferenceService, authService entity.AuthService) entity.AROVersionService {
 	return &aroVersionService{
 		aroVersionRepository: aroVersionRepo,
 		preferenceService:    preferenceService,
+		authService:          authService,
 	}
 }
 
