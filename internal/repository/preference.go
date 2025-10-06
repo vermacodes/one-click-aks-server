@@ -53,12 +53,14 @@ func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storag
 		return "", err
 	}
 
+	userAlias := helper.GetUserAliasFromContext(ctx)
+
 	// Download the blob
-	downloadResponse, err := client.DownloadStream(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", nil)
+	downloadResponse, err := client.DownloadStream(ctx, "repro-project-preferences", userAlias+"-preference.json", nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to download stream",
 			"containerName", "repro-project-preferences",
-			"blobName", p.appConfig.UserAlias+"-preference.json",
+			"blobName", userAlias+"-preference.json",
 			"error", err.Error(),
 		)
 		return "", err
@@ -95,12 +97,14 @@ func (p *preferenceRepository) PutPreferenceInBlob(ctx context.Context, val stri
 		return err
 	}
 
+	userAlias := helper.GetUserAliasFromContext(ctx)
+
 	// Upload the blob
-	_, err = client.UploadBuffer(ctx, "repro-project-preferences", p.appConfig.UserAlias+"-preference.json", []byte(val), nil)
+	_, err = client.UploadBuffer(ctx, "repro-project-preferences", userAlias+"-preference.json", []byte(val), nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to upload buffer",
 			"containerName", "repro-project-preferences",
-			"blobName", p.appConfig.UserAlias+"-preference.json",
+			"blobName", userAlias+"-preference.json",
 			"error", err.Error(),
 		)
 		return err

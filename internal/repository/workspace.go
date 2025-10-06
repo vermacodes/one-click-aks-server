@@ -37,7 +37,7 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
-	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	setEnvironmentVariable("tf_state_file_name", helper.GetUserAliasFromContext(ctx)+"-terraform.tfstate")
 	if t.appConfig.UseMsi {
 		setEnvironmentVariable("ARM_USE_MSI", "true")
 		setEnvironmentVariable("ARM_USE_AZUREAD", "true")
@@ -95,7 +95,7 @@ func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountNam
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
-	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	setEnvironmentVariable("tf_state_file_name", helper.GetUserAliasFromContext(ctx)+"-terraform.tfstate")
 	if t.appConfig.UseMsi {
 		setEnvironmentVariable("ARM_USE_MSI", "true")
 		setEnvironmentVariable("ARM_USE_AZUREAD", "true")
@@ -118,15 +118,15 @@ func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountNam
 
 func (t *tfWorkspaceRepository) GetResourcesFromRedis(ctx context.Context) (string, error) {
 	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(ctx, "terraformResources").Result()
+	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources").Result()
 }
 
 func (t *tfWorkspaceRepository) AddResourcesToRedis(ctx context.Context, val string) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(ctx, "terraformResources", val, 0)
+	rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources", val, 0)
 }
 
 func (t *tfWorkspaceRepository) DeleteResourcesFromRedis(ctx context.Context) {
 	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(ctx, "terraformResources")
+	rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources")
 }

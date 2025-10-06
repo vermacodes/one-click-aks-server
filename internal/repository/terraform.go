@@ -36,7 +36,7 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
-	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	setEnvironmentVariable("tf_state_file_name", helper.GetUserAliasFromContext(ctx)+"-terraform.tfstate")
 	setEnvironmentVariable("TF_VAR_aro_rp_first_party_service_principal_id", t.appConfig.AroRpFirstPartySpID)
 	if t.appConfig.UseMsi {
 		setEnvironmentVariable("ARM_USE_MSI", "true")
@@ -97,7 +97,7 @@ func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, 
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
-	setEnvironmentVariable("tf_state_file_name", t.appConfig.UserAlias+"-terraform.tfstate")
+	setEnvironmentVariable("tf_state_file_name", helper.GetUserAliasFromContext(ctx)+"-terraform.tfstate")
 	setEnvironmentVariable("SCRIPT_MODE", mode)
 	setEnvironmentVariable("TF_VAR_aro_rp_first_party_service_principal_id", t.appConfig.AroRpFirstPartySpID)
 	if t.appConfig.UseMsi {
