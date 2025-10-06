@@ -28,11 +28,11 @@ func NewTerraformRepository(appConfig *config.Config) entity.TerraformRepository
 	}
 }
 
-func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.TfvarConfigType, action string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.TfvarConfigType, action string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error) {
 
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
-	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
+	setEnvironmentVariable("subscription_id", subscriptionId)
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
@@ -44,13 +44,13 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
 		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 
@@ -90,10 +90,10 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 	return cmd, rPipe, wPipe, nil
 }
 
-func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
-	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
+	setEnvironmentVariable("subscription_id", subscriptionId)
 	setEnvironmentVariable("resource_group_name", t.appConfig.ActLabsHubResourceGroupName)
 	setEnvironmentVariable("storage_account_name", t.appConfig.ActLabsHubStorageAccountName)
 	setEnvironmentVariable("container_name", "repro-project-tf-state-files")
@@ -106,13 +106,13 @@ func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, 
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
 		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 

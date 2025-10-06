@@ -15,6 +15,7 @@ import (
 type kVersionService struct {
 	kVersionRepository entity.KVersionRepository
 	preferenceService  entity.PreferenceService
+	authService        entity.AuthService
 }
 
 func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceService entity.PreferenceService) entity.KVersionService {
@@ -35,7 +36,7 @@ func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.Kubernete
 	}
 
 	logging.LogDebug(ctx, "getting kubernetes versions for location "+preference.AzureRegion)
-	out, err := k.kVersionRepository.GetOrchestrator(ctx, preference.AzureRegion)
+	out, err := k.kVersionRepository.GetOrchestrator(ctx, preference.AzureRegion, k.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		logging.LogError(ctx, "not able to get orchestrator", err)
 		return kubernetesVersions, err

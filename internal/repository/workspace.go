@@ -30,7 +30,7 @@ func newTfWorkspaceRedisClient() *redis.Client {
 	})
 }
 
-func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName string) (string, error) {
+func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
 	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
@@ -44,13 +44,13 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
 		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 
@@ -88,7 +88,7 @@ func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Wor
 	return err
 }
 
-func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountName string) (string, error) {
+func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountName string, subscriptionId string) (string, error) {
 	setEnvironmentVariable("terraform_directory", "tf")
 	setEnvironmentVariable("root_directory", os.ExpandEnv("$ROOT_DIR"))
 	setEnvironmentVariable("subscription_id", t.appConfig.ActLabsHubSubscriptionID)
@@ -102,13 +102,13 @@ func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountNam
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_MSI_ENDPOINT", "http://localhost:"+os.ExpandEnv("$ARM_MSI_API_PROXY_PORT")+"/msi/token")
 		setEnvironmentVariable("ARM_MSI_API_VERSION", "2019-08-01")
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 	if t.appConfig.UseServicePrincipal {
 		setEnvironmentVariable("ARM_CLIENT_ID", t.appConfig.AzureClientID)
 		setEnvironmentVariable("ARM_CLIENT_SECRET", t.appConfig.AzureClientSecret)
-		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", t.appConfig.SubscriptionID)
+		setEnvironmentVariable("ARM_SUBSCRIPTION_ID", subscriptionId)
 		setEnvironmentVariable("ARM_TENANT_ID", t.appConfig.AzureTenantID)
 	}
 

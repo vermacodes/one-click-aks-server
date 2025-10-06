@@ -10,6 +10,7 @@ import (
 type aroVersionService struct {
 	aroVersionRepository entity.AROVersionRepository
 	preferenceService    entity.PreferenceService
+	authService          entity.AuthService
 }
 
 func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preferenceService entity.PreferenceService) entity.AROVersionService {
@@ -30,7 +31,7 @@ func (a *aroVersionService) GetAROVersions(ctx context.Context) (entity.AROVersi
 	}
 
 	logging.LogInfo(ctx, "getting aro versions for location "+preference.AzureRegion)
-	out, err := a.aroVersionRepository.GetAROVersions(ctx, preference.AzureRegion)
+	out, err := a.aroVersionRepository.GetAROVersions(ctx, preference.AzureRegion, a.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		logging.LogError(ctx, "not able to get ARO versions for location "+preference.AzureRegion, err)
 		return aroVersions, err

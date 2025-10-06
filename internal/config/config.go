@@ -11,10 +11,10 @@ import (
 )
 
 type Config struct {
-	ActLabsHubSubscriptionID        string
-	ActLabsHubResourceGroupName     string
-	ActLabsHubStorageAccountName    string
-	SubscriptionID                  string
+	ActLabsHubSubscriptionID     string
+	ActLabsHubResourceGroupName  string
+	ActLabsHubStorageAccountName string
+	// SubscriptionID                  string
 	KubernetesVersionApiUrlTemplate string
 	AroVersionApiUrlTemplate        string
 	AroRpFirstPartySpID             string
@@ -76,12 +76,12 @@ func NewConfig() *Config {
 	}
 	logging.LogDebug(context.Background(), "ARM_USER_PRINCIPAL_NAME: "+armUserPrincipalName)
 
-	subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		logging.LogError(context.Background(), "AZURE_SUBSCRIPTION_ID not set")
-		os.Exit(1)
-	}
-	logging.LogDebug(context.Background(), "AZURE_SUBSCRIPTION_ID: "+subscriptionID)
+	// subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	// if subscriptionID == "" {
+	// 	logging.LogError(context.Background(), "AZURE_SUBSCRIPTION_ID not set")
+	// 	os.Exit(1)
+	// }
+	// logging.LogDebug(context.Background(), "AZURE_SUBSCRIPTION_ID: "+subscriptionID)
 
 	authTokenAud := os.Getenv("AUTH_TOKEN_AUD")
 	if authTokenAud == "" {
@@ -232,10 +232,10 @@ func NewConfig() *Config {
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
-		ActLabsHubSubscriptionID:        actLabsHubSubscriptionID,
-		ActLabsHubResourceGroupName:     actLabsHubResourceGroupName,
-		ActLabsHubStorageAccountName:    actLabsHubStorageAccountName,
-		SubscriptionID:                  subscriptionID,
+		ActLabsHubSubscriptionID:     actLabsHubSubscriptionID,
+		ActLabsHubResourceGroupName:  actLabsHubResourceGroupName,
+		ActLabsHubStorageAccountName: actLabsHubStorageAccountName,
+		// SubscriptionID:                  subscriptionID,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
 		AroVersionApiUrlTemplate:        aroVersionApiUrlTemplate,
 		AroRpFirstPartySpID:             aroRpFirstPartySpID,

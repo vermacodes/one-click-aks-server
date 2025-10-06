@@ -31,7 +31,7 @@ type WorkspaceService interface {
 // Persistence of this is take care of by terraform itself.
 type WorkspaceRepository interface {
 	// List all the workspaces. Workspaces is the output sent in string.
-	List(ctx context.Context, storageAccountName string) (string, error)
+	List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error)
 
 	GetListFromRedis(ctx context.Context) (string, error)
 	AddListToRedis(ctx context.Context, val string)
@@ -52,7 +52,7 @@ type WorkspaceRepository interface {
 
 	// Gets the resources in current selected workspace.
 	// The Resources are just a string and thus returned as is.
-	Resources(ctx context.Context, storageAccount string) (string, error)
+	Resources(ctx context.Context, storageAccount string, subscriptionId string) (string, error)
 
 	GetResourcesFromRedis(ctx context.Context) (string, error)
 	AddResourcesToRedis(ctx context.Context, val string)

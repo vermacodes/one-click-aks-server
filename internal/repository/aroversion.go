@@ -31,7 +31,7 @@ func NewAROVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *red
 	}
 }
 
-func (a *aroVersionRepository) GetAROVersions(ctx context.Context, location string) (string, error) {
+func (a *aroVersionRepository) GetAROVersions(ctx context.Context, location string, subscriptionId string) (string, error) {
 
 	// Check if the orchestrator versions are already cached in Redis
 	aroVersions, err := a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-aroVersions-"+location).Result()
@@ -48,7 +48,7 @@ func (a *aroVersionRepository) GetAROVersions(ctx context.Context, location stri
 	}
 
 	// Make HTTP request to retrieve ARO versions
-	url := fmt.Sprintf(a.appConfig.AroVersionApiUrlTemplate, a.appConfig.SubscriptionID, location)
+	url := fmt.Sprintf(a.appConfig.AroVersionApiUrlTemplate, subscriptionId, location)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		logging.LogError(ctx, "not able to make http get request to get ARO versions",

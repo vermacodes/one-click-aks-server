@@ -242,7 +242,7 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 
 	helperEnsureAro(ctx, &tfvar)
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName)
+	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func helperExecuteScript(ctx context.Context, t *terraformService, script string
 		return fmt.Errorf("not able to get storage account name")
 	}
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(ctx, script, mode, storageAccountName)
+	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(ctx, script, mode, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		logging.LogError(ctx, "not able to run terraform script",
 			"error", err,

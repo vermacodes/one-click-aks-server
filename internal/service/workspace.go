@@ -12,6 +12,7 @@ type workspaceService struct {
 	workspaceRepository   entity.WorkspaceRepository
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	actionStatusService   entity.ActionStatusService
+	authService           entity.AuthService
 }
 
 func NewWorkspaceService(workspaceRepo entity.WorkspaceRepository, storageAccountService entity.StorageAccountService, actionStatusService entity.ActionStatusService) entity.WorkspaceService {
@@ -41,7 +42,7 @@ func (w *workspaceService) List(ctx context.Context) ([]entity.Workspace, error)
 		return workspaces, err
 	}
 
-	val, err = w.workspaceRepository.List(ctx, storageAccountName)
+	val, err = w.workspaceRepository.List(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		logging.LogError(ctx, "Not able to list workspaces", "error", err)
 		return workspaces, err
@@ -131,7 +132,7 @@ func (w *workspaceService) Resources(ctx context.Context) (string, error) {
 		logging.LogError(ctx, "Not able to get storage account name", "error", err)
 		return "", err
 	}
-	resources, err = w.workspaceRepository.Resources(ctx, storageAccountName)
+	resources, err = w.workspaceRepository.Resources(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		logging.LogError(ctx, "not able to get resources", "error", err)
 	}

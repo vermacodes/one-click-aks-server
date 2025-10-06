@@ -50,5 +50,5 @@ type KVersionService interface {
 
 type KVersionRepository interface {
 	//GetDefaultOrchestrator(string) (string, error)
-	GetOrchestrator(ctx context.Context, region string) (string, error)
+	GetOrchestrator(ctx context.Context, region string, subscriptionId string) (string, error)
 }

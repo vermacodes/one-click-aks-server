@@ -40,7 +40,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 			log.Fatalf("Failed to initialize service principal auth: %v", err)
 		}
 
-		AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.SubscriptionID, appConfig.AzureTenantID)
+		// AzureCLILoginByServicePrincipal(appConfig.AzureClientID, appConfig.AzureClientSecret, appConfig.SubscriptionID, appConfig.AzureTenantID)
 
 	} else if appConfig.UseMsi {
 
@@ -55,7 +55,7 @@ func NewAuth(appConfig *config.Config) *Auth {
 			log.Fatalf("Failed to initialize managed identity auth: %v", err)
 		}
 
-		AzureCLILoginByMSI(appConfig.AzureClientID, appConfig.SubscriptionID)
+		// AzureCLILoginByMSI(appConfig.AzureClientID, appConfig.SubscriptionID)
 
 	} else {
 

@@ -49,7 +49,7 @@ func (d *DeploymentService) GetDeployments(ctx context.Context) ([]entity.Deploy
 func (d *DeploymentService) GetMyDeployments(ctx context.Context, userId string) ([]entity.Deployment, error) {
 
 	// get all deployments
-	deployments, err := d.deploymentRepository.GetMyDeployments(ctx, userId, d.config.SubscriptionID)
+	deployments, err := d.deploymentRepository.GetMyDeployments(ctx, userId, d.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +57,8 @@ func (d *DeploymentService) GetMyDeployments(ctx context.Context, userId string)
 	// filter deployments for active account
 	var filteredDeployments []entity.Deployment
 	for _, deployment := range deployments {
-		logging.LogDebug(ctx, "Deployment Filter", "workspace", deployment.DeploymentWorkspace, "subscription", deployment.DeploymentSubscriptionId, "active", d.config.SubscriptionID)
-		if deployment.DeploymentSubscriptionId == d.config.SubscriptionID {
+		logging.LogDebug(ctx, "Deployment Filter", "workspace", deployment.DeploymentWorkspace, "subscription", deployment.DeploymentSubscriptionId, "active", d.authService.GetSubscriptionId(ctx))
+		if deployment.DeploymentSubscriptionId == d.authService.GetSubscriptionId(ctx) {
 			filteredDeployments = append(filteredDeployments, deployment)
 		}
 	}
@@ -74,8 +74,8 @@ func (d *DeploymentService) GetMyDeployments(ctx context.Context, userId string)
 		deployment := entity.Deployment{
 			DeploymentUserId:             userId,
 			DeploymentWorkspace:          "default",
-			DeploymentSubscriptionId:     d.config.SubscriptionID,
-			DeploymentId:                 userId + "-default-" + d.config.SubscriptionID,
+			DeploymentSubscriptionId:     d.authService.GetSubscriptionId(ctx),
+			DeploymentId:                 userId + "-default-" + d.authService.GetSubscriptionId(ctx),
 			DeploymentLab:                defaultLab,
 			DeploymentAutoDelete:         false,
 			DeploymentLifespan:           28800,
@@ -141,7 +141,7 @@ func (d *DeploymentService) SelectDeployment(ctx context.Context, deployment ent
 }
 
 func (d *DeploymentService) UpsertDeployment(ctx context.Context, deployment entity.Deployment) error {
-	deployment.DeploymentSubscriptionId = d.config.SubscriptionID
+	deployment.DeploymentSubscriptionId = d.authService.GetSubscriptionId(ctx)
 
 	// check if workspace exists, if not add it.
 	if err := checkAndAddWorkspace(ctx, d, &deployment); err != nil {

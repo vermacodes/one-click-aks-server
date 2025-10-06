@@ -22,5 +22,5 @@ type AROVersionService interface {
 
 // AROVersionRepository defines the interface for interacting with ARO version data.
 type AROVersionRepository interface {
-	GetAROVersions(ctx context.Context, location string) (string, error)
+	GetAROVersions(ctx context.Context, location string, subscriptionId string) (string, error)
 }

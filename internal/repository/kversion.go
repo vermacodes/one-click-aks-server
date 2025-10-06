@@ -30,7 +30,7 @@ func NewKVersionRepository(appConfig *config.Config, auth *auth.Auth, rdb *redis
 	}
 }
 
-func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location string) (string, error) {
+func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location string, subscriptionId string) (string, error) {
 
 	// Check if the orchestrator versions are already cached in Redis
 	kubernetesVersions, err := k.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions").Result()
@@ -44,7 +44,7 @@ func (k *kVersionRepository) GetOrchestrator(ctx context.Context, location strin
 	}
 
 	// Make HTTP request to retrieve Kubernetes versions
-	url := fmt.Sprintf(k.appConfig.KubernetesVersionApiUrlTemplate, k.appConfig.SubscriptionID, location)
+	url := fmt.Sprintf(k.appConfig.KubernetesVersionApiUrlTemplate, subscriptionId, location)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
