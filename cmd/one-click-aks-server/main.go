@@ -113,7 +113,7 @@ func main() {
 	// handlers
 	handler.NewLogStreamHandler(router, logStreamService)
 	handler.NewActionStatusHandler(router, actionStatusService)
-	handler.NewRedisHandler(actionStatusRouter, redisService)
+	handler.NewRedisHandler(authWithActionRouter, redisService)
 	// handler.NewLoginHandler(router, authService)
 	handler.NewAuthLogStreamHandler(authRouter, logStreamService)
 	handler.NewAuthActionStatusHandler(authRouter, actionStatusService)
