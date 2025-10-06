@@ -29,12 +29,12 @@ type Config struct {
 	AzureTenantID                   string
 	ActlabsHubURL                   string
 	HttpRequestTimeoutSeconds       int
-	UserAlias                       string
-	MiseEndpoint                    string
-	MiseVerboseLogging              bool
-	CorsAllowOrigins                string
-	CorsAllowMethods                string
-	CorsAllowHeaders                string
+	// UserAlias                       string
+	MiseEndpoint       string
+	MiseVerboseLogging bool
+	CorsAllowOrigins   string
+	CorsAllowMethods   string
+	CorsAllowHeaders   string
 	// Add other configuration fields as needed
 }
 
@@ -182,12 +182,12 @@ func NewConfig() *Config {
 		}
 	}
 
-	userAlias := os.Getenv("USER_ALIAS")
-	if userAlias == "" {
-		logging.LogError(context.Background(), "USER_ALIAS not set")
-		os.Exit(1)
-	}
-	logging.LogDebug(context.Background(), "USER_ALIAS: "+userAlias)
+	// userAlias := os.Getenv("USER_ALIAS")
+	// if userAlias == "" {
+	// 	logging.LogError(context.Background(), "USER_ALIAS not set")
+	// 	os.Exit(1)
+	// }
+	// logging.LogDebug(context.Background(), "USER_ALIAS: "+userAlias)
 
 	miseEndpoint := os.Getenv("MISE_ENDPOINT")
 	if miseEndpoint == "" {
@@ -250,12 +250,12 @@ func NewConfig() *Config {
 		AzureTenantID:                   azureTenantID,
 		ActlabsHubURL:                   actlabsHubURL,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
-		UserAlias:                       userAlias,
-		MiseEndpoint:                    miseEndpoint,
-		MiseVerboseLogging:              miseVerboseLogging,
-		CorsAllowOrigins:                corsAllowOrigins,
-		CorsAllowMethods:                corsAllowMethods,
-		CorsAllowHeaders:                corsAllowHeaders,
+		// UserAlias:                       userAlias,
+		MiseEndpoint:       miseEndpoint,
+		MiseVerboseLogging: miseVerboseLogging,
+		CorsAllowOrigins:   corsAllowOrigins,
+		CorsAllowMethods:   corsAllowMethods,
+		CorsAllowHeaders:   corsAllowHeaders,
 		// Add other configuration fields as needed
 	}
 }
