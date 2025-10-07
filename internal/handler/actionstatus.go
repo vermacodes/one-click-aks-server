@@ -117,8 +117,20 @@ func (a *actionStatusHandler) GetActionStatusWs(w http.ResponseWriter, r *http.R
 
 	logging.LogInfo(ctx, "action status websocket authenticated successfully", "user_id", userID)
 
-	// Don't send initial state - only send changes after connection
-	logging.LogDebug(ctx, "action status websocket ready, waiting for changes")
+	// Get initial action status and send it to client
+	initialActionStatus, err := a.actionStatusService.GetActionStatus(ctx)
+	if err != nil {
+		logging.LogError(ctx, "failed to retrieve initial action status", "error", err)
+		return
+	}
+
+	// Send the initial action status to the client
+	if err := conn.WriteJSON(initialActionStatus); err != nil {
+		logging.LogError(ctx, "failed to send initial action status to client", "error", err)
+		return
+	}
+
+	logging.LogDebug(ctx, "sent initial action status, now waiting for changes", "in_progress", initialActionStatus.InProgress)
 
 	for {
 		// Get the current action status when it changes
@@ -161,8 +173,20 @@ func (a *actionStatusHandler) GetTerraformOperationWs(w http.ResponseWriter, r *
 
 	logging.LogInfo(ctx, "terraform operation websocket authenticated successfully", "user_id", userID)
 
-	// Don't send initial state - only send changes after connection
-	logging.LogDebug(ctx, "terraform operation websocket ready, waiting for changes")
+	// Get initial terraform operation status and send it to client
+	initialTerraformOperation, err := a.actionStatusService.GetTerraformOperation(ctx)
+	if err != nil {
+		logging.LogError(ctx, "failed to retrieve initial terraform operation status", "error", err)
+		return
+	}
+
+	// Send the initial terraform operation status to the client
+	if err := conn.WriteJSON(initialTerraformOperation); err != nil {
+		logging.LogError(ctx, "failed to send initial terraform operation status to client", "error", err)
+		return
+	}
+
+	logging.LogDebug(ctx, "sent initial terraform operation, now waiting for changes", "operation_id", initialTerraformOperation.OperationId, "in_progress", initialTerraformOperation.InProgress)
 
 	for {
 		// Get the current terraform operation status when it changes
