@@ -41,7 +41,7 @@ func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar en
 	// Add user-specific terraform environment variables
 	userEnvVars := map[string]string{
 		"terraform_directory":  "tf",
-		"root_directory":       os.ExpandEnv("$ROOT_DIR"),
+		"root_directory":       t.appConfig.RootDir,
 		"subscription_id":      subscriptionId,
 		"resource_group_name":  t.appConfig.ActLabsHubResourceGroupName,
 		"storage_account_name": storageAccountName,
@@ -93,7 +93,7 @@ func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar en
 // ensureUserDirectory creates user-specific directory and copies terraform files
 func (t *terraformRepository) ensureUserDirectory(ctx context.Context) (string, error) {
 	userAlias := helper.GetUserAliasFromContext(ctx)
-	userDir := filepath.Join(os.ExpandEnv("$ROOT_DIR"), "user", userAlias)
+	userDir := filepath.Join(t.appConfig.RootDir, "user", userAlias)
 
 	if err := os.MkdirAll(userDir, 0755); err != nil {
 		logging.LogError(ctx, "failed to create user directory", "dir", userDir, "error", err)
@@ -101,7 +101,7 @@ func (t *terraformRepository) ensureUserDirectory(ctx context.Context) (string, 
 	}
 
 	// Copy terraform files from /tf directory to user directory
-	tfSourceDir := filepath.Join(os.ExpandEnv("$ROOT_DIR"), "tf")
+	tfSourceDir := filepath.Join(t.appConfig.RootDir, "tf")
 	tfUserDir := filepath.Join(userDir, "tf")
 
 	if err := t.copyTerraformFiles(ctx, tfSourceDir, tfUserDir); err != nil {
@@ -182,7 +182,7 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 
 	// Execute terraform script with appropriate action in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
-	cmd := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/terraform.sh", action)
+	cmd := exec.Command(t.appConfig.RootDir+"/scripts/terraform.sh", action)
 	cmd.Dir = tfDir
 	cmd.Env = userEnv
 

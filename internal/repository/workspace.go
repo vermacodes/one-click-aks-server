@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
@@ -18,11 +19,13 @@ import (
 
 type tfWorkspaceRepository struct {
 	appConfig *config.Config
+	rdb       *redis.Client
 }
 
 func NewTfWorkspaceRepository(appConfig *config.Config) entity.WorkspaceRepository {
 	return &tfWorkspaceRepository{
 		appConfig: appConfig,
+		rdb:       cache.NewRedisClient(),
 	}
 }
 
@@ -36,7 +39,7 @@ func (t *tfWorkspaceRepository) buildWorkspaceEnvironment(ctx context.Context, s
 	// Add user-specific terraform environment variables
 	userEnvVars := map[string]string{
 		"terraform_directory":  "tf",
-		"root_directory":       os.ExpandEnv("$ROOT_DIR"),
+		"root_directory":       t.appConfig.RootDir,
 		"subscription_id":      subscriptionId,
 		"resource_group_name":  t.appConfig.ActLabsHubResourceGroupName,
 		"storage_account_name": storageAccountName,
@@ -72,7 +75,7 @@ func (t *tfWorkspaceRepository) buildWorkspaceEnvironment(ctx context.Context, s
 // ensureUserDirectory creates user-specific directory and copies tf files
 func (t *tfWorkspaceRepository) ensureUserDirectory(ctx context.Context) (string, error) {
 	userAlias := helper.GetUserAliasFromContext(ctx)
-	userDir := filepath.Join(os.ExpandEnv("$ROOT_DIR"), "user", userAlias)
+	userDir := filepath.Join(t.appConfig.RootDir, "user", userAlias)
 
 	if err := os.MkdirAll(userDir, 0755); err != nil {
 		logging.LogError(ctx, "failed to create user directory", "dir", userDir, "error", err)
@@ -80,7 +83,7 @@ func (t *tfWorkspaceRepository) ensureUserDirectory(ctx context.Context) (string
 	}
 
 	// Copy terraform files from /tf directory to user directory
-	tfSourceDir := filepath.Join(os.ExpandEnv("$ROOT_DIR"), "tf")
+	tfSourceDir := filepath.Join(t.appConfig.RootDir, "tf")
 	tfUserDir := filepath.Join(userDir, "tf")
 
 	if err := t.copyTerraformFiles(ctx, tfSourceDir, tfUserDir); err != nil {
@@ -148,14 +151,6 @@ func (t *tfWorkspaceRepository) copyFile(src, dst string) error {
 	return err
 }
 
-func newTfWorkspaceRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-}
-
 func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error) {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
@@ -168,7 +163,7 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
-	cmd := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "list")
+	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "list")
 	cmd.Dir = tfDir
 	cmd.Env = userEnv
 
@@ -177,18 +172,15 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 }
 
 func (t *tfWorkspaceRepository) GetListFromRedis(ctx context.Context) (string, error) {
-	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces").Result()
+	return t.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces").Result()
 }
 
 func (t *tfWorkspaceRepository) AddListToRedis(ctx context.Context, val string) {
-	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces", val, 0)
+	t.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces", val, 0)
 }
 
 func (t *tfWorkspaceRepository) DeleteListFromRedis(ctx context.Context) {
-	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces")
+	t.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces")
 }
 
 func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Workspace) error {
@@ -200,7 +192,7 @@ func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Worksp
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
-	cmd := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "new", workspace.Name)
+	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "new", workspace.Name)
 	cmd.Dir = tfDir
 
 	_, err = cmd.Output()
@@ -216,7 +208,7 @@ func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Wor
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
-	cmd := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "select", workspace.Name)
+	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "select", workspace.Name)
 	cmd.Dir = tfDir
 
 	_, err = cmd.Output()
@@ -232,7 +224,7 @@ func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Wor
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
-	cmd := exec.Command(os.ExpandEnv("$ROOT_DIR")+"/scripts/workspaces.sh", "delete", workspace.Name)
+	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "delete", workspace.Name)
 	cmd.Dir = tfDir
 
 	_, err = cmd.Output()
@@ -260,16 +252,13 @@ func (t *tfWorkspaceRepository) Resources(ctx context.Context, storageAccountNam
 }
 
 func (t *tfWorkspaceRepository) GetResourcesFromRedis(ctx context.Context) (string, error) {
-	rdb := newTfWorkspaceRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources").Result()
+	return t.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources").Result()
 }
 
 func (t *tfWorkspaceRepository) AddResourcesToRedis(ctx context.Context, val string) {
-	rdb := newTfWorkspaceRedisClient()
-	rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources", val, 0)
+	t.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources", val, 0)
 }
 
 func (t *tfWorkspaceRepository) DeleteResourcesFromRedis(ctx context.Context) {
-	rdb := newTfWorkspaceRedisClient()
-	rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources")
+	t.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformResources")
 }

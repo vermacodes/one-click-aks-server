@@ -12,6 +12,7 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
@@ -68,7 +69,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
@@ -191,7 +192,7 @@ func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment 
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	marshalledDeployment, err := json.Marshal(deployment)
@@ -268,7 +269,7 @@ func (d *deploymentRepository) DeleteDeployment(ctx context.Context, userId stri
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", d.appConfig.ArmUserPrincipalName)
+	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	client := &http.Client{

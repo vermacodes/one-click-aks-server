@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
@@ -10,22 +11,17 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func newRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+type RedisRepository struct {
+	rdb *redis.Client
 }
 
-type RedisRepository struct{}
-
 func NewRedisRepository() entity.RedisRepository {
-	return &RedisRepository{}
+	return &RedisRepository{
+		rdb: cache.NewRedisClient(),
+	}
 }
 
 func (r *RedisRepository) ResetServerCache(ctx context.Context) error {
-	rdb := newRedisClient()
 	userId := helper.GetUserIDFromContext(ctx)
 
 	logging.LogInfo(ctx, "attempting to reset cache for user", "user_id", userId)
@@ -41,7 +37,7 @@ func (r *RedisRepository) ResetServerCache(ctx context.Context) error {
 
 	var allKeys []string
 	for _, pattern := range patterns {
-		keys, err := rdb.Keys(ctx, pattern).Result()
+		keys, err := r.rdb.Keys(ctx, pattern).Result()
 		if err != nil {
 			logging.LogError(ctx, "failed to get keys for pattern", "pattern", pattern, "error", err)
 			continue
@@ -64,7 +60,7 @@ func (r *RedisRepository) ResetServerCache(ctx context.Context) error {
 
 	// Delete the keys if any found
 	if len(keysToDelete) > 0 {
-		err := rdb.Del(ctx, keysToDelete...).Err()
+		err := r.rdb.Del(ctx, keysToDelete...).Err()
 		if err != nil {
 			logging.LogError(ctx, "failed to delete user keys", "error", err)
 			return err

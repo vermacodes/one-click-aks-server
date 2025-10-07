@@ -11,14 +11,12 @@ import (
 )
 
 type Config struct {
-	ActLabsHubSubscriptionID     string
-	ActLabsHubResourceGroupName  string
-	ActLabsHubStorageAccountName string
-	// SubscriptionID                  string
+	ActLabsHubSubscriptionID        string
+	ActLabsHubResourceGroupName     string
+	ActLabsHubStorageAccountName    string
 	KubernetesVersionApiUrlTemplate string
 	AroVersionApiUrlTemplate        string
 	AroRpFirstPartySpID             string
-	ArmUserPrincipalName            string
 	AuthTokenAud                    string
 	AuthTokenIss                    string
 	RootDir                         string
@@ -29,12 +27,11 @@ type Config struct {
 	AzureTenantID                   string
 	ActlabsHubURL                   string
 	HttpRequestTimeoutSeconds       int
-	// UserAlias                       string
-	MiseEndpoint       string
-	MiseVerboseLogging bool
-	CorsAllowOrigins   string
-	CorsAllowMethods   string
-	CorsAllowHeaders   string
+	MiseEndpoint                    string
+	MiseVerboseLogging              bool
+	CorsAllowOrigins                string
+	CorsAllowMethods                string
+	CorsAllowHeaders                string
 	// Add other configuration fields as needed
 }
 
@@ -66,22 +63,6 @@ func NewConfig() *Config {
 		os.Exit(1)
 	}
 	logging.LogDebug(context.Background(), "ACTLABS_HUB_STORAGE_ACCOUNT_NAME: "+actLabsHubStorageAccountName)
-
-	armUserPrincipalName := os.Getenv("ARM_USER_PRINCIPAL_NAME")
-	logging.LogDebug(context.Background(), "ARM_USER_PRINCIPAL_NAME: "+armUserPrincipalName)
-
-	if armUserPrincipalName == "" {
-		logging.LogError(context.Background(), "ARM_USER_PRINCIPAL_NAME not set")
-		os.Exit(1)
-	}
-	logging.LogDebug(context.Background(), "ARM_USER_PRINCIPAL_NAME: "+armUserPrincipalName)
-
-	// subscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
-	// if subscriptionID == "" {
-	// 	logging.LogError(context.Background(), "AZURE_SUBSCRIPTION_ID not set")
-	// 	os.Exit(1)
-	// }
-	// logging.LogDebug(context.Background(), "AZURE_SUBSCRIPTION_ID: "+subscriptionID)
 
 	authTokenAud := os.Getenv("AUTH_TOKEN_AUD")
 	if authTokenAud == "" {
@@ -182,13 +163,6 @@ func NewConfig() *Config {
 		}
 	}
 
-	// userAlias := os.Getenv("USER_ALIAS")
-	// if userAlias == "" {
-	// 	logging.LogError(context.Background(), "USER_ALIAS not set")
-	// 	os.Exit(1)
-	// }
-	// logging.LogDebug(context.Background(), "USER_ALIAS: "+userAlias)
-
 	miseEndpoint := os.Getenv("MISE_ENDPOINT")
 	if miseEndpoint == "" {
 		logging.LogError(context.Background(), "MISE_ENDPOINT not set")
@@ -232,14 +206,12 @@ func NewConfig() *Config {
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
-		ActLabsHubSubscriptionID:     actLabsHubSubscriptionID,
-		ActLabsHubResourceGroupName:  actLabsHubResourceGroupName,
-		ActLabsHubStorageAccountName: actLabsHubStorageAccountName,
-		// SubscriptionID:                  subscriptionID,
+		ActLabsHubSubscriptionID:        actLabsHubSubscriptionID,
+		ActLabsHubResourceGroupName:     actLabsHubResourceGroupName,
+		ActLabsHubStorageAccountName:    actLabsHubStorageAccountName,
 		KubernetesVersionApiUrlTemplate: kubernetesVersionApiUrlTemplate,
 		AroVersionApiUrlTemplate:        aroVersionApiUrlTemplate,
 		AroRpFirstPartySpID:             aroRpFirstPartySpID,
-		ArmUserPrincipalName:            armUserPrincipalName,
 		AuthTokenAud:                    authTokenAud,
 		AuthTokenIss:                    authTokenIss,
 		RootDir:                         rootDir,
@@ -250,12 +222,11 @@ func NewConfig() *Config {
 		AzureTenantID:                   azureTenantID,
 		ActlabsHubURL:                   actlabsHubURL,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
-		// UserAlias:                       userAlias,
-		MiseEndpoint:       miseEndpoint,
-		MiseVerboseLogging: miseVerboseLogging,
-		CorsAllowOrigins:   corsAllowOrigins,
-		CorsAllowMethods:   corsAllowMethods,
-		CorsAllowHeaders:   corsAllowHeaders,
+		MiseEndpoint:                    miseEndpoint,
+		MiseVerboseLogging:              miseVerboseLogging,
+		CorsAllowOrigins:                corsAllowOrigins,
+		CorsAllowMethods:                corsAllowMethods,
+		CorsAllowHeaders:                corsAllowHeaders,
 		// Add other configuration fields as needed
 	}
 }

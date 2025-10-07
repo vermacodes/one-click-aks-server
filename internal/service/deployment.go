@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"os"
 	"strconv"
 	"time"
 
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 )
 
@@ -105,7 +105,7 @@ func (d *DeploymentService) GetSelectedDeployment(ctx context.Context) (entity.D
 	}
 
 	//Get user principal from env variable.
-	userPrincipal := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+	userPrincipal := helper.GetUserIDFromContext(ctx)
 
 	//Get all deployments.
 	deployments, err := d.GetMyDeployments(ctx, userPrincipal)
@@ -287,7 +287,7 @@ func (d *DeploymentService) PollAndDeleteDeployments(interval time.Duration) err
 
 func (d *DeploymentService) FetchDeploymentsToBeDeleted(ctx context.Context) []entity.Deployment {
 	//Get user principal from env variable.
-	userPrincipal := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+	userPrincipal := helper.GetUserIDFromContext(ctx)
 
 	//Get all deployments.
 	deployments, err := d.GetMyDeployments(ctx, userPrincipal)

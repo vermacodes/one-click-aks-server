@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"os"
+	"strconv"
 
 	"one-click-aks-server/internal/logging"
 
@@ -10,17 +11,44 @@ import (
 )
 
 func NewRedisClient() *redis.Client {
+	// Get Redis hostname from environment variable, default to localhost
+	redisHostname := os.Getenv("REDIS_HOSTNAME")
+	if redisHostname == "" {
+		redisHostname = "localhost"
+	}
+
+	// Get Redis port from environment variable, default to 6379
+	redisPort := os.Getenv("REDIS_PORT")
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+
+	// Get Redis password from environment variable
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	// Get Redis DB from environment variable, default to 0
+	redisDB := 0
+	if dbStr := os.Getenv("REDIS_DB"); dbStr != "" {
+		if db, err := strconv.Atoi(dbStr); err == nil {
+			redisDB = db
+		}
+	}
+
+	addr := redisHostname + ":" + redisPort
+
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     addr,
+		Password: redisPassword,
+		DB:       redisDB,
 	})
 
-	_, err := client.Ping(context.Background()).Result()
+	ctx := context.Background()
+	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		logging.LogError(context.Background(), "failed to connect to redis", "error", err)
+		logging.LogError(ctx, "failed to connect to redis", "addr", addr, "error", err)
 		os.Exit(1)
 	}
 
+	logging.LogInfo(ctx, "connected to redis successfully", "addr", addr, "db", redisDB)
 	return client
 }

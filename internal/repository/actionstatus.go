@@ -3,41 +3,35 @@ package repository
 import (
 	"context"
 
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type actionStatusRepository struct{}
-
-func NewActionStatusRepository() entity.ActionStatusRepository {
-	return &actionStatusRepository{}
+type actionStatusRepository struct {
+	rdb *redis.Client
 }
 
-func newActionStatusRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+func NewActionStatusRepository() entity.ActionStatusRepository {
+	return &actionStatusRepository{
+		rdb: cache.NewRedisClient(),
+	}
 }
 
 func (a *actionStatusRepository) GetActionStatus(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus").Result()
+	return a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus").Result()
 }
 
 func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string) error {
-	rdb := newActionStatusRedisClient()
-
 	// Set the value in redis.
-	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus", val, 0).Err(); err != nil {
+	if err := a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus", val, 0).Err(); err != nil {
 		return err
 	}
 
 	// Publish the value to the pubsub channel.
-	if err := rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel", val).Err(); err != nil {
+	if err := a.rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel", val).Err(); err != nil {
 		return err
 	}
 
@@ -45,7 +39,7 @@ func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string
 }
 
 func (a *actionStatusRepository) WaitForActionStatusChange(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel")
+	rdb := a.rdb.Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-action-status-pubsub-channel")
 	defer rdb.Close()
 
 	for {
@@ -59,21 +53,19 @@ func (a *actionStatusRepository) WaitForActionStatusChange(ctx context.Context) 
 }
 
 func (a *actionStatusRepository) SetTerraformOperation(ctx context.Context, val string) error {
-	rdb := newActionStatusRedisClient()
-	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraform-operation", val, 0).Err(); err != nil {
+	if err := a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraform-operation", val, 0).Err(); err != nil {
 		return err
 	}
 
-	return rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-terraform-operation-pubsub-channel", val).Err()
+	return a.rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-terraform-operation-pubsub-channel", val).Err()
 }
 
 func (a *actionStatusRepository) GetTerraformOperation(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraform-operation").Result()
+	return a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraform-operation").Result()
 }
 
 func (a *actionStatusRepository) WaitForTerraformOperationChange(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-terraform-operation-pubsub-channel")
+	rdb := a.rdb.Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-terraform-operation-pubsub-channel")
 	defer rdb.Close()
 
 	for {
@@ -87,21 +79,19 @@ func (a *actionStatusRepository) WaitForTerraformOperationChange(ctx context.Con
 }
 
 func (a *actionStatusRepository) SetServerNotification(ctx context.Context, val string) error {
-	rdb := newActionStatusRedisClient()
-	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification", val, 0).Err(); err != nil {
+	if err := a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification", val, 0).Err(); err != nil {
 		return err
 	}
 
-	return rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-server-notification-pubsub-channel", val).Err()
+	return a.rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-server-notification-pubsub-channel", val).Err()
 }
 
 func (a *actionStatusRepository) GetServerNotification(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification").Result()
+	return a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-server-notification").Result()
 }
 
 func (a *actionStatusRepository) WaitForServerNotificationChange(ctx context.Context) (string, error) {
-	rdb := newActionStatusRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-server-notification-pubsub-channel")
+	rdb := a.rdb.Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-server-notification-pubsub-channel")
 	defer rdb.Close()
 
 	for {

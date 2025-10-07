@@ -94,7 +94,7 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", a.config.ArmUserPrincipalName)
+	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 

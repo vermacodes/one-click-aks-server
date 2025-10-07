@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
@@ -18,21 +19,15 @@ import (
 type preferenceRepository struct {
 	auth      *auth.Auth
 	appConfig *config.Config
+	rdb       *redis.Client
 }
 
 func NewPreferenceRepository(auth *auth.Auth, appConfig *config.Config) entity.PreferenceRepository {
 	return &preferenceRepository{
 		auth:      auth,
 		appConfig: appConfig,
+		rdb:       cache.NewRedisClient(),
 	}
-}
-
-func newPreferenceRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
 }
 
 func (p *preferenceRepository) GetPreferenceFromBlob(ctx context.Context, storageAccountName string) (string, error) {
@@ -114,21 +109,17 @@ func (p *preferenceRepository) PutPreferenceInBlob(ctx context.Context, val stri
 }
 
 func (p *preferenceRepository) GetPreferenceFromRedis(ctx context.Context) (string, error) {
-	rdb := newPreferenceRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-preference").Result()
+	return p.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-preference").Result()
 }
 
 func (p *preferenceRepository) PutPreferenceInRedis(ctx context.Context, val string) error {
-	rdb := newPreferenceRedisClient()
-	return rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-preference", val, 0).Err()
+	return p.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-preference", val, 0).Err()
 }
 
 func (p *preferenceRepository) DeletePreferenceFromRedis(ctx context.Context) error {
-	rdb := newPreferenceRedisClient()
-	return rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-preference").Err()
+	return p.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-preference").Err()
 }
 
 func (p *preferenceRepository) DeleteKubernetesVersionsFromRedis(ctx context.Context) error {
-	rdb := newPreferenceRedisClient()
-	return rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions").Err()
+	return p.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-kubernetesVersions").Err()
 }

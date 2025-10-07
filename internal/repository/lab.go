@@ -9,6 +9,7 @@ import (
 	"os/exec"
 
 	"one-click-aks-server/internal/auth"
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
@@ -20,36 +21,27 @@ import (
 type labRepository struct {
 	appConfig *config.Config
 	auth      *auth.Auth
+	rdb       *redis.Client
 }
 
 func NewLabRepository(appConfig *config.Config, auth *auth.Auth) entity.LabRepository {
 	return &labRepository{
 		appConfig: appConfig,
 		auth:      auth,
+		rdb:       cache.NewRedisClient(),
 	}
 }
 
-func newLabRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-}
-
 func (l *labRepository) GetLabFromRedis(ctx context.Context) (string, error) {
-	rdb := newLabRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Result()
+	return l.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Result()
 }
 
 func (l *labRepository) SetLabInRedis(ctx context.Context, lab string) error {
-	rdb := newLabRedisClient()
-	return rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-lab", lab, 0).Err()
+	return l.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-lab", lab, 0).Err()
 }
 
 func (l *labRepository) DeleteLabFromRedis(ctx context.Context) error {
-	rdb := newLabRedisClient()
-	return rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Err()
+	return l.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-lab").Err()
 }
 
 func (l *labRepository) GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (string, error) {
@@ -69,7 +61,7 @@ func (l *labRepository) GetProtectedLab(ctx context.Context, typeOfLab string, l
 	}
 
 	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", l.appConfig.ArmUserPrincipalName)
+	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 

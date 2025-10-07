@@ -27,9 +27,6 @@ PROXY_PID=$!
 
 chmod +x one-click-aks-server
 export ROOT_DIR=$(pwd)
-# export PORT="80"
-
-echo $ARM_CLIENT_ID
 
 while true; do
 

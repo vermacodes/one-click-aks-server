@@ -3,33 +3,29 @@ package repository
 import (
 	"context"
 
+	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type logStreamRepository struct{}
-
-func NewLogStreamRepository() entity.LogStreamRepository {
-	return &logStreamRepository{}
+type logStreamRepository struct {
+	rdb *redis.Client
 }
 
-func newLogStreamRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+func NewLogStreamRepository() entity.LogStreamRepository {
+	return &logStreamRepository{
+		rdb: cache.NewRedisClient(),
+	}
 }
 
 func (l *logStreamRepository) SetLogsInRedis(ctx context.Context, logStream string) error {
-	rdb := newLogStreamRedisClient()
-	if err := rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-logs", logStream, 0).Err(); err != nil {
+	if err := l.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-logs", logStream, 0).Err(); err != nil {
 		return err
 	}
 
-	if err := rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel", logStream).Err(); err != nil {
+	if err := l.rdb.Publish(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel", logStream).Err(); err != nil {
 		return err
 	}
 
@@ -37,12 +33,11 @@ func (l *logStreamRepository) SetLogsInRedis(ctx context.Context, logStream stri
 }
 
 func (l *logStreamRepository) GetLogsFromRedis(ctx context.Context) (string, error) {
-	rdb := newLogStreamRedisClient()
-	return rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-logs").Result()
+	return l.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-logs").Result()
 }
 
 func (l *logStreamRepository) WaitForLogsChange(ctx context.Context) (string, error) {
-	rdb := newLogStreamRedisClient().Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel")
+	rdb := l.rdb.Subscribe(ctx, helper.GetUserIDFromContext(ctx)+"-redis-log-stream-pubsub-channel")
 	defer rdb.Close()
 
 	for {

@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 )
 
@@ -93,7 +93,7 @@ func (t *terraformService) Apply(ctx context.Context, lab entity.LabType) error 
 
 	// if lab is assignment, update assignment status to InProgress
 	if lab.Type == "assignment" {
-		userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+		userId := helper.GetUserIDFromContext(ctx)
 		if err := t.UpdateAssignment(ctx, userId, lab.Id, "InProgress"); err != nil {
 			return fmt.Errorf("not able to update assignment status, try again")
 		}
@@ -141,7 +141,7 @@ func (t *terraformService) Extend(ctx context.Context, lab entity.LabType, mode 
 		// if lab is assignment and mode is validate,
 		// update assignment status to completed if the validation was good.
 		if lab.Type == "assignment" && mode == "validate" {
-			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+			userId := helper.GetUserIDFromContext(ctx)
 			if err := t.UpdateAssignment(ctx, userId, lab.Id, "Completed"); err != nil {
 				return fmt.Errorf("validation was successful but not able to update status, try again")
 			}
@@ -150,7 +150,7 @@ func (t *terraformService) Extend(ctx context.Context, lab entity.LabType, mode 
 		// if lab is challenge and mode is validate,
 		// update challenge status to completed if the validation was good.
 		if lab.Type == "challenge" && mode == "validate" {
-			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
+			userId := helper.GetUserIDFromContext(ctx)
 			if err := t.UpdateChallenge(ctx, userId, lab.Id, "completed"); err != nil { // it is completed. not Completed.
 				return fmt.Errorf("validation was successful but not able to update status, try again")
 			}
