@@ -158,21 +158,8 @@ func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get initial logs for this specific user
-	initialLogs, err := l.logStreamService.GetLogs(ctx)
-	if err != nil {
-		logging.LogError(ctx, "failed to retrieve initial logs for user", "error", err)
-		l.sendErrorMessage(ws, "Failed to retrieve initial logs")
-		return
-	}
-
-	// Send initial logs
-	if err := ws.WriteJSON(initialLogs); err != nil {
-		logging.LogError(ctx, "failed to write initial logs to websocket", "error", err)
-		return
-	}
-
-	logging.LogInfo(ctx, "initial logs sent")
+	// Don't send initial logs - only send changes after connection
+	logging.LogDebug(ctx, "log stream websocket ready, waiting for changes")
 
 	// background context for long running operation
 	bgCtx := logging.CreateBackgroundContextWithValues(ctx)
