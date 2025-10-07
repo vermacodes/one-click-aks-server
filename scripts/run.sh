@@ -3,6 +3,7 @@
 # This script is for local testing. Its used by Air.
 
 rm one-click-aks-server
+rm -rf user/
 
 source .env
 source .env.local

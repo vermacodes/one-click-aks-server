@@ -36,22 +36,53 @@ function enablePublicNetworkAccess() {
 function init() {
   # Initialize terraform only if not.
   if [[ ! -f .terraform/terraform.tfstate ]] || [[ ! -f .terraform.lock.hcl ]]; then
-    # Check if using local Azurite storage emulator
-    if [[ "$storage_account_name" == "devstoreaccount1" ]]; then
-      # Set terraform backend to local for development
-      sed -i 's/backend "azurerm" {/backend "local" {/' providers.tf
-      terraform init >>$LOG_FILE 2>&1
-
-    else
-      # Set terraform backend to azurerm for production
-      sed -i 's/backend "local" {/backend "azurerm" {/' providers.tf
-      terraform init \
-        -migrate-state \
-        -backend-config="subscription_id=$subscription_id" \
-        -backend-config="resource_group_name=$resource_group_name" \
-        -backend-config="storage_account_name=$storage_account_name" \
-        -backend-config="container_name=$container_name" \
-        -backend-config="key=$tf_state_file_name" >>$LOG_FILE 2>&1
+    local attempt=1
+    local max_attempts=3
+    local success=false
+    
+    while [[ $attempt -le $max_attempts ]]; do
+      echo "terraform init attempt $attempt of $max_attempts $(date)" >> $LOG_FILE
+      
+      # Check if using local Azurite storage emulator
+      if [[ "$storage_account_name" == "devstoreaccount1" ]]; then
+        # Set terraform backend to local for development
+        sed -i 's/backend "azurerm" {/backend "local" {/' providers.tf
+        if terraform init >>$LOG_FILE 2>&1; then
+          success=true
+          echo "terraform init succeeded on attempt $attempt $(date)" >> $LOG_FILE
+          break
+        fi
+      else
+        # Set terraform backend to azurerm for production
+        sed -i 's/backend "local" {/backend "azurerm" {/' providers.tf
+        if terraform init \
+          -migrate-state \
+          -backend-config="subscription_id=$subscription_id" \
+          -backend-config="resource_group_name=$resource_group_name" \
+          -backend-config="storage_account_name=$storage_account_name" \
+          -backend-config="container_name=$container_name" \
+          -backend-config="key=$tf_state_file_name" >>$LOG_FILE 2>&1; then
+          success=true
+          echo "terraform init succeeded on attempt $attempt $(date)" >> $LOG_FILE
+          break
+        fi
+      fi
+      
+      echo "terraform init failed on attempt $attempt $(date)" >> $LOG_FILE
+      
+      # If not the last attempt, wait before retrying with backoff
+      if [[ $attempt -lt $max_attempts ]]; then
+        local wait_time=$((5 * attempt))
+        echo "waiting $wait_time seconds before retry $(date)" >> $LOG_FILE
+        sleep $wait_time
+      fi
+      
+      ((attempt++))
+    done
+    
+    if [[ $success != true ]]; then
+      echo "terraform init failed after $max_attempts attempts $(date)" >> $LOG_FILE
+      exit 1
     fi
   fi
 }
