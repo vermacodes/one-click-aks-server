@@ -167,7 +167,7 @@ func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send initial logs
-	if err := l.sendMessage(ws, entity.WSMsgTypeLogs, initialLogs); err != nil {
+	if err := ws.WriteJSON(initialLogs); err != nil {
 		logging.LogError(ctx, "failed to write initial logs to websocket", "error", err)
 		return
 	}
@@ -186,7 +186,7 @@ func (l *logStreamHandler) GetLogsWs(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := l.sendMessage(ws, entity.WSMsgTypeLogs, logStream); err != nil {
+		if err := ws.WriteJSON(logStream); err != nil {
 			logging.LogError(bgCtx, "failed to write logs to websocket for user", "error", err)
 			return
 		}
