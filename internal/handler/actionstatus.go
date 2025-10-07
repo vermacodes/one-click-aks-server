@@ -117,32 +117,24 @@ func (a *actionStatusHandler) GetActionStatusWs(w http.ResponseWriter, r *http.R
 
 	logging.LogInfo(ctx, "action status websocket authenticated successfully", "user_id", userID)
 
-	// Get initial action status
-	initialActionStatus, err := a.actionStatusService.GetActionStatus(ctx)
-	if err != nil {
-		logging.LogError(ctx, "failed to retrieve initial action status", "error", err)
-		return
-	}
-
-	// Send the initial action status to the client
-	if err := conn.WriteJSON(initialActionStatus); err != nil {
-		logging.LogError(ctx, "failed to send initial action status to client", "error", err)
-		return
-	}
+	// Don't send initial state - only send changes after connection
+	logging.LogDebug(ctx, "action status websocket ready, waiting for changes")
 
 	for {
-		// Get the current action status
+		// Get the current action status when it changes
 		actionStatus, err := a.actionStatusService.WaitForActionStatusChange(ctx)
 		if err != nil {
 			logging.LogError(ctx, "failed to retrieve action status", "error", err)
 			return
 		}
 
-		// Check for changes in action status
+		// Send the action status change
 		if err := conn.WriteJSON(actionStatus); err != nil {
 			logging.LogError(ctx, "failed to send action status to client", "error", err)
 			return
 		}
+
+		logging.LogDebug(ctx, "sent action status update", "in_progress", actionStatus.InProgress)
 	}
 }
 
@@ -169,32 +161,24 @@ func (a *actionStatusHandler) GetTerraformOperationWs(w http.ResponseWriter, r *
 
 	logging.LogInfo(ctx, "terraform operation websocket authenticated successfully", "user_id", userID)
 
-	// Get initial terraform operation status
-	initialTerraformOperation, err := a.actionStatusService.GetTerraformOperation(ctx)
-	if err != nil {
-		logging.LogError(ctx, "failed to retrieve initial terraform operation status", "error", err)
-		return
-	}
-
-	// Send the initial terraform operation status to the client
-	if err := conn.WriteJSON(initialTerraformOperation); err != nil {
-		logging.LogError(ctx, "failed to send initial terraform operation status to client", "error", err)
-		return
-	}
+	// Don't send initial state - only send changes after connection
+	logging.LogDebug(ctx, "terraform operation websocket ready, waiting for changes")
 
 	for {
-		// Get the current terraform operation status
+		// Get the current terraform operation status when it changes
 		terraformOperation, err := a.actionStatusService.WaitForTerraformOperationChange(ctx)
 		if err != nil {
 			logging.LogError(ctx, "failed to retrieve terraform operation status", "error", err)
 			return
 		}
 
-		// Check for changes in terraform operation status
+		// Send the terraform operation change
 		if err := conn.WriteJSON(terraformOperation); err != nil {
 			logging.LogError(ctx, "failed to send terraform operation status to client", "error", err)
 			return
 		}
+
+		logging.LogDebug(ctx, "sent terraform operation update", "operation_id", terraformOperation.OperationId, "in_progress", terraformOperation.InProgress)
 	}
 }
 
@@ -221,31 +205,23 @@ func (a *actionStatusHandler) GetServerNotificationWs(w http.ResponseWriter, r *
 
 	logging.LogInfo(ctx, "server notification websocket authenticated successfully", "user_id", userID)
 
-	// Get initial server notification
-	initialNotification, err := a.actionStatusService.GetServerNotification(ctx)
-	if err != nil {
-		logging.LogError(ctx, "failed to retrieve initial server notification", "error", err)
-		return
-	}
-
-	// Send the initial server notification to the client
-	if err := conn.WriteJSON(initialNotification); err != nil {
-		logging.LogError(ctx, "failed to send initial server notification to client", "error", err)
-		return
-	}
+	// Don't send initial state - only send changes after connection
+	logging.LogDebug(ctx, "server notification websocket ready, waiting for changes")
 
 	for {
-		// Get the current server notification
+		// Get the current server notification when it changes
 		notification, err := a.actionStatusService.WaitForServerNotificationChange(ctx)
 		if err != nil {
 			logging.LogError(ctx, "failed to retrieve server notification", "error", err)
 			return
 		}
 
-		// Check for changes in server notification
+		// Send the notification change
 		if err := conn.WriteJSON(notification); err != nil {
 			logging.LogError(ctx, "failed to send server notification to client", "error", err)
 			return
 		}
+
+		logging.LogDebug(ctx, "sent server notification update", "notification_id", notification.Id)
 	}
 }
