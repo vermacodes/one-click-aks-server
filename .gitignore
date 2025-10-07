@@ -163,3 +163,4 @@ dist
 
 # Ignore tmp directory and contents
 tmp/
+user/

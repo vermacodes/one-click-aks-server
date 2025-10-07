@@ -8,6 +8,8 @@ WORKSPACE=$2
 
 LOG_FILE="workspaces.log"
 
+echo "script executed $(date)" >> $LOG_FILE
+
 # We are not using function from helper.sh cause this function needs to be quiet. i.e. no output.
 function enableSharedKeyAccess() {
   # Enable shared key access to storage account if not already enabled
@@ -73,15 +75,15 @@ function listWorkspaces() {
 }
 
 function selectWorkspace() {
-  terraform workspace select $WORKSPACE
+  terraform workspace select $WORKSPACE >>$LOG_FILE 2>&1
 }
 
 function createWorkspace() {
-  terraform workspace create $WORKSPACE
+  terraform workspace create $WORKSPACE >>$LOG_FILE 2>&1
 }
 
 # Script starts here.
-cd ${ROOT_DIR}/tf
+# cd ${ROOT_DIR}/tf
 
 if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
   export ARM_SUBSCRIPTION_ID=$(az account show --output json --only-show-error | jq -r .id)

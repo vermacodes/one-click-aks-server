@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script breaks cluster.
-cd $ROOT_DIR
+# cd $ROOT_DIR
 
 # Add some color
 RED='\033[0;91m'
@@ -72,7 +72,7 @@ function get_aks_credentials() {
     err "Expected either AKS login command or an empty string. Found this -> ${AKS_LOGIN}"
   fi
 
-  change_to_root_dir
+  # change_to_root_dir
 }
 
 function get_kubectl() {
@@ -88,8 +88,10 @@ function tf_init() {
   log "Initializing"
 
   # Change to TF Directory
-  changeToTerraformDirectory
+  # changeToTerraformDirectory
   # enableSharedKeyAccess
+
+  log "Present directory $(pwd)"
 
   # Setting MSI variables to blank to allow authentication using MSI
   export MSI_ENDPOINT=""
@@ -326,7 +328,7 @@ function init() {
     gap
   fi
   log "Initializing Environment"
-  change_to_root_dir
+  # change_to_root_dir
   tf_init
   get_variables_from_tf_output
   get_aks_credentials
