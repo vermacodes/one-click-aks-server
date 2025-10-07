@@ -78,13 +78,13 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 			"user_principal", userPrincipal)
 
 		// ensure user principal matches with the one in env
-		if userPrincipal != os.Getenv("ARM_USER_PRINCIPAL_NAME") {
-			logging.LogError(ctx, "principal mismatch",
-				"token_principal", userPrincipal,
-				"env_principal", os.Getenv("ARM_USER_PRINCIPAL_NAME"))
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "principal mismatch : token issued to " + userPrincipal + " but found user " + os.Getenv("ARM_USER_PRINCIPAL_NAME")})
-			return
-		}
+		// if userPrincipal != os.Getenv("ARM_USER_PRINCIPAL_NAME") {
+		// 	logging.LogError(ctx, "principal mismatch",
+		// 		"token_principal", userPrincipal,
+		// 		"env_principal", os.Getenv("ARM_USER_PRINCIPAL_NAME"))
+		// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "principal mismatch : token issued to " + userPrincipal + " but found user " + os.Getenv("ARM_USER_PRINCIPAL_NAME")})
+		// 	return
+		// }
 
 		os.Setenv("ACTLABS_AUTH_TOKEN", authToken) // used by repositories to authenticate with other services
 
