@@ -27,7 +27,7 @@ type CustomHandler struct {
 
 func NewCustomHandler(w io.Writer, opts *slog.HandlerOptions) *CustomHandler {
 	return &CustomHandler{
-		handler: slog.NewJSONHandler(w, opts),
+		handler: slog.NewTextHandler(w, opts),
 	}
 }
 
