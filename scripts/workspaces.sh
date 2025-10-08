@@ -10,6 +10,80 @@ LOG_FILE="workspaces.log"
 
 echo "script executed $(date)" >> $LOG_FILE
 
+function setupAzureLogin() {
+  if [[ -n "$ARM_SUBSCRIPTION_ID" ]]; then
+    echo "ARM_SUBSCRIPTION_ID detected: $ARM_SUBSCRIPTION_ID" >> $LOG_FILE
+    
+    # Set Azure CLI config directory to current directory/.azure
+    local azure_config_dir="$PWD/.azure"
+    export AZURE_CONFIG_DIR="$azure_config_dir"
+    
+    echo "Setting Azure config directory to: $azure_config_dir" >> $LOG_FILE
+    
+    # Create .azure directory if it doesn't exist
+    if [[ ! -d "$azure_config_dir" ]]; then
+      echo "Creating Azure config directory: $azure_config_dir" >> $LOG_FILE
+      mkdir -p "$azure_config_dir"
+    fi
+    
+    # Check if already logged in to the correct subscription
+    local current_subscription
+    current_subscription=$(az account show --query "id" --output tsv 2>>$LOG_FILE)
+    
+    if [[ "$current_subscription" != "$ARM_SUBSCRIPTION_ID" ]]; then
+      echo "Current subscription ($current_subscription) differs from ARM_SUBSCRIPTION_ID ($ARM_SUBSCRIPTION_ID)" >> $LOG_FILE
+      echo "Performing Azure login..." >> $LOG_FILE
+      
+      # Check if MSI authentication is requested
+      if [[ "$ARM_USE_MSI" == "true" ]]; then
+        if [[ -n "$ARM_CLIENT_ID" ]]; then
+          echo "Using Managed Service Identity login with client ID: $ARM_CLIENT_ID" >> $LOG_FILE
+          if az login --identity --username "$ARM_CLIENT_ID" --only-show-errors >>$LOG_FILE 2>&1; then
+            echo "Azure MSI login successful" >> $LOG_FILE
+          else
+            echo "Azure MSI login failed" >> $LOG_FILE
+            return 1
+          fi
+        else
+          echo "ARM_USE_MSI is true but ARM_CLIENT_ID is not set" >> $LOG_FILE
+          return 1
+        fi
+      else
+        # Perform standard Azure login (will use device code flow or managed identity if available)
+        if az login --only-show-errors >>$LOG_FILE 2>&1; then
+          echo "Azure login successful" >> $LOG_FILE
+        else
+          echo "Azure login failed" >> $LOG_FILE
+          return 1
+        fi
+      fi
+      
+      # Set the subscription
+      echo "Setting subscription to: $ARM_SUBSCRIPTION_ID" >> $LOG_FILE
+      if az account set --subscription "$ARM_SUBSCRIPTION_ID" --only-show-errors >>$LOG_FILE 2>&1; then
+        echo "Successfully switched to subscription: $ARM_SUBSCRIPTION_ID" >> $LOG_FILE
+      else
+        echo "Failed to switch to subscription: $ARM_SUBSCRIPTION_ID" >> $LOG_FILE
+        return 1
+      fi
+    else
+      echo "Already logged in to correct subscription: $ARM_SUBSCRIPTION_ID" >> $LOG_FILE
+    fi
+    
+    # Verify the subscription is set correctly
+    local verified_subscription
+    verified_subscription=$(az account show --query "id" --output tsv 2>>$LOG_FILE)
+    if [[ "$verified_subscription" == "$ARM_SUBSCRIPTION_ID" ]]; then
+      echo "Verified current subscription: $verified_subscription" >> $LOG_FILE
+    else
+      echo "Subscription verification failed. Expected: $ARM_SUBSCRIPTION_ID, Got: $verified_subscription" >> $LOG_FILE
+      return 1
+    fi
+  else
+    echo "ARM_SUBSCRIPTION_ID not set, skipping Azure login setup" >> $LOG_FILE
+  fi
+}
+
 # We are not using function from helper.sh cause this function needs to be quiet. i.e. no output.
 function enableSharedKeyAccess() {
   # Enable shared key access to storage account if not already enabled
@@ -122,6 +196,7 @@ fi
 
 # enableSharedKeyAccess
 # enablePublicNetworkAccess
+setupAzureLogin
 init
 
 if [[ "$OPTION" == "list" ]]; then

@@ -151,6 +151,18 @@ func (t *tfWorkspaceRepository) copyFile(src, dst string) error {
 	return err
 }
 
+func (t *tfWorkspaceRepository) GetListFromRedis(ctx context.Context) (string, error) {
+	return t.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces").Result()
+}
+
+func (t *tfWorkspaceRepository) AddListToRedis(ctx context.Context, val string) {
+	t.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces", val, 0)
+}
+
+func (t *tfWorkspaceRepository) DeleteListFromRedis(ctx context.Context) {
+	t.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces")
+}
+
 func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error) {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
@@ -171,18 +183,6 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 	return string(out), err
 }
 
-func (t *tfWorkspaceRepository) GetListFromRedis(ctx context.Context) (string, error) {
-	return t.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces").Result()
-}
-
-func (t *tfWorkspaceRepository) AddListToRedis(ctx context.Context, val string) {
-	t.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces", val, 0)
-}
-
-func (t *tfWorkspaceRepository) DeleteListFromRedis(ctx context.Context) {
-	t.rdb.Del(ctx, helper.GetUserIDFromContext(ctx)+"-terraformWorkspaces")
-}
-
 func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Workspace) error {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
@@ -190,10 +190,14 @@ func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Worksp
 		return err
 	}
 
+	// Build user-specific environment
+	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
 	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "new", workspace.Name)
 	cmd.Dir = tfDir
+	cmd.Env = userEnv
 
 	_, err = cmd.Output()
 	return err
@@ -206,10 +210,14 @@ func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Wor
 		return err
 	}
 
+	// Build user-specific environment
+	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
 	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "select", workspace.Name)
 	cmd.Dir = tfDir
+	cmd.Env = userEnv
 
 	_, err = cmd.Output()
 	return err
@@ -222,10 +230,14 @@ func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Wor
 		return err
 	}
 
+	// Build user-specific environment
+	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
 	cmd := exec.Command(t.appConfig.RootDir+"/scripts/workspaces.sh", "delete", workspace.Name)
 	cmd.Dir = tfDir
+	cmd.Env = userEnv
 
 	_, err = cmd.Output()
 	return err
