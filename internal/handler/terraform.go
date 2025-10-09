@@ -16,16 +16,19 @@ type terraformHandler struct {
 	terraformService    entity.TerraformService
 	actionStatusService entity.ActionStatusService
 	deploymentService   entity.DeploymentService
+	workspaceService    entity.WorkspaceService
 }
 
 func NewTerraformWithActionStatusHandler(r *gin.RouterGroup,
 	service entity.TerraformService,
 	actionStatusService entity.ActionStatusService,
-	deploymentService entity.DeploymentService) {
+	deploymentService entity.DeploymentService,
+	workspaceService entity.WorkspaceService) {
 	handler := &terraformHandler{
 		terraformService:    service,
 		actionStatusService: actionStatusService,
 		deploymentService:   deploymentService,
+		workspaceService:    workspaceService,
 	}
 
 	r.POST("/terraform/init/:operationId", handler.Init)
@@ -139,15 +142,25 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
+		// Set Action start.
+		t.actionStatusService.SetActionStart(bgCtx)
+		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+			logging.LogError(bgCtx, "error setting server notification", "error", err)
+		}
+
+		// Delete workspaces in redis
+		if err := t.workspaceService.DeleteAllWorkspaceFromRedis(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error deleting workspaces in redis", "error", err)
+		}
+
+		// Update deployment status
 		deployment.DeploymentStatus = entity.DeploymentInProgress
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			logging.LogError(bgCtx, "error updating deployment", "error", err)
 		}
-		t.actionStatusService.SetActionStart(bgCtx)
-		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
-			logging.LogError(bgCtx, "error setting server notification", "error", err)
-		}
+
+		// Apply
 		if err := t.terraformService.Apply(bgCtx, lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.DeploymentFailed) + ". " + err.Error()
@@ -158,13 +171,19 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 			notification.Message = string(entity.DeploymentCompleted)
 			deployment.DeploymentStatus = entity.DeploymentCompleted
 		}
+
+		// Send notification
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
 		}
+
+		// Update Deployment
 		helper.CalculateNewEpochTimeForDeployment(&deployment)
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			logging.LogError(bgCtx, "error updating deployment", "error", err)
 		}
+
+		// End Action status
 		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
 			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
@@ -248,13 +267,19 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
-		deployment.DeploymentStatus = entity.DestroyInProgress
-		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
-			logging.LogError(bgCtx, "error updating deployment", "error", err)
-		}
 		t.actionStatusService.SetActionStart(bgCtx)
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
+		}
+
+		// Delete workspaces in redis
+		if err := t.workspaceService.DeleteAllWorkspaceFromRedis(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error deleting workspaces in redis", "error", err)
+		}
+
+		deployment.DeploymentStatus = entity.DestroyInProgress
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
+			logging.LogError(bgCtx, "error updating deployment", "error", err)
 		}
 
 		if err := t.terraformService.Destroy(bgCtx, lab); err != nil {
