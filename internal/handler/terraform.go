@@ -148,9 +148,9 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
 		}
 
-		// Delete workspaces in redis
-		if err := t.workspaceService.DeleteAllWorkspaceFromRedis(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error deleting workspaces in redis", "error", err)
+		// Ensure terraform is initialized
+		if err := t.terraformService.Init(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error initializing terraform", "error", err)
 		}
 
 		// Update deployment status
@@ -272,9 +272,9 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
 		}
 
-		// Delete workspaces in redis
-		if err := t.workspaceService.DeleteAllWorkspaceFromRedis(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error deleting workspaces in redis", "error", err)
+		// Ensure terraform is initialized
+		if err := t.terraformService.Init(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error initializing terraform", "error", err)
 		}
 
 		deployment.DeploymentStatus = entity.DestroyInProgress
