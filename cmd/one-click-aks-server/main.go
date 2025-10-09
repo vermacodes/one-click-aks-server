@@ -76,7 +76,7 @@ func main() {
 	kVersionService := service.NewKVersionService(kVersionRepository, prefService, authService)
 	aroVersionService := service.NewAROVersionService(aroVersionRepository, prefService, authService)
 	labService := service.NewLabService(labRepository, kVersionService, aroVersionService, storageAccountService, authService)
-	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, aroVersionService, storageAccountService, authService)
+	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, aroVersionService, storageAccountService, authService, *appConfig)
 	deploymentService := service.NewDeploymentService(deploymentRepository, labService, terraformService, actionStatusService, logStreamService, authService, workspaceService, *appConfig)
 
 	// gin routers

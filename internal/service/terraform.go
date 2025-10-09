@@ -5,7 +5,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
@@ -21,6 +24,7 @@ type terraformService struct {
 	aroVersionService     entity.AROVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	authService           entity.AuthService
+	appConfig             config.Config
 }
 
 func NewTerraformService(
@@ -33,6 +37,7 @@ func NewTerraformService(
 	aroVersionService entity.AROVersionService,
 	storageAccountService entity.StorageAccountService,
 	authService entity.AuthService,
+	appConfig config.Config,
 ) entity.TerraformService {
 	return &terraformService{
 		terraformRepository:   terraformRepository,
@@ -44,6 +49,7 @@ func NewTerraformService(
 		workspaceService:      workspaceService,
 		storageAccountService: storageAccountService,
 		authService:           authService,
+		appConfig:             appConfig,
 	}
 }
 
@@ -77,6 +83,20 @@ func (t *terraformService) EnsureInit(ctx context.Context) error {
 	lab, err := t.labService.GetLabFromRedis(ctx)
 	if err != nil {
 		return err
+	}
+
+	userAlias := helper.GetUserAliasFromContext(ctx)
+	userDir := filepath.Join(t.appConfig.RootDir, "user", userAlias)
+	tfUserDir := filepath.Join(userDir, "tf")
+
+	// check if .terraform directory exist in tfUserDir
+	terraformDir := filepath.Join(tfUserDir, ".terraform")
+	if _, err := os.Stat(terraformDir); os.IsNotExist(err) {
+		logging.LogInfo(ctx, "terraform not initialized in user directory, running init", "terraform_dir", tfUserDir)
+	} else {
+		logging.LogInfo(ctx, "terraform already initialized in user directory", "terraform_dir", tfUserDir)
+		// Terraform is already initialized, no need to run init again
+		return nil
 	}
 
 	if err := helperTerraformAction(ctx, t, lab.Template, "ensure_init"); err != nil {
