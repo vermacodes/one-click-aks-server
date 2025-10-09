@@ -101,6 +101,17 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 	go func() {
 		// background context for long running operation
 		t.actionStatusService.SetActionStart(bgCtx)
+
+		// Ensure terraform is initialized
+		if err := t.terraformService.EnsureInit(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error initializing terraform", "error", err)
+		}
+
+		// This doesn't change deployment status, just resets the workspaces.
+		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
+			logging.LogError(bgCtx, "error updating deployment", "error", err)
+		}
+
 		if err := t.terraformService.Plan(bgCtx, lab); err != nil {
 			notification.NotificationType = entity.Error
 			notification.Message = string(entity.PlanFailed)
@@ -149,7 +160,7 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 		}
 
 		// Ensure terraform is initialized
-		if err := t.terraformService.Init(bgCtx); err != nil {
+		if err := t.terraformService.EnsureInit(bgCtx); err != nil {
 			logging.LogError(bgCtx, "error initializing terraform", "error", err)
 		}
 
@@ -273,7 +284,7 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		}
 
 		// Ensure terraform is initialized
-		if err := t.terraformService.Init(bgCtx); err != nil {
+		if err := t.terraformService.EnsureInit(bgCtx); err != nil {
 			logging.LogError(bgCtx, "error initializing terraform", "error", err)
 		}
 

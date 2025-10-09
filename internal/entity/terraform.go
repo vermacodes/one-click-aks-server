@@ -10,6 +10,12 @@ type TerraformService interface {
 	// Terraform Init
 	Init(ctx context.Context) error
 
+	// Terraform Ensure Init
+	// This will send a non-existent action
+	// The script will execute and tf init will run if not already.
+	// Clever :D
+	EnsureInit(ctx context.Context) error
+
 	// Streams logs
 	Plan(ctx context.Context, lab LabType) error
 

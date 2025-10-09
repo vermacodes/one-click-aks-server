@@ -72,6 +72,31 @@ func (t *terraformService) Init(ctx context.Context) error {
 	return nil
 }
 
+func (t *terraformService) EnsureInit(ctx context.Context) error {
+	logging.LogInfo(ctx, "ensuring terraform init")
+	lab, err := t.labService.GetLabFromRedis(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := helperTerraformAction(ctx, t, lab.Template, "ensure_init"); err != nil {
+		logging.LogError(ctx, "terraform init failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
+		)
+		return fmt.Errorf("terraform init failed %s", err.Error())
+	}
+
+	// Invalidate workspace cache
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (t *terraformService) Plan(ctx context.Context, lab entity.LabType) error {
 
 	logging.LogInfo(ctx, "running terraform plan", "lab_id", lab.Id)
