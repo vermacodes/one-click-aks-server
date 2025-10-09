@@ -79,7 +79,14 @@ func (w *workspaceService) GetSelectedWorkspace(ctx context.Context) (entity.Wor
 
 func (w *workspaceService) Add(ctx context.Context, workspace entity.Workspace) error {
 
-	if err := w.workspaceRepository.Add(ctx, workspace); err != nil {
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
+
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
+		return err
+	}
+
+	if err := w.workspaceRepository.Add(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
 		logging.LogError(ctx, "not able to add workspace", "error", err)
 		return err
 	}
@@ -94,9 +101,15 @@ func (w *workspaceService) Add(ctx context.Context, workspace entity.Workspace) 
 
 func (w *workspaceService) Select(ctx context.Context, workspace entity.Workspace) error {
 
-	// add workspace if not exists
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
 
-	if err := w.workspaceRepository.Select(ctx, workspace); err != nil {
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
+		return err
+	}
+
+	// add workspace if not exists
+	if err := w.workspaceRepository.Select(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
 		logging.LogError(ctx, "not able to select the workspace", "error", err)
 		return err
 	}
@@ -107,7 +120,14 @@ func (w *workspaceService) Select(ctx context.Context, workspace entity.Workspac
 }
 
 func (w *workspaceService) Delete(ctx context.Context, workspace entity.Workspace) error {
-	if err := w.workspaceRepository.Delete(ctx, workspace); err != nil {
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
+
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
+		return err
+	}
+
+	if err := w.workspaceRepository.Delete(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
 		logging.LogError(ctx, "not able to delete workspace", "error", err)
 		return err
 	}

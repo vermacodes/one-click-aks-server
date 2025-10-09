@@ -19,7 +19,7 @@ func NewActionStatusService(actionStatusRepository entity.ActionStatusRepository
 }
 
 func (a *actionStatusService) GetActionStatus(ctx context.Context) (entity.ActionStatus, error) {
-	logging.LogInfo(ctx, "getting action status")
+	logging.LogDebug(ctx, "getting action status")
 	actionStatus := entity.ActionStatus{}
 	val, err := a.actionStatusRepository.GetActionStatus(ctx)
 	if err != nil {
@@ -46,7 +46,7 @@ func (a *actionStatusService) GetActionStatus(ctx context.Context) (entity.Actio
 }
 
 func (a *actionStatusService) SetActionStatus(ctx context.Context, actionStatus entity.ActionStatus) error {
-	logging.LogInfo(ctx, "setting action status")
+	logging.LogDebug(ctx, "setting action status")
 	val, err := json.Marshal(actionStatus)
 	if err != nil {
 		logging.LogError(ctx, "not able to marshal object to string", "error", err)
