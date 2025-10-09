@@ -183,7 +183,7 @@ func (t *tfWorkspaceRepository) List(ctx context.Context, storageAccountName str
 	return string(out), err
 }
 
-func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Add(ctx context.Context, storageAccountName string, subscriptionId string, workspace entity.Workspace) error {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
 	if err != nil {
@@ -191,7 +191,7 @@ func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Worksp
 	}
 
 	// Build user-specific environment
-	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+	userEnv := t.buildWorkspaceEnvironment(ctx, storageAccountName, subscriptionId)
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
@@ -203,7 +203,7 @@ func (t *tfWorkspaceRepository) Add(ctx context.Context, workspace entity.Worksp
 	return err
 }
 
-func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Select(ctx context.Context, storageAccountName string, subscriptionId string, workspace entity.Workspace) error {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
 	if err != nil {
@@ -211,7 +211,7 @@ func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Wor
 	}
 
 	// Build user-specific environment
-	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+	userEnv := t.buildWorkspaceEnvironment(ctx, storageAccountName, subscriptionId)
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
@@ -223,7 +223,7 @@ func (t *tfWorkspaceRepository) Select(ctx context.Context, workspace entity.Wor
 	return err
 }
 
-func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Workspace) error {
+func (t *tfWorkspaceRepository) Delete(ctx context.Context, storageAccountName string, subscriptionId string, workspace entity.Workspace) error {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
 	if err != nil {
@@ -231,7 +231,7 @@ func (t *tfWorkspaceRepository) Delete(ctx context.Context, workspace entity.Wor
 	}
 
 	// Build user-specific environment
-	userEnv := t.buildWorkspaceEnvironment(ctx, "", "")
+	userEnv := t.buildWorkspaceEnvironment(ctx, storageAccountName, subscriptionId)
 
 	// Execute workspaces script in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
