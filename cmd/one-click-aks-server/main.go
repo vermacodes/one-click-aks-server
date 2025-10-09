@@ -129,7 +129,7 @@ func main() {
 	handler.NewDeploymentHandler(authRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithActionStatusHandler(authWithActionRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithTerraformActionStatusHandler(authWithTerraformActionRouter, deploymentService, terraformService, actionStatusService)
-	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService)
+	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 
 	// go routine to poll and delete deployments.
 	// take seconds and multiply with 1000000000 and pass it to the function.
