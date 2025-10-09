@@ -30,29 +30,29 @@ type WorkspaceService interface {
 // All the operations are done using a script or bash commands.
 // Persistence of this is take care of by terraform itself.
 type WorkspaceRepository interface {
-	// List all the workspaces. Workspaces is the output sent in string.
-	List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error)
-
 	GetListFromRedis(ctx context.Context) (string, error)
 	AddListToRedis(ctx context.Context, val string)
 
 	// All mutating operations on workspaces must delete list from redis.
 	DeleteListFromRedis(ctx context.Context)
 
+	// List all the workspaces. Workspaces is the output sent in string.
+	List(ctx context.Context, storageAccountName string, subscriptionId string) (string, error)
+
 	// As a new workspace is added, it becomes the selected workspace.
 	// Thats a terraform feature.
 	// Client is expected to run List query after update is made.
-	Add(ctx context.Context, workspace Workspace) error
+	Add(ctx context.Context, storageAccountName string, subscriptionId string, workspace Workspace) error
 
 	// Selects the workspace.
-	Select(ctx context.Context, workspace Workspace) error
+	Select(ctx context.Context, storageAccountName string, subscriptionId string, workspace Workspace) error
 
 	// Deletes the workspace.
-	Delete(ctx context.Context, workspace Workspace) error
+	Delete(ctx context.Context, storageAccountName string, subscriptionId string, workspace Workspace) error
 
 	// Gets the resources in current selected workspace.
 	// The Resources are just a string and thus returned as is.
-	Resources(ctx context.Context, storageAccount string, subscriptionId string) (string, error)
+	Resources(ctx context.Context, storageAccountName string, subscriptionId string) (string, error)
 
 	GetResourcesFromRedis(ctx context.Context) (string, error)
 	AddResourcesToRedis(ctx context.Context, val string)
