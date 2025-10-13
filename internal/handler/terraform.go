@@ -384,6 +384,7 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 
 		if reSelectWorkspace {
 			logging.LogDebug(bgCtx, "selecting previous workspace as the deployment is now complete", "previous workspace", workspaceAtStart.Name)
+
 			if err := t.workspaceService.Select(bgCtx, workspaceAtStart); err != nil {
 				logging.LogError(bgCtx, "not able to select workspace as it was at the start of destroy operation", "error", err)
 				notification.NotificationType = entity.Error
