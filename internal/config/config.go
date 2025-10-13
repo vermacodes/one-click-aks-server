@@ -6,8 +6,6 @@ import (
 	"one-click-aks-server/internal/logging"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -41,17 +39,8 @@ func NewConfig() *Config {
 
 	ctx := context.Background()
 
-	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		logging.LogError(ctx, "Error loading .env file")
-	}
-
-	// Load environment variables from .env.local file (overrides .env)
-	err = godotenv.Load(".env.local")
-	if err != nil {
-		logging.LogError(ctx, "No .env.local file found or error loading it")
-	}
+	// Environment variables are now loaded in main.go before any config initialization
+	// This ensures they're available when this function runs
 
 	actLabsHubSubscriptionID := os.Getenv("ACTLABS_HUB_SUBSCRIPTION_ID")
 	if actLabsHubSubscriptionID == "" {

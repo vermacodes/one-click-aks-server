@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/cache"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 type Status struct {
@@ -36,6 +38,16 @@ func status(c *gin.Context) {
 }
 
 func main() {
+	// Load environment files first - critical for all config loading
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+
+	// Load local environment overrides if present
+	if err := godotenv.Load(".env.local"); err != nil {
+		log.Printf("Info: No .env.local file found or error loading it: %v", err)
+	}
+
 	logging.SetupLogger()
 
 	// Disable Gin's default logging and use our custom logger

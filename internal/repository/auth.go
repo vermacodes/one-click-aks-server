@@ -73,6 +73,13 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 	// Get subscription id from redis
 	userId := helper.GetUserIDFromContext(ctx)
 
+	// Check if user ID is valid
+	if userId == "" || userId == "unknown-user" {
+		logging.LogError(ctx, "GetSubscriptionId called without valid user ID in context",
+			"userID", userId)
+		return "", fmt.Errorf("authentication required: user ID not found in context")
+	}
+
 	subscriptionId, err := a.rdb.Get(ctx, userId+"-subscription-id").Result()
 	if err == nil {
 		logging.LogDebug(context.Background(), "subscription id found in redis")
@@ -157,7 +164,16 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 
 // Get subscription from redis, return ok if found
 func (a *authRepository) getSubscriptionFromRedis(ctx context.Context) (*armsubscription.Subscription, bool) {
-	subscription, err := a.rdb.Get(ctx, helper.GetUserIDFromContext(ctx)+"-subscription").Result()
+	userId := helper.GetUserIDFromContext(ctx)
+
+	// Check if user ID is valid
+	if userId == "" || userId == "unknown-user" {
+		logging.LogError(ctx, "getSubscriptionFromRedis called without valid user ID in context",
+			"userID", userId)
+		return nil, false
+	}
+
+	subscription, err := a.rdb.Get(ctx, userId+"-subscription").Result()
 	if err == nil {
 		logging.LogDebug(ctx, "subscription found in redis")
 		var sub armsubscription.Subscription
