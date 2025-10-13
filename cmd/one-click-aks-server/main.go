@@ -96,7 +96,7 @@ func main() {
 	router.Use(cors.New(config))
 
 	authRouter := router.Group("/")
-	authRouter.Use(middleware.AuthRequired(miseServer, authService, logStreamService, *appConfig))
+	authRouter.Use(middleware.AuthRequired(miseServer, *appConfig))
 
 	actionStatusRouter := router.Group("/")
 	actionStatusRouter.Use(middleware.ActionStatusMiddleware(actionStatusService))

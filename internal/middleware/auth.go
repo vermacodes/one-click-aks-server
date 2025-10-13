@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"one-click-aks-server/internal/config"
-	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 	"one-click-aks-server/internal/mise"
@@ -15,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStream entity.LogStreamService, config config.Config) gin.HandlerFunc {
+func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the auth token from the request header
 		authToken := c.GetHeader("Authorization")
