@@ -39,96 +39,104 @@ type Config struct {
 
 func NewConfig() *Config {
 
+	ctx := context.Background()
+
 	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
-		logging.LogError(context.Background(), "Error loading .env file")
+		logging.LogError(ctx, "Error loading .env file")
+	}
+
+	// Load environment variables from .env.local file (overrides .env)
+	err = godotenv.Load(".env.local")
+	if err != nil {
+		logging.LogError(ctx, "No .env.local file found or error loading it")
 	}
 
 	actLabsHubSubscriptionID := os.Getenv("ACTLABS_HUB_SUBSCRIPTION_ID")
 	if actLabsHubSubscriptionID == "" {
-		logging.LogError(context.Background(), "ACTLABS_HUB_SUBSCRIPTION_ID not set")
+		logging.LogError(ctx, "ACTLABS_HUB_SUBSCRIPTION_ID not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "ACTLABS_HUB_SUBSCRIPTION_ID: "+actLabsHubSubscriptionID)
+	logging.LogDebug(ctx, "ACTLABS_HUB_SUBSCRIPTION_ID: "+actLabsHubSubscriptionID)
 
 	actLabsHubResourceGroupName := os.Getenv("ACTLABS_HUB_RESOURCE_GROUP_NAME")
 	if actLabsHubResourceGroupName == "" {
-		logging.LogError(context.Background(), "ACTLABS_HUB_RESOURCE_GROUP_NAME not set")
+		logging.LogError(ctx, "ACTLABS_HUB_RESOURCE_GROUP_NAME not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "ACTLABS_HUB_RESOURCE_GROUP_NAME: "+actLabsHubResourceGroupName)
+	logging.LogDebug(ctx, "ACTLABS_HUB_RESOURCE_GROUP_NAME: "+actLabsHubResourceGroupName)
 
 	actLabsHubStorageAccountName := os.Getenv("ACTLABS_HUB_STORAGE_ACCOUNT_NAME")
 	if actLabsHubStorageAccountName == "" {
-		logging.LogError(context.Background(), "ACTLABS_HUB_STORAGE_ACCOUNT_NAME not set")
+		logging.LogError(ctx, "ACTLABS_HUB_STORAGE_ACCOUNT_NAME not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "ACTLABS_HUB_STORAGE_ACCOUNT_NAME: "+actLabsHubStorageAccountName)
+	logging.LogDebug(ctx, "ACTLABS_HUB_STORAGE_ACCOUNT_NAME: "+actLabsHubStorageAccountName)
 
 	authTokenAud := os.Getenv("AUTH_TOKEN_AUD")
 	if authTokenAud == "" {
-		logging.LogError(context.Background(), "AUTH_TOKEN_AUD not set")
+		logging.LogError(ctx, "AUTH_TOKEN_AUD not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "AUTH_TOKEN_AUD: "+authTokenAud)
+	logging.LogDebug(ctx, "AUTH_TOKEN_AUD: "+authTokenAud)
 
 	authTokenIss := os.Getenv("AUTH_TOKEN_ISS")
 	if authTokenIss == "" {
-		logging.LogError(context.Background(), "AUTH_TOKEN_ISS not set")
+		logging.LogError(ctx, "AUTH_TOKEN_ISS not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "AUTH_TOKEN_ISS: "+authTokenIss)
+	logging.LogDebug(ctx, "AUTH_TOKEN_ISS: "+authTokenIss)
 
 	rootDir := os.Getenv("ROOT_DIR")
 	if rootDir == "" {
-		logging.LogError(context.Background(), "ROOT_DIR not set")
+		logging.LogError(ctx, "ROOT_DIR not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "ROOT_DIR: "+rootDir)
+	logging.LogDebug(ctx, "ROOT_DIR: "+rootDir)
 
 	useMsiString := os.Getenv("USE_MSI")
 	if useMsiString == "" {
-		logging.LogError(context.Background(), "USE_MSI not set")
+		logging.LogError(ctx, "USE_MSI not set")
 		os.Exit(1)
 	}
 	useMsi := false
 	if useMsiString == "true" {
-		logging.LogDebug(context.Background(), "USE_MSI: true")
+		logging.LogDebug(ctx, "USE_MSI: true")
 		useMsi = true
 	} else {
-		logging.LogDebug(context.Background(), "USE_MSI: false")
+		logging.LogDebug(ctx, "USE_MSI: false")
 	}
 
 	useServicePrincipalString := os.Getenv("USE_SERVICE_PRINCIPAL")
 	if useServicePrincipalString == "" {
-		logging.LogError(context.Background(), "USE_SERVICE_PRINCIPAL not set")
+		logging.LogError(ctx, "USE_SERVICE_PRINCIPAL not set")
 		os.Exit(1)
 	}
 
 	useServicePrincipal := false
 	if useServicePrincipalString == "true" {
-		logging.LogDebug(context.Background(), "USE_SERVICE_PRINCIPAL: true")
+		logging.LogDebug(ctx, "USE_SERVICE_PRINCIPAL: true")
 		useServicePrincipal = true
 	} else {
-		logging.LogDebug(context.Background(), "USE_SERVICE_PRINCIPAL: false")
+		logging.LogDebug(ctx, "USE_SERVICE_PRINCIPAL: false")
 	}
 
 	azureClientId := os.Getenv("AZURE_CLIENT_ID")
 	if azureClientId == "" && useServicePrincipal {
-		logging.LogError(context.Background(), "AZURE_CLIENT_ID not set")
+		logging.LogError(ctx, "AZURE_CLIENT_ID not set")
 		os.Exit(1)
 	}
 
 	azureClientSecret := os.Getenv("AZURE_CLIENT_SECRET")
 	if azureClientSecret == "" && useServicePrincipal {
-		logging.LogError(context.Background(), "AZURE_CLIENT_SECRET not set")
+		logging.LogError(ctx, "AZURE_CLIENT_SECRET not set")
 		os.Exit(1)
 	}
 
 	azureTenantID := os.Getenv("AZURE_TENANT_ID")
 	if azureTenantID == "" && useServicePrincipal {
-		logging.LogError(context.Background(), "AZURE_TENANT_ID not set")
+		logging.LogError(ctx, "AZURE_TENANT_ID not set")
 		os.Exit(1)
 	}
 
@@ -144,14 +152,14 @@ func NewConfig() *Config {
 
 	aroRpFirstPartySpID := os.Getenv("AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID")
 	if aroRpFirstPartySpID == "" {
-		logging.LogError(context.Background(), "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID not set")
+		logging.LogError(ctx, "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: "+aroRpFirstPartySpID)
+	logging.LogDebug(ctx, "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: "+aroRpFirstPartySpID)
 
 	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
 	if actlabsHubURL == "" {
-		logging.LogError(context.Background(), "ACTLABS_HUB_URL not set")
+		logging.LogError(ctx, "ACTLABS_HUB_URL not set")
 		os.Exit(1)
 	}
 
@@ -167,10 +175,10 @@ func NewConfig() *Config {
 
 	miseEndpoint := os.Getenv("MISE_ENDPOINT")
 	if miseEndpoint == "" {
-		logging.LogError(context.Background(), "MISE_ENDPOINT not set")
+		logging.LogError(ctx, "MISE_ENDPOINT not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "MISE_ENDPOINT: "+miseEndpoint)
+	logging.LogDebug(ctx, "MISE_ENDPOINT: "+miseEndpoint)
 
 	miseVerboseLoggingString := os.Getenv("MISE_VERBOSE_LOGGING")
 	if miseVerboseLoggingString == "" {
@@ -178,45 +186,45 @@ func NewConfig() *Config {
 	}
 	miseVerboseLogging := false
 	if miseVerboseLoggingString == "true" {
-		logging.LogDebug(context.Background(), "MISE_VERBOSE_LOGGING: true")
+		logging.LogDebug(ctx, "MISE_VERBOSE_LOGGING: true")
 		miseVerboseLogging = true
 	} else {
-		logging.LogDebug(context.Background(), "MISE_VERBOSE_LOGGING: false")
+		logging.LogDebug(ctx, "MISE_VERBOSE_LOGGING: false")
 	}
 
 	authVerifyMode := os.Getenv("AUTH_VERIFY_MODE")
 	if authVerifyMode == "" {
 		authVerifyMode = "Custom" // default value
 	}
-	logging.LogDebug(context.Background(), "AUTH_VERIFY_MODE: "+authVerifyMode)
+	logging.LogDebug(ctx, "AUTH_VERIFY_MODE: "+authVerifyMode)
 
 	apiKey := os.Getenv("API_KEY")
 	if apiKey == "" {
-		logging.LogError(context.Background(), "API_KEY not set")
+		logging.LogError(ctx, "API_KEY not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "API_KEY is set")
+	logging.LogDebug(ctx, "API_KEY is set")
 
 	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
 	if corsAllowOrigins == "" {
-		logging.LogError(context.Background(), "CORS_ALLOW_ORIGINS not set")
+		logging.LogError(ctx, "CORS_ALLOW_ORIGINS not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "CORS_ALLOW_ORIGINS: "+corsAllowOrigins)
+	logging.LogDebug(ctx, "CORS_ALLOW_ORIGINS: "+corsAllowOrigins)
 
 	corsAllowMethods := os.Getenv("CORS_ALLOW_METHODS")
 	if corsAllowMethods == "" {
-		logging.LogError(context.Background(), "CORS_ALLOW_METHODS not set")
+		logging.LogError(ctx, "CORS_ALLOW_METHODS not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "CORS_ALLOW_METHODS: "+corsAllowMethods)
+	logging.LogDebug(ctx, "CORS_ALLOW_METHODS: "+corsAllowMethods)
 
 	corsAllowHeaders := os.Getenv("CORS_ALLOW_HEADERS")
 	if corsAllowHeaders == "" {
-		logging.LogError(context.Background(), "CORS_ALLOW_HEADERS not set")
+		logging.LogError(ctx, "CORS_ALLOW_HEADERS not set")
 		os.Exit(1)
 	}
-	logging.LogDebug(context.Background(), "CORS_ALLOW_HEADERS: "+corsAllowHeaders)
+	logging.LogDebug(ctx, "CORS_ALLOW_HEADERS: "+corsAllowHeaders)
 
 	// Retrieve other environment variables and check them as needed
 
