@@ -50,7 +50,7 @@ func NewTerraformWithAPIKeyAndActionStatusHandler(r *gin.RouterGroup,
 		workspaceService:    workspaceService,
 	}
 
-	r.POST("/terraform/destroy/:operationId", handler.Destroy)
+	r.POST("/api/terraform/destroy/:operationId", handler.Destroy)
 }
 
 func (t *terraformHandler) Init(c *gin.Context) {

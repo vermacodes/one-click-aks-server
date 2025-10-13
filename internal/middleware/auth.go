@@ -99,6 +99,18 @@ func APIKeyAuthRequired(config config.Config) gin.HandlerFunc {
 			return
 		}
 
+		reqUserPrincipal := c.GetHeader("x-user-id")
+		if reqUserPrincipal == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "no user principal provided"})
+			return
+		}
+
+		SetUserIDInGin(c, reqUserPrincipal)
+		ctx := GetContextFromGin(c)
+
+		logging.LogDebug(ctx, "api call authenticated successfully",
+			"user", reqUserPrincipal)
+
 		c.Next()
 	}
 }
