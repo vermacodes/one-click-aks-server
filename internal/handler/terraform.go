@@ -353,6 +353,8 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		}
 
 		if workspaceAtStart.Name != deployment.DeploymentWorkspace {
+			logging.LogDebug(bgCtx, "selected workspace is not same as workspace in deployment to be destroyed selecting desired workspace", "selected_workspace", workspaceAtStart.Name, "desired_workspace", deployment.DeploymentWorkspace)
+
 			if err := t.workspaceService.Select(bgCtx, entity.Workspace{Name: deployment.DeploymentWorkspace}); err != nil {
 				logging.LogError(bgCtx, "not able to select workspace", "error", err)
 				notification.NotificationType = entity.Error
@@ -381,6 +383,7 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		}
 
 		if reSelectWorkspace {
+			logging.LogDebug(bgCtx, "selecting previous workspace as the deployment is now complete", "previous workspace", workspaceAtStart.Name)
 			if err := t.workspaceService.Select(bgCtx, workspaceAtStart); err != nil {
 				logging.LogError(bgCtx, "not able to select workspace as it was at the start of destroy operation", "error", err)
 				notification.NotificationType = entity.Error
