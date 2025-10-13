@@ -43,12 +43,14 @@ func AuthRequired(miseServer mise.Server, authService entity.AuthService, logStr
 				return
 			}
 
-			userPrincipal, ok := result.SubjectClaims["preferred_username"]
-			if !ok || len(userPrincipal) == 0 {
+			userPrincipals, ok := result.SubjectClaims["preferred_username"]
+			if !ok || len(userPrincipals) == 0 {
 				logging.LogError(c.Request.Context(), "preferred_username claim not found in subject claims")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim not found in token"})
 				return
 			}
+
+			userPrincipal = userPrincipals[0] // take the first one
 		}
 		if config.AuthVerifyMode == "Custom" {
 
