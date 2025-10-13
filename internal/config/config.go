@@ -112,7 +112,7 @@ func NewConfig() *Config {
 	}
 
 	azureClientId := os.Getenv("AZURE_CLIENT_ID")
-	if azureClientId == "" && useServicePrincipal {
+	if azureClientId == "" && (useServicePrincipal || useMsi) {
 		logging.LogError(ctx, "AZURE_CLIENT_ID not set")
 		os.Exit(1)
 	}
