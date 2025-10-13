@@ -30,6 +30,7 @@ type Config struct {
 	MiseEndpoint                    string
 	MiseVerboseLogging              bool
 	AuthVerifyMode                  string
+	APIKey                          string
 	CorsAllowOrigins                string
 	CorsAllowMethods                string
 	CorsAllowHeaders                string
@@ -189,6 +190,13 @@ func NewConfig() *Config {
 	}
 	logging.LogDebug(context.Background(), "AUTH_VERIFY_MODE: "+authVerifyMode)
 
+	apiKey := os.Getenv("API_KEY")
+	if apiKey == "" {
+		logging.LogError(context.Background(), "API_KEY not set")
+		os.Exit(1)
+	}
+	logging.LogDebug(context.Background(), "API_KEY is set")
+
 	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
 	if corsAllowOrigins == "" {
 		logging.LogError(context.Background(), "CORS_ALLOW_ORIGINS not set")
@@ -232,6 +240,7 @@ func NewConfig() *Config {
 		MiseEndpoint:                    miseEndpoint,
 		MiseVerboseLogging:              miseVerboseLogging,
 		AuthVerifyMode:                  authVerifyMode,
+		APIKey:                          apiKey,
 		CorsAllowOrigins:                corsAllowOrigins,
 		CorsAllowMethods:                corsAllowMethods,
 		CorsAllowHeaders:                corsAllowHeaders,

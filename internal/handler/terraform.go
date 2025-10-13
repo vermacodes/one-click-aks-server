@@ -38,6 +38,21 @@ func NewTerraformWithActionStatusHandler(r *gin.RouterGroup,
 	r.POST("/terraform/extend/:mode/:operationId", handler.Extend)
 }
 
+func NewTerraformWithAPIKeyAndActionStatusHandler(r *gin.RouterGroup,
+	service entity.TerraformService,
+	actionStatusService entity.ActionStatusService,
+	deploymentService entity.DeploymentService,
+	workspaceService entity.WorkspaceService) {
+	handler := &terraformHandler{
+		terraformService:    service,
+		actionStatusService: actionStatusService,
+		deploymentService:   deploymentService,
+		workspaceService:    workspaceService,
+	}
+
+	r.POST("/terraform/destroy/:operationId", handler.Destroy)
+}
+
 func (t *terraformHandler) Init(c *gin.Context) {
 	notification := entity.ServerNotification{
 		Id:               uuid.New().String(),

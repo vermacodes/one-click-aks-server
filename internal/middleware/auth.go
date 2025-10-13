@@ -88,3 +88,17 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 		c.Next()
 	}
 }
+
+func APIKeyAuthRequired(config config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the api key from the request header
+		reqApiKey := c.GetHeader("x-api-key")
+
+		if reqApiKey == "" || reqApiKey != config.APIKey {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid api key"})
+			return
+		}
+
+		c.Next()
+	}
+}

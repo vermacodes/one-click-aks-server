@@ -98,6 +98,9 @@ func main() {
 	authRouter := router.Group("/")
 	authRouter.Use(middleware.AuthRequired(miseServer, *appConfig))
 
+	apiKeyAuthRouter := router.Group("/")
+	apiKeyAuthRouter.Use(middleware.APIKeyAuthRequired(*appConfig))
+
 	actionStatusRouter := router.Group("/")
 	actionStatusRouter.Use(middleware.ActionStatusMiddleware(actionStatusService))
 
@@ -106,6 +109,9 @@ func main() {
 
 	authWithTerraformActionRouter := authRouter.Group("/")
 	authWithTerraformActionRouter.Use(middleware.TerraformActionMiddleware(actionStatusService))
+
+	apiKeyAuthWithTerraformActionRouter := apiKeyAuthRouter.Group("/")
+	apiKeyAuthWithTerraformActionRouter.Use(middleware.TerraformActionMiddleware(actionStatusService))
 
 	// server status
 	router.GET("/status", status)
@@ -128,6 +134,7 @@ func main() {
 	handler.NewDeploymentWithTerraformActionStatusHandler(authWithTerraformActionRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 
+	handler.NewTerraformWithAPIKeyAndActionStatusHandler(apiKeyAuthWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 	// go routine to poll and delete deployments.
 	// take seconds and multiply with 1000000000 and pass it to the function.
 	// go deploymentService.PollAndDeleteDeployments(60 * 1000000000)
