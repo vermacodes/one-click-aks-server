@@ -29,6 +29,7 @@ type Config struct {
 	HttpRequestTimeoutSeconds       int
 	MiseEndpoint                    string
 	MiseVerboseLogging              bool
+	AuthVerifyMode                  string
 	CorsAllowOrigins                string
 	CorsAllowMethods                string
 	CorsAllowHeaders                string
@@ -182,6 +183,12 @@ func NewConfig() *Config {
 		logging.LogDebug(context.Background(), "MISE_VERBOSE_LOGGING: false")
 	}
 
+	authVerifyMode := os.Getenv("AUTH_VERIFY_MODE")
+	if authVerifyMode == "" {
+		authVerifyMode = "Custom" // default value
+	}
+	logging.LogDebug(context.Background(), "AUTH_VERIFY_MODE: "+authVerifyMode)
+
 	corsAllowOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
 	if corsAllowOrigins == "" {
 		logging.LogError(context.Background(), "CORS_ALLOW_ORIGINS not set")
@@ -224,6 +231,7 @@ func NewConfig() *Config {
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
 		MiseEndpoint:                    miseEndpoint,
 		MiseVerboseLogging:              miseVerboseLogging,
+		AuthVerifyMode:                  authVerifyMode,
 		CorsAllowOrigins:                corsAllowOrigins,
 		CorsAllowMethods:                corsAllowMethods,
 		CorsAllowHeaders:                corsAllowHeaders,

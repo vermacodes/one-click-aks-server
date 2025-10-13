@@ -49,6 +49,6 @@ func NewRedisClient() *redis.Client {
 		os.Exit(1)
 	}
 
-	logging.LogInfo(ctx, "connected to redis successfully", "addr", addr, "db", redisDB)
+	logging.LogDebug(ctx, "connected to redis successfully", "addr", addr, "db", redisDB)
 	return client
 }

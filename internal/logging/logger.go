@@ -92,7 +92,7 @@ func getProjectRelativePath(fullPath string) string {
 func SetupLogger() {
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
-		slog.Error("LOG_LEVEL not set")
+		slog.Info("LOG_LEVEL not set defaulting to INFO")
 		logLevel = "INFO" // Default to INFO
 	}
 
