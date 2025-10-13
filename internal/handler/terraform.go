@@ -70,6 +70,13 @@ func (t *terraformHandler) Init(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
+		// Ensure action always ends when goroutine exits
+		defer func() {
+			if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
+				logging.LogError(bgCtx, "error setting action end", "error", err)
+			}
+		}()
+
 		t.actionStatusService.SetActionStart(bgCtx)
 		if err := t.terraformService.Init(bgCtx); err != nil {
 			notification.NotificationType = entity.Error
@@ -80,9 +87,6 @@ func (t *terraformHandler) Init(c *gin.Context) {
 		}
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
-		}
-		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 	}()
 
@@ -114,6 +118,13 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
 
 	go func() {
+		// Ensure action always ends when goroutine exits
+		defer func() {
+			if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
+				logging.LogError(bgCtx, "error setting action end", "error", err)
+			}
+		}()
+
 		// background context for long running operation
 		t.actionStatusService.SetActionStart(bgCtx)
 
@@ -136,9 +147,6 @@ func (t *terraformHandler) Plan(c *gin.Context) {
 		}
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
-		}
-		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 	}()
 
@@ -168,6 +176,13 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
+		// Ensure action always ends when goroutine exits
+		defer func() {
+			if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
+				logging.LogError(bgCtx, "error setting action end", "error", err)
+			}
+		}()
+
 		// Set Action start.
 		t.actionStatusService.SetActionStart(bgCtx)
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
@@ -208,11 +223,6 @@ func (t *terraformHandler) Apply(c *gin.Context) {
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			logging.LogError(bgCtx, "error updating deployment", "error", err)
 		}
-
-		// End Action status
-		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error setting action end", "error", err)
-		}
 	}()
 
 	// Respond back to the request with the operation ID
@@ -246,6 +256,13 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
+		// Ensure action always ends when goroutine exits
+		defer func() {
+			if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
+				logging.LogError(bgCtx, "error setting action end", "error", err)
+			}
+		}()
+
 		if err := t.actionStatusService.SetActionStart(bgCtx); err != nil {
 			logging.LogError(bgCtx, "error setting action start", "error", err)
 			notification.NotificationType = entity.Error
@@ -262,9 +279,6 @@ func (t *terraformHandler) Extend(c *gin.Context) {
 		}
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
-		}
-		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 	}()
 
@@ -293,7 +307,22 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 
 	// Start the long-running operation in a goroutine
 	go func() {
-		t.actionStatusService.SetActionStart(bgCtx)
+		// Ensure action always ends when goroutine exits
+		defer func() {
+			if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
+				logging.LogError(bgCtx, "error setting action end", "error", err)
+			}
+		}()
+
+		if err := t.actionStatusService.SetActionStart(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error setting action start", "error", err)
+			notification.NotificationType = entity.Error
+			notification.Message = "Failed to start destroy operation"
+			if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+				logging.LogError(bgCtx, "error setting server notification", "error", err)
+			}
+			return
+		}
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
 		}
@@ -301,6 +330,39 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 		// Ensure terraform is initialized
 		if err := t.terraformService.EnsureInit(bgCtx); err != nil {
 			logging.LogError(bgCtx, "error initializing terraform", "error", err)
+			notification.NotificationType = entity.Error
+			notification.Message = "error initializing terraform"
+			if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+				logging.LogError(bgCtx, "error setting server notification", "error", err)
+			}
+			return
+		}
+
+		// Ensure workspace is as in deployment
+		workspaceAtStart, err := t.workspaceService.GetSelectedWorkspace(bgCtx)
+		reSelectWorkspace := false
+		if err != nil {
+			logging.LogError(bgCtx, "not able to get selected workspace", "error", err)
+			notification.NotificationType = entity.Error
+			notification.Message = "unable to get selected workspace"
+			if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+				logging.LogError(bgCtx, "error setting server notification", "error", err)
+			}
+
+			return
+		}
+
+		if workspaceAtStart.Name != deployment.DeploymentWorkspace {
+			if err := t.workspaceService.Select(bgCtx, entity.Workspace{Name: deployment.DeploymentWorkspace}); err != nil {
+				logging.LogError(bgCtx, "not able to select workspace", "error", err)
+				notification.NotificationType = entity.Error
+				notification.Message = "error selecting workspace"
+				if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+					logging.LogError(bgCtx, "error setting server notification", "error", err)
+				}
+				return
+			}
+			reSelectWorkspace = true
 		}
 
 		deployment.DeploymentStatus = entity.DestroyInProgress
@@ -317,14 +379,23 @@ func (t *terraformHandler) Destroy(c *gin.Context) {
 			notification.Message = string(entity.DestroyCompleted)
 			deployment.DeploymentStatus = entity.DestroyCompleted
 		}
+
+		if reSelectWorkspace {
+			if err := t.workspaceService.Select(bgCtx, workspaceAtStart); err != nil {
+				logging.LogError(bgCtx, "not able to select workspace as it was at the start of destroy operation", "error", err)
+				notification.NotificationType = entity.Error
+				notification.Message = "error selecting workspace"
+				if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
+					logging.LogError(bgCtx, "error setting server notification", "error", err)
+				}
+			}
+		}
+
 		if err := t.actionStatusService.SetServerNotification(bgCtx, notification); err != nil {
 			logging.LogError(bgCtx, "error setting server notification", "error", err)
 		}
 		if err := t.deploymentService.UpsertDeployment(bgCtx, deployment); err != nil {
 			logging.LogError(bgCtx, "error updating deployment", "error", err)
-		}
-		if err := t.actionStatusService.SetActionEnd(bgCtx); err != nil {
-			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 	}()
 
