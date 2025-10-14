@@ -50,6 +50,13 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 			}
 
 			userPrincipal = userPrincipals[0] // take the first one
+
+			if userPrincipal == "" {
+				logging.LogError(c.Request.Context(), "preferred_username claim didn't have username")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim didn't have username"})
+			}
+
+			logging.LogDebug(c.Request.Context(), "user authenticated using mise", "user_principal", userPrincipal)
 		}
 		if config.AuthVerifyMode == "Custom" {
 
@@ -73,6 +80,8 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid auth token"})
 				return
 			}
+
+			logging.LogDebug(c.Request.Context(), "user authenticated using custom", "user_principal", userPrincipal)
 		}
 		// Set user ID in context for tracing and user-specific operations
 		SetUserIDInGin(c, userPrincipal)
