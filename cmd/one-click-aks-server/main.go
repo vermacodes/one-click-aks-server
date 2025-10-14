@@ -147,9 +147,6 @@ func main() {
 	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 
 	handler.NewTerraformWithAPIKeyAndActionStatusHandler(apiKeyAuthWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
-	// go routine to poll and delete deployments.
-	// take seconds and multiply with 1000000000 and pass it to the function.
-	// go deploymentService.PollAndDeleteDeployments(60 * 1000000000)
 
 	// run server
 	router.Run()

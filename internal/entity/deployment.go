@@ -2,7 +2,6 @@ package entity
 
 import (
 	"context"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 )
@@ -64,8 +63,6 @@ type DeploymentService interface {
 	SelectDeployment(ctx context.Context, deployment Deployment) error
 	UpsertDeployment(ctx context.Context, deployment Deployment) error
 	DeleteDeployment(ctx context.Context, userId string, labId string, deploymentId string) error
-	PollAndDeleteDeployments(duration time.Duration) error
-	FetchDeploymentsToBeDeleted(ctx context.Context) []Deployment
 	ChangeTerraformWorkspace(ctx context.Context, deployment Deployment) error
 }
 
