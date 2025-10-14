@@ -26,7 +26,8 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 
 		var userPrincipal string
 
-		if config.AuthVerifyMode == "MISE" {
+		switch config.AuthVerifyMode {
+		case "MISE":
 			// MISE Implementation
 			result, err := miseServer.DelegateAuthToContainer(authToken, c.Request.URL.String(), c.Request.Method, c.ClientIP())
 			if err != nil {
@@ -54,12 +55,13 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 			if userPrincipal == "" {
 				logging.LogError(c.Request.Context(), "preferred_username claim didn't have username")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "preferred_username claim didn't have username"})
+				return
 			}
 
 			logging.LogDebug(c.Request.Context(), "user authenticated using mise", "user_principal", userPrincipal)
-		}
-		if config.AuthVerifyMode == "Custom" {
 
+		case "Custom":
+			// Custom implementation
 			isAADToken, err := helper.VerifyToken(authToken)
 			if err != nil || !isAADToken {
 				logging.LogError(c.Request.Context(), "invalid auth token", "error", err)
@@ -82,6 +84,17 @@ func AuthRequired(miseServer mise.Server, config config.Config) gin.HandlerFunc 
 			}
 
 			logging.LogDebug(c.Request.Context(), "user authenticated using custom", "user_principal", userPrincipal)
+
+		default:
+			// Unsupported authentication mode
+			logging.LogError(c.Request.Context(), "unsupported authentication mode",
+				"auth_verify_mode", config.AuthVerifyMode,
+				"supported_modes", "MISE, Custom")
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error":           "server configuration error: unsupported authentication mode",
+				"supported_modes": []string{"MISE", "Custom"},
+			})
+			return
 		}
 		// Set user ID in context for tracing and user-specific operations
 		SetUserIDInGin(c, userPrincipal)
