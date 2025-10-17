@@ -174,11 +174,7 @@ func (a *actionStatusHandler) GetTerraformOperationWs(w http.ResponseWriter, r *
 	logging.LogInfo(ctx, "terraform operation websocket authenticated successfully", "user_id", userID)
 
 	// Get initial terraform operation status and send it to client
-	initialTerraformOperation, err := a.actionStatusService.GetTerraformOperation(ctx)
-	if err != nil {
-		logging.LogError(ctx, "failed to retrieve initial terraform operation status", "error", err)
-		return
-	}
+	initialTerraformOperation, _ := a.actionStatusService.GetTerraformOperation(ctx)
 
 	// Send the initial terraform operation status to the client
 	if err := conn.WriteJSON(initialTerraformOperation); err != nil {
