@@ -86,7 +86,7 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 		return subscriptionId, nil
 	}
 
-	actlabsAuthEndpoint := a.config.ActlabsHubURL
+	actlabsAuthEndpoint := a.config.ActlabsHubURLInternal
 	// http call to actlabs-auth
 	req, err := http.NewRequest("GET", actlabsAuthEndpoint+"arm/server/"+userId, nil)
 	if err != nil {

@@ -235,7 +235,7 @@ func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, 
 func (t *terraformRepository) UpdateAssignment(ctx context.Context, userId string, labId string, status string) error {
 
 	// http call to actlabs-hub
-	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"assignment/"+userId+"/"+labId+"/"+status, nil)
+	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURLInternal+"assignment/"+userId+"/"+labId+"/"+status, nil)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (t *terraformRepository) UpdateAssignment(ctx context.Context, userId strin
 func (t *terraformRepository) UpdateChallenge(ctx context.Context, userId string, labId string, status string) error {
 
 	// http call to actlabs-hub
-	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURL+"challenge/"+userId+"/"+labId+"/"+status, nil)
+	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURLInternal+"challenge/"+userId+"/"+labId+"/"+status, nil)
 	if err != nil {
 		return err
 	}

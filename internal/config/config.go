@@ -23,7 +23,7 @@ type Config struct {
 	AzureClientID                   string
 	AzureClientSecret               string
 	AzureTenantID                   string
-	ActlabsHubURL                   string
+	ActlabsHubURLInternal           string
 	HttpRequestTimeoutSeconds       int
 	MiseEndpoint                    string
 	MiseVerboseLogging              bool
@@ -146,9 +146,9 @@ func NewConfig() *Config {
 	}
 	logging.LogDebug(ctx, "AZURE_RED_HAT_OPENSHIFT_RP_FIRST_PARTY_SP_ID: "+aroRpFirstPartySpID)
 
-	actlabsHubURL := os.Getenv("ACTLABS_HUB_URL")
-	if actlabsHubURL == "" {
-		logging.LogError(ctx, "ACTLABS_HUB_URL not set")
+	ActlabsHubURLInternal := os.Getenv("ACTLABS_HUB_URL_INTERNAL")
+	if ActlabsHubURLInternal == "" {
+		logging.LogError(ctx, "ACTLABS_HUB_URL_INTERNAL not set")
 		os.Exit(1)
 	}
 
@@ -232,7 +232,7 @@ func NewConfig() *Config {
 		AzureClientID:                   azureClientId,
 		AzureClientSecret:               azureClientSecret,
 		AzureTenantID:                   azureTenantID,
-		ActlabsHubURL:                   actlabsHubURL,
+		ActlabsHubURLInternal:           ActlabsHubURLInternal,
 		HttpRequestTimeoutSeconds:       httpRequestTimeoutSeconds,
 		MiseEndpoint:                    miseEndpoint,
 		MiseVerboseLogging:              miseVerboseLogging,

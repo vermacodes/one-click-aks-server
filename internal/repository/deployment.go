@@ -55,7 +55,7 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 		)
 	}
 
-	url := d.appConfig.ActlabsHubURL + "deployments"
+	url := d.appConfig.ActlabsHubURLInternal + "deployments"
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		logging.LogError(ctx, "error creating HTTP request", "error", err)
@@ -175,7 +175,7 @@ func (d *deploymentRepository) GetDeployment(ctx context.Context, userId string,
 }
 
 func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment entity.Deployment) error {
-	url := d.appConfig.ActlabsHubURL + "deployments"
+	url := d.appConfig.ActlabsHubURLInternal + "deployments"
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
 		logging.LogError(ctx, "error creating new request",
@@ -254,7 +254,7 @@ func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment 
 }
 
 func (d *deploymentRepository) DeleteDeployment(ctx context.Context, userId string, workspace string, subscriptionId string) error {
-	url := d.appConfig.ActlabsHubURL + "deployments/" + subscriptionId + "/" + workspace
+	url := d.appConfig.ActlabsHubURLInternal + "deployments/" + subscriptionId + "/" + workspace
 
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {

@@ -45,7 +45,7 @@ func (l *labRepository) DeleteLabFromRedis(ctx context.Context) error {
 }
 
 func (l *labRepository) GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (string, error) {
-	actlabsAuthEndpoint := l.appConfig.ActlabsHubURL
+	actlabsAuthEndpoint := l.appConfig.ActlabsHubURLInternal
 	// http call to actlabs-auth
 	req, err := http.NewRequest("GET", actlabsAuthEndpoint+"lab/protected/"+typeOfLab+"/"+labId, nil)
 	if err != nil {
