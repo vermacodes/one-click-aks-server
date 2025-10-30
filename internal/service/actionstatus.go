@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/logging"
@@ -53,8 +54,59 @@ func (a *actionStatusService) SetActionStatus(ctx context.Context, actionStatus 
 		return err
 	}
 
+	// Set action status with conditional TTL
 	if err = a.actionStatusRepository.SetActionStatus(ctx, string(val)); err != nil {
 		logging.LogError(ctx, "not able to set actions status in redis", "error", err)
+		return err
+	}
+
+	// Only start auto-renewal if action is in progress
+	if actionStatus.InProgress {
+		logging.LogDebug(ctx, "action in progress, starting auto-renewal with 30s TTL")
+
+		// Start auto-renewal goroutine that renews every 20 seconds
+		go func() {
+			ticker := time.NewTicker(20 * time.Second)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ctx.Done():
+					// Context cancelled, stop renewal
+					logging.LogInfo(ctx, "context cancelled, stopping action status auto-renewal")
+					return
+				case <-ticker.C:
+					// Check current status before renewing
+					currentStatus, err := a.GetActionStatus(ctx)
+					if err != nil {
+						logging.LogError(ctx, "failed to get current action status for renewal", "error", err)
+						continue // Continue trying on next tick
+					}
+
+					if !currentStatus.InProgress {
+						// Action is no longer in progress, stop renewal
+						logging.LogInfo(ctx, "action no longer in progress, stopping auto-renewal")
+						return
+					}
+
+					// Only renew if still in progress - use current status
+					currentVal, err := json.Marshal(currentStatus)
+					if err != nil {
+						logging.LogError(ctx, "failed to marshal current status for renewal", "error", err)
+						continue
+					}
+
+					if err := a.actionStatusRepository.SetActionStatus(ctx, string(currentVal)); err != nil {
+						logging.LogError(ctx, "failed to renew action status TTL", "error", err)
+						// Continue trying to renew on next tick
+					} else {
+						logging.LogDebug(ctx, "action status TTL renewed successfully")
+					}
+				}
+			}
+		}()
+	} else {
+		logging.LogDebug(ctx, "action not in progress, set with no expiration")
 	}
 
 	return nil

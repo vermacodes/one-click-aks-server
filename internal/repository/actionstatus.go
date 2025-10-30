@@ -2,10 +2,14 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
+	"time"
 
 	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -15,8 +19,41 @@ type actionStatusRepository struct {
 }
 
 func NewActionStatusRepository() entity.ActionStatusRepository {
-	return &actionStatusRepository{
+	repo := &actionStatusRepository{
 		rdb: cache.NewRedisClient(),
+	}
+
+	// Enable key expiration notifications and start listener
+	go repo.listenForKeyExpirations()
+
+	return repo
+}
+
+func (a *actionStatusRepository) listenForKeyExpirations() {
+	ctx := context.Background()
+
+	// Enable key expiration notifications in Redis
+	a.rdb.ConfigSet(ctx, "notify-keyspace-events", "Ex")
+
+	// Subscribe to key expiration events
+	pubsub := a.rdb.PSubscribe(ctx, "__keyevent@*__:expired")
+	defer pubsub.Close()
+
+	for msg := range pubsub.Channel() {
+		expiredKey := msg.Payload
+
+		// Check if this is an action status key
+		if strings.HasSuffix(expiredKey, "-actionstatus") {
+			userID := strings.TrimSuffix(expiredKey, "-actionstatus")
+
+			// Create expired action status
+			expiredStatus := entity.ActionStatus{InProgress: false}
+			expiredVal, _ := json.Marshal(expiredStatus)
+
+			// Publish to the action status channel
+			channelName := userID + "-redis-action-status-pubsub-channel"
+			a.rdb.Publish(ctx, channelName, string(expiredVal))
+		}
 	}
 }
 
@@ -25,8 +62,19 @@ func (a *actionStatusRepository) GetActionStatus(ctx context.Context) (string, e
 }
 
 func (a *actionStatusRepository) SetActionStatus(ctx context.Context, val string) error {
-	// Set the value in redis.
-	if err := a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus", val, 0).Err(); err != nil {
+	logging.LogDebug(ctx, "called set action status repository", "action_status_value", val)
+	// Parse the action status to check if it's in progress
+	var actionStatus entity.ActionStatus
+	var ttl time.Duration = 0 // Default: no expiration
+
+	if err := json.Unmarshal([]byte(val), &actionStatus); err == nil {
+		if actionStatus.InProgress {
+			ttl = 30 * time.Second // Set 30 second TTL only if in progress
+		}
+	}
+
+	// Set the value in redis with conditional TTL
+	if err := a.rdb.Set(ctx, helper.GetUserIDFromContext(ctx)+"-actionstatus", val, ttl).Err(); err != nil {
 		return err
 	}
 
