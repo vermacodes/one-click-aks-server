@@ -239,9 +239,10 @@ func (t *terraformRepository) UpdateAssignment(ctx context.Context, userId strin
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
+	req.Header.Set("x-api-key", t.appConfig.APIKey)
+	req.Header.Set("x-user-id", userId)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -263,21 +264,25 @@ func (t *terraformRepository) UpdateChallenge(ctx context.Context, userId string
 	// http call to actlabs-hub
 	req, err := http.NewRequest("PUT", t.appConfig.ActlabsHubURLInternal+"challenge/"+userId+"/"+labId+"/"+status, nil)
 	if err != nil {
+		logging.LogError(ctx, "failed to create HTTP request to update challenge status", "error", err)
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("ACTLABS_AUTH_TOKEN"))
+	req.Header.Set("x-api-key", t.appConfig.APIKey)
+	req.Header.Set("x-user-id", userId)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		logging.LogError(ctx, "failed to update challenge status", "error", err)
 		return err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logging.LogError(ctx, "failed to update challenge status", "status", resp.Status)
 		return fmt.Errorf("not able to update challenge status")
 	}
 

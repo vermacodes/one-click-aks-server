@@ -94,16 +94,21 @@ func (a *authRepository) GetSubscriptionId(ctx context.Context) (string, error) 
 		return "", err
 	}
 
-	armAccessToken, err := a.auth.GetARMAccessToken()
-	if err != nil {
-		logging.LogError(ctx, "error getting arm access token", "error", err)
-		return "", err
-	}
+	// armAccessToken, err := a.auth.GetARMAccessToken()
+	// if err != nil {
+	// 	logging.LogError(ctx, "error getting arm access token", "error", err)
+	// 	return "", err
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Accept", "application/json")
+	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	req.Header.Set("x-api-key", a.config.APIKey)
+	req.Header.Set("x-user-id", userId)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

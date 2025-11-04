@@ -52,18 +52,23 @@ func (l *labRepository) GetProtectedLab(ctx context.Context, typeOfLab string, l
 		return "", err
 	}
 
-	armAccessToken, err := l.auth.GetARMAccessToken()
-	if err != nil {
-		logging.LogError(ctx, "error getting arm access token",
-			slog.Any("error", err),
-		)
-		return "", err
-	}
+	// armAccessToken, err := l.auth.GetARMAccessToken()
+	// if err != nil {
+	// 	logging.LogError(ctx, "error getting arm access token",
+	// 		slog.Any("error", err),
+	// 	)
+	// 	return "", err
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Accept", "application/json")
+	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	req.Header.Set("x-api-key", l.appConfig.APIKey)
+	req.Header.Set("x-user-id", logging.GetUserID(ctx))
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

@@ -12,7 +12,6 @@ import (
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
-	"one-click-aks-server/internal/helper"
 	"one-click-aks-server/internal/logging"
 
 	"github.com/redis/go-redis/v9"
@@ -62,16 +61,21 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 		return nil, err
 	}
 
-	armAccessToken, err := d.auth.GetARMAccessToken()
-	if err != nil {
-		logging.LogError(ctx, "error getting arm access token ", err)
-		return nil, err
-	}
+	// armAccessToken, err := d.auth.GetARMAccessToken()
+	// if err != nil {
+	// 	logging.LogError(ctx, "error getting arm access token ", err)
+	// 	return nil, err
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("Accept", "application/json")
+	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	req.Header.Set("x-api-key", d.appConfig.APIKey)
+	req.Header.Set("x-user-id", userId)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),
@@ -184,16 +188,21 @@ func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment 
 		return err
 	}
 
-	armAccessToken, err := d.auth.GetARMAccessToken()
-	if err != nil {
-		logging.LogError(ctx, "error getting arm access token ", "error", err)
-		return err
-	}
+	// armAccessToken, err := d.auth.GetARMAccessToken()
+	// if err != nil {
+	// 	logging.LogError(ctx, "error getting arm access token ", "error", err)
+	// 	return err
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("Content-Type", "application/json")
+	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	req.Header.Set("x-api-key", d.appConfig.APIKey)
+	req.Header.Set("x-user-id", logging.GetUserID(ctx))
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	marshalledDeployment, err := json.Marshal(deployment)
 	if err != nil {
@@ -262,15 +271,20 @@ func (d *deploymentRepository) DeleteDeployment(ctx context.Context, userId stri
 		return err
 	}
 
-	armAccessToken, err := d.auth.GetARMAccessToken()
-	if err != nil {
-		logging.LogError(ctx, "error getting arm access token ", "error", err)
-		return err
-	}
+	// armAccessToken, err := d.auth.GetARMAccessToken()
+	// if err != nil {
+	// 	logging.LogError(ctx, "error getting arm access token ", "error", err)
+	// 	return err
+	// }
 
-	req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
-	req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
+	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
+	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
+
+	req.Header.Set("x-api-key", d.appConfig.APIKey)
+	req.Header.Set("x-user-id", userId)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{
 		Timeout: time.Second * time.Duration(d.appConfig.HttpRequestTimeoutSeconds),
