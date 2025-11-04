@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Starting Redis Server
-service redis-server start
-
 # Start azurerm-msi-auth-proxy in the background
 chmod +x azurerm-msi-auth-proxy
 ./azurerm-msi-auth-proxy &
