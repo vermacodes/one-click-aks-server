@@ -40,10 +40,6 @@ rm ./tf/workspaces.log
 # remove old build files
 rm one-click-aks-server azurerm-msi-auth-proxy
 
-if [[ "${PROTECTED_LAB_SECRET}" == "" ]]; then
-  echo "PROTECTED_LAB_SECRET missing"
-  exit 1
-fi
 
 export VERSION="$(date +%Y%m%d)"
 
@@ -55,7 +51,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # build server
-go build -ldflags "-X 'main.version=$VERSION' -X 'one-click-aks-server/internal/entity.ProtectedLabSecret=$PROTECTED_LAB_SECRET'" ./cmd/one-click-aks-server
+go build -ldflags "-X 'main.version=$VERSION'" ./cmd/one-click-aks-server
 
 if [ $? -ne 0 ]; then
   echo "Failed to build one-click-aks-server"

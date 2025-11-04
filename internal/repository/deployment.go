@@ -61,17 +61,6 @@ func (d *deploymentRepository) GetMyDeployments(ctx context.Context, userId stri
 		return nil, err
 	}
 
-	// armAccessToken, err := d.auth.GetARMAccessToken()
-	// if err != nil {
-	// 	logging.LogError(ctx, "error getting arm access token ", err)
-	// 	return nil, err
-	// }
-
-	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
-	// req.Header.Set("Accept", "application/json")
-	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
-
 	req.Header.Set("x-api-key", d.appConfig.APIKey)
 	req.Header.Set("x-user-id", userId)
 	req.Header.Set("Accept", "application/json")
@@ -188,17 +177,6 @@ func (d *deploymentRepository) UpsertDeployment(ctx context.Context, deployment 
 		return err
 	}
 
-	// armAccessToken, err := d.auth.GetARMAccessToken()
-	// if err != nil {
-	// 	logging.LogError(ctx, "error getting arm access token ", "error", err)
-	// 	return err
-	// }
-
-	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	// req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
-	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
-
 	req.Header.Set("x-api-key", d.appConfig.APIKey)
 	req.Header.Set("x-user-id", logging.GetUserID(ctx))
 	req.Header.Set("Accept", "application/json")
@@ -270,16 +248,6 @@ func (d *deploymentRepository) DeleteDeployment(ctx context.Context, userId stri
 		logging.LogError(ctx, "error creating new request ", "error", err)
 		return err
 	}
-
-	// armAccessToken, err := d.auth.GetARMAccessToken()
-	// if err != nil {
-	// 	logging.LogError(ctx, "error getting arm access token ", "error", err)
-	// 	return err
-	// }
-
-	// req.Header.Set("Authorization", "Bearer "+armAccessToken)
-	// req.Header.Set("x-ms-client-principal-name", helper.GetUserIDFromContext(ctx))
-	// req.Header.Set("ProtectedLabSecret", entity.ProtectedLabSecret)
 
 	req.Header.Set("x-api-key", d.appConfig.APIKey)
 	req.Header.Set("x-user-id", userId)
