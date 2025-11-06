@@ -2,6 +2,7 @@
 
 function setup_azure_login() {
   if [[ -n "$ARM_SUBSCRIPTION_ID" ]]; then
+    log "ACTLABS SERVER ID: $HOSTNAME"
     log "ARM_SUBSCRIPTION_ID detected: $ARM_SUBSCRIPTION_ID"
     
     # Set Azure CLI config directory to current directory/.azure

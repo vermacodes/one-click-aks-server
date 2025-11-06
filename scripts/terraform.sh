@@ -2,8 +2,6 @@
 
 action=$1
 
-echo $(pwd)
-
 source $ROOT_DIR/scripts/helper.sh
 
 function plan() {
