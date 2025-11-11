@@ -3,11 +3,12 @@ package handler
 import (
 	"net/http"
 
+	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"golang.org/x/exp/slog"
 )
 
 type actionStatusHandler struct {
@@ -19,9 +20,6 @@ func NewActionStatusHandler(r *gin.Engine, service entity.ActionStatusService) {
 		actionStatusService: service,
 	}
 
-	r.GET("/actionstatus", handler.GetActionStatus)
-	r.PUT("/actionstatus", handler.SetActionStatus)
-	r.GET("/terraform/status", handler.GetTerraformOperationStatus)
 	r.GET("/terraform/statusws", func(c *gin.Context) {
 		handler.GetTerraformOperationWs(c.Writer, c.Request)
 	})
@@ -32,20 +30,28 @@ func NewActionStatusHandler(r *gin.Engine, service entity.ActionStatusService) {
 	r.GET("/serverNotificationWs", func(c *gin.Context) {
 		handler.GetServerNotificationWs(c.Writer, c.Request)
 	})
+
+	r.GET("/secureServerNotificationWs", func(c *gin.Context) {
+		handler.GetServerNotificationWs(c.Writer, c.Request)
+	})
 }
 
 func NewAuthActionStatusHandler(r *gin.RouterGroup, service entity.ActionStatusService) {
 	handler := &actionStatusHandler{
 		actionStatusService: service,
 	}
-	r.GET("/secureServerNotificationWs", func(c *gin.Context) {
-		handler.GetServerNotificationWs(c.Writer, c.Request)
-	})
+
+	r.GET("/actionstatus", handler.GetActionStatus)
+	r.PUT("/actionstatus", handler.SetActionStatus)
+	r.GET("/terraform/status", handler.GetTerraformOperationStatus)
 }
 
 func (a *actionStatusHandler) GetActionStatus(c *gin.Context) {
-	actionStatus, err := a.actionStatusService.GetActionStatus()
+	logging.LogInfo(c.Request.Context(), "getting action status")
+
+	actionStatus, err := a.actionStatusService.GetActionStatus(c.Request.Context())
 	if err != nil {
+		logging.LogError(c.Request.Context(), "failed to get action status", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -54,19 +60,25 @@ func (a *actionStatusHandler) GetActionStatus(c *gin.Context) {
 }
 
 func (a *actionStatusHandler) SetActionStatus(c *gin.Context) {
+	logging.LogInfo(c.Request.Context(), "setting action status")
+
 	actionStatus := entity.ActionStatus{}
 	if err := c.Bind(&actionStatus); err != nil {
+		logging.LogError(c.Request.Context(), "invalid request payload for action status", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	a.actionStatusService.SetActionStatus(actionStatus)
+	a.actionStatusService.SetActionStatus(c.Request.Context(), actionStatus)
 	c.Status(http.StatusOK)
 }
 
 func (a *actionStatusHandler) GetTerraformOperationStatus(c *gin.Context) {
-	terraformOperation, err := a.actionStatusService.GetTerraformOperation()
+	logging.LogInfo(c.Request.Context(), "getting terraform operation status")
+
+	terraformOperation, err := a.actionStatusService.GetTerraformOperation(c.Request.Context())
 	if err != nil {
+		logging.LogError(c.Request.Context(), "failed to get terraform operation status", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -85,94 +97,151 @@ var actionStatusUpgrader = websocket.Upgrader{
 func (a *actionStatusHandler) GetActionStatusWs(w http.ResponseWriter, r *http.Request) {
 	conn, err := actionStatusUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("Failed to upgrade action status websocket connection:", err)
+		logging.LogError(r.Context(), "failed to upgrade action status websocket connection", "error", err)
 		return
 	}
 
 	defer conn.Close()
 
-	// Get initial action status
-	initialActionStatus, err := a.actionStatusService.GetActionStatus()
+	logging.LogInfo(r.Context(), "websocket connection for action status established, waiting for authentication")
+
+	// Wait for authentication message
+	userID, err := auth.AuthenticateWebSocketConnection(conn)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		slog.Error("Failed to retrieve initial action status:", err)
+		logging.LogError(r.Context(), "failed to authenticate action status websocket connection", "error", err)
+		return
+	}
+
+	// now that we have user id, add it to context
+	ctx := logging.WithUserID(r.Context(), userID)
+
+	logging.LogInfo(ctx, "action status websocket authenticated successfully", "user_id", userID)
+
+	// Get initial action status and send it to client
+	initialActionStatus, err := a.actionStatusService.GetActionStatus(ctx)
+	if err != nil {
+		logging.LogError(ctx, "failed to retrieve initial action status", "error", err)
 		return
 	}
 
 	// Send the initial action status to the client
 	if err := conn.WriteJSON(initialActionStatus); err != nil {
-		slog.Error("Failed to send initial action status to client:", err)
+		logging.LogError(ctx, "failed to send initial action status to client", "error", err)
 		return
 	}
 
-	// previousActionStatus := initialActionStatus
+	logging.LogDebug(ctx, "sent initial action status, now waiting for changes", "in_progress", initialActionStatus.InProgress)
 
 	for {
-		// Get the current action status
-		actionStatus, err := a.actionStatusService.WaitForActionStatusChange()
+		// Get the current action status when it changes
+		actionStatus, err := a.actionStatusService.WaitForActionStatusChange(ctx)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			slog.Error("Failed to retrieve action status:", err)
+			logging.LogError(ctx, "failed to retrieve action status", "error", err)
 			return
 		}
 
-		// Check for changes in action status
+		// Send the action status change
 		if err := conn.WriteJSON(actionStatus); err != nil {
-			slog.Error("Failed to send action status to client:", err)
+			logging.LogError(ctx, "failed to send action status to client", "error", err)
 			return
 		}
 
+		logging.LogDebug(ctx, "sent action status update", "in_progress", actionStatus.InProgress)
 	}
 }
 
 func (a *actionStatusHandler) GetTerraformOperationWs(w http.ResponseWriter, r *http.Request) {
 	conn, err := actionStatusUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("Failed to upgrade action status websocket connection:", err)
+		logging.LogError(r.Context(), "failed to upgrade terraform operation websocket connection", "error", err)
 		return
 	}
 
 	defer conn.Close()
 
+	logging.LogInfo(r.Context(), "websocket connection for terraform operation established, waiting for authentication")
+
+	// Wait for authentication message
+	userID, err := auth.AuthenticateWebSocketConnection(conn)
+	if err != nil {
+		logging.LogError(r.Context(), "failed to authenticate terraform operation websocket connection", "error", err)
+		return
+	}
+
+	// now that we have user id, add it to context
+	ctx := logging.WithUserID(r.Context(), userID)
+
+	logging.LogInfo(ctx, "terraform operation websocket authenticated successfully", "user_id", userID)
+
+	// Get initial terraform operation status and send it to client
+	initialTerraformOperation, _ := a.actionStatusService.GetTerraformOperation(ctx)
+
+	// Send the initial terraform operation status to the client
+	if err := conn.WriteJSON(initialTerraformOperation); err != nil {
+		logging.LogError(ctx, "failed to send initial terraform operation status to client", "error", err)
+		return
+	}
+
+	logging.LogDebug(ctx, "sent initial terraform operation, now waiting for changes", "operation_id", initialTerraformOperation.OperationId, "in_progress", initialTerraformOperation.InProgress)
+
 	for {
-		// Get the current action status
-		actionStatus, err := a.actionStatusService.WaitForTerraformOperationChange()
+		// Get the current terraform operation status when it changes
+		terraformOperation, err := a.actionStatusService.WaitForTerraformOperationChange(ctx)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			slog.Error("Failed to retrieve action status:", err)
+			logging.LogError(ctx, "failed to retrieve terraform operation status", "error", err)
 			return
 		}
 
-		// Check for changes in action status
-		if err := conn.WriteJSON(actionStatus); err != nil {
-			slog.Error("Failed to send action status to client:", err)
+		// Send the terraform operation change
+		if err := conn.WriteJSON(terraformOperation); err != nil {
+			logging.LogError(ctx, "failed to send terraform operation status to client", "error", err)
 			return
 		}
+
+		logging.LogDebug(ctx, "sent terraform operation update", "operation_id", terraformOperation.OperationId, "in_progress", terraformOperation.InProgress)
 	}
 }
 
 func (a *actionStatusHandler) GetServerNotificationWs(w http.ResponseWriter, r *http.Request) {
 	conn, err := actionStatusUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("Failed to upgrade server notification websocket connection:", err)
+		logging.LogError(r.Context(), "failed to upgrade server notification websocket connection", "error", err)
 		return
 	}
 
 	defer conn.Close()
 
+	logging.LogInfo(r.Context(), "websocket connection for server notification established, waiting for authentication")
+
+	// Wait for authentication message
+	userID, err := auth.AuthenticateWebSocketConnection(conn)
+	if err != nil {
+		logging.LogError(r.Context(), "failed to authenticate server notification websocket connection", "error", err)
+		return
+	}
+
+	// now that we have user id, add it to context
+	ctx := logging.WithUserID(r.Context(), userID)
+
+	logging.LogInfo(ctx, "server notification websocket authenticated successfully", "user_id", userID)
+
+	// Don't send initial state - only send changes after connection
+	logging.LogDebug(ctx, "server notification websocket ready, waiting for changes")
+
 	for {
-		// Get the current server notification
-		actionStatus, err := a.actionStatusService.WaitForServerNotificationChange()
+		// Get the current server notification when it changes
+		notification, err := a.actionStatusService.WaitForServerNotificationChange(ctx)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			slog.Error("Failed to retrieve server notification:", err)
+			logging.LogError(ctx, "failed to retrieve server notification", "error", err)
 			return
 		}
 
-		// Check for changes in server notification
-		if err := conn.WriteJSON(actionStatus); err != nil {
-			slog.Error("Failed to send server notification to client:", err)
+		// Send the notification change
+		if err := conn.WriteJSON(notification); err != nil {
+			logging.LogError(ctx, "failed to send server notification to client", "error", err)
 			return
 		}
+
+		logging.LogDebug(ctx, "sent server notification update", "notification_id", notification.Id)
 	}
 }

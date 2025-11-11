@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Starting Redis Server
-service redis-server start
-
 # Start azurerm-msi-auth-proxy in the background
 chmod +x azurerm-msi-auth-proxy
 ./azurerm-msi-auth-proxy &
@@ -27,9 +24,6 @@ PROXY_PID=$!
 
 chmod +x one-click-aks-server
 export ROOT_DIR=$(pwd)
-# export PORT="80"
-
-echo $ARM_CLIENT_ID
 
 while true; do
 

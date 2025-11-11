@@ -1,9 +1,11 @@
 package entity
 
+import "context"
+
 type RedisService interface {
-	ResetServerCache() error
+	ResetServerCache(ctx context.Context) error
 }
 
 type RedisRepository interface {
-	ResetServerCache() error
+	ResetServerCache(ctx context.Context) error
 }

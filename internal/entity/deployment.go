@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"time"
+	"context"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/data/aztables"
 )
@@ -56,23 +56,21 @@ type OperationEntry struct {
 }
 
 type DeploymentService interface {
-	GetDeployments() ([]Deployment, error)
-	GetMyDeployments(string) ([]Deployment, error)
-	GetDeployment(string, string, string) (Deployment, error)
-	GetSelectedDeployment() (Deployment, error)
-	SelectDeployment(Deployment) error
-	UpsertDeployment(Deployment) error
-	DeleteDeployment(string, string, string) error
-	PollAndDeleteDeployments(time.Duration) error
-	FetchDeploymentsToBeDeleted() []Deployment
-	ChangeTerraformWorkspace(Deployment) error
+	GetDeployments(ctx context.Context) ([]Deployment, error)
+	GetMyDeployments(ctx context.Context, userId string) ([]Deployment, error)
+	GetDeployment(ctx context.Context, userId string, labId string, deploymentId string) (Deployment, error)
+	GetSelectedDeployment(ctx context.Context) (Deployment, error)
+	SelectDeployment(ctx context.Context, deployment Deployment) error
+	UpsertDeployment(ctx context.Context, deployment Deployment) error
+	DeleteDeployment(ctx context.Context, userId string, labId string, deploymentId string) error
+	ChangeTerraformWorkspace(ctx context.Context, deployment Deployment) error
 }
 
 type DeploymentRepository interface {
-	GetDeployments() ([]Deployment, error)
-	GetMyDeployments(string, string) ([]Deployment, error)
-	GetDeployment(string, string, string) (Deployment, error)
-	UpsertDeployment(Deployment) error
+	GetDeployments(ctx context.Context) ([]Deployment, error)
+	GetMyDeployments(ctx context.Context, userId string, subscriptionId string) ([]Deployment, error)
+	GetDeployment(ctx context.Context, userId string, labId string, deploymentId string) (Deployment, error)
+	UpsertDeployment(ctx context.Context, deployment Deployment) error
 	// DeploymentOperationEntry(Deployment) error
-	DeleteDeployment(string, string, string) error
+	DeleteDeployment(ctx context.Context, userId string, labId string, deploymentId string) error
 }

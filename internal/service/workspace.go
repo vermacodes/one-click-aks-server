@@ -1,64 +1,68 @@
 package service
 
 import (
+	"context"
 	"strings"
 
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 type workspaceService struct {
 	workspaceRepository   entity.WorkspaceRepository
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	actionStatusService   entity.ActionStatusService
+	authService           entity.AuthService
 }
 
-func NewWorkspaceService(workspaceRepo entity.WorkspaceRepository, storageAccountService entity.StorageAccountService, actionStatusService entity.ActionStatusService) entity.WorkspaceService {
+func NewWorkspaceService(workspaceRepo entity.WorkspaceRepository, storageAccountService entity.StorageAccountService, actionStatusService entity.ActionStatusService, authService entity.AuthService) entity.WorkspaceService {
 	return &workspaceService{
 		workspaceRepository:   workspaceRepo,
 		storageAccountService: storageAccountService,
 		actionStatusService:   actionStatusService,
+		authService:           authService,
 	}
 }
 
-func (w *workspaceService) List() ([]entity.Workspace, error) {
+func (w *workspaceService) List(ctx context.Context) ([]entity.Workspace, error) {
+	logging.LogInfo(ctx, "listing workspaces")
 	workspaces := []entity.Workspace{}
 
 	// Send workspaces from redis.
-	val, err := w.workspaceRepository.GetListFromRedis()
+	val, err := w.workspaceRepository.GetListFromRedis(ctx)
 	if err == nil {
-		return helperStringToWorkspaces(val), nil
+		return helperStringToWorkspaces(ctx, val), nil
 	}
 
 	// rest of the function will be executed only if the workspace was not found in redis.
 
-	storageAccountName, err := w.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
 
 	if err != nil {
-		slog.Error("Not able to get storage account name", err)
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
 		return workspaces, err
 	}
 
-	val, err = w.workspaceRepository.List(storageAccountName)
+	val, err = w.workspaceRepository.List(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx))
 	if err != nil {
-		slog.Error("Not able to list workspaces", err)
+		logging.LogError(ctx, "Not able to list workspaces", "error", err)
 		return workspaces, err
 	}
 
 	if val == "" {
-		slog.Error("No workspaces found", err)
+		logging.LogError(ctx, "No workspaces found", "error", err)
 		return workspaces, err
 	}
 
 	// Adding workspaces in redis.
-	w.workspaceRepository.AddListToRedis(val)
+	w.workspaceRepository.AddListToRedis(ctx, val)
 
-	return helperStringToWorkspaces(val), nil
+	return helperStringToWorkspaces(ctx, val), nil
 }
 
-func (w *workspaceService) GetSelectedWorkspace() (entity.Workspace, error) {
-	workspaces, err := w.List()
+func (w *workspaceService) GetSelectedWorkspace(ctx context.Context) (entity.Workspace, error) {
+	logging.LogInfo(ctx, "getting selected workspace")
+	workspaces, err := w.List(ctx)
 	if err != nil {
 		return entity.Workspace{}, err
 	}
@@ -73,81 +77,101 @@ func (w *workspaceService) GetSelectedWorkspace() (entity.Workspace, error) {
 
 }
 
-func (w *workspaceService) Add(workspace entity.Workspace) error {
+func (w *workspaceService) Add(ctx context.Context, workspace entity.Workspace) error {
 
-	if err := w.workspaceRepository.Add(workspace); err != nil {
-		slog.Error("not able to add workspace", err)
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
+
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
+		return err
+	}
+
+	if err := w.workspaceRepository.Add(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
+		logging.LogError(ctx, "not able to add workspace", "error", err)
 		return err
 	}
 
 	// Since we just updated the workspaces, Redis info is now stale.
 	// Remove it so that it gets updated correctly.
-	w.workspaceRepository.DeleteListFromRedis()
-	w.workspaceRepository.DeleteResourcesFromRedis()
+	w.workspaceRepository.DeleteListFromRedis(ctx)
+	w.workspaceRepository.DeleteResourcesFromRedis(ctx)
 
 	return nil
 }
 
-func (w *workspaceService) Select(workspace entity.Workspace) error {
+func (w *workspaceService) Select(ctx context.Context, workspace entity.Workspace) error {
+
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
+
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
+		return err
+	}
 
 	// add workspace if not exists
-
-	if err := w.workspaceRepository.Select(workspace); err != nil {
-		slog.Error("not able to select the workspace", err)
+	if err := w.workspaceRepository.Select(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
+		logging.LogError(ctx, "not able to select the workspace", "error", err)
 		return err
 	}
 
-	w.workspaceRepository.DeleteListFromRedis()
-	w.workspaceRepository.DeleteResourcesFromRedis()
+	w.workspaceRepository.DeleteListFromRedis(ctx)
+	w.workspaceRepository.DeleteResourcesFromRedis(ctx)
 	return nil
 }
 
-func (w *workspaceService) Delete(workspace entity.Workspace) error {
-	if err := w.workspaceRepository.Delete(workspace); err != nil {
-		slog.Error("not able to delete workspace", err)
+func (w *workspaceService) Delete(ctx context.Context, workspace entity.Workspace) error {
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
+
+	if err != nil {
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
 		return err
 	}
 
-	w.workspaceRepository.DeleteListFromRedis()
-	w.workspaceRepository.DeleteResourcesFromRedis()
+	if err := w.workspaceRepository.Delete(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx), workspace); err != nil {
+		logging.LogError(ctx, "not able to delete workspace", "error", err)
+		return err
+	}
+
+	w.workspaceRepository.DeleteListFromRedis(ctx)
+	w.workspaceRepository.DeleteResourcesFromRedis(ctx)
 	return nil
 }
 
-func (w *workspaceService) Resources() (string, error) {
-
+func (w *workspaceService) Resources(ctx context.Context) (string, error) {
+	logging.LogInfo(ctx, "getting resources")
 	// Get resources from redis.
-	resources, err := w.workspaceRepository.GetResourcesFromRedis()
+	resources, err := w.workspaceRepository.GetResourcesFromRedis(ctx)
 	if err == nil {
 		return resources, err
 	}
 
 	// rest of the function executes only if resources not found in redis.
 
-	storageAccountName, err := w.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := w.storageAccountService.GetStorageAccountName(ctx)
 
 	if err != nil {
-		slog.Error("Not able to get storage account name", err)
+		logging.LogError(ctx, "Not able to get storage account name", "error", err)
 		return "", err
 	}
-	resources, err = w.workspaceRepository.Resources(storageAccountName)
+	resources, err = w.workspaceRepository.Resources(ctx, storageAccountName, w.authService.GetSubscriptionId(ctx))
 	if err != nil {
-		slog.Error("not able to get resources", err)
+		logging.LogError(ctx, "not able to get resources", "error", err)
 	}
 
-	w.workspaceRepository.AddResourcesToRedis(resources)
+	w.workspaceRepository.AddResourcesToRedis(ctx, resources)
 	return resources, err
 }
 
-func (w *workspaceService) DeleteAllWorkspaceFromRedis() error {
-	w.workspaceRepository.DeleteListFromRedis()
-	w.workspaceRepository.DeleteResourcesFromRedis()
+func (w *workspaceService) DeleteAllWorkspaceFromRedis(ctx context.Context) error {
+	w.workspaceRepository.DeleteListFromRedis(ctx)
+	w.workspaceRepository.DeleteResourcesFromRedis(ctx)
 	return nil
 }
 
 // this is a helper function which takes a string (output from the command)
 // and converts to a list of workspaces.
-func helperStringToWorkspaces(val string) []entity.Workspace {
-	slog.Debug("Workspaces : " + val)
+func helperStringToWorkspaces(ctx context.Context, val string) []entity.Workspace {
+	logging.LogDebug(ctx, "workspaces : "+val)
 	workspaces := []entity.Workspace{}
 	sliceOut := strings.Split(string(val), ",")
 	for _, v := range sliceOut {

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"one-click-aks-server/internal/auth"
 	"one-click-aks-server/internal/cache"
 	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/handler"
-	"one-click-aks-server/internal/logger"
+	"one-click-aks-server/internal/logging"
 	"one-click-aks-server/internal/mise"
 	"one-click-aks-server/internal/miseadapter"
 	"strings"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 type Status struct {
@@ -36,7 +38,20 @@ func status(c *gin.Context) {
 }
 
 func main() {
-	logger.SetupLogger()
+	// Load environment files first - critical for all config loading
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+
+	// Load local environment overrides if present
+	if err := godotenv.Load(".env.local"); err != nil {
+		log.Printf("Info: No .env.local file found or error loading it: %v", err)
+	}
+
+	logging.SetupLogger()
+
+	// Disable Gin's default logging and use our custom logger
+	middleware.DisableGinDefaultLogging()
 
 	appConfig := config.NewConfig()
 	auth := auth.NewAuth(appConfig)
@@ -68,17 +83,22 @@ func main() {
 	redisService := service.NewRedisService(redisRepository)
 	authService := service.NewAuthService(authRepository)
 	storageAccountService := service.NewStorageAccountService(storageAccountRepository)
-	workspaceService := service.NewWorkspaceService(workspaceRepository, storageAccountService, actionStatusService)
+	workspaceService := service.NewWorkspaceService(workspaceRepository, storageAccountService, actionStatusService, authService)
 	prefService := service.NewPreferenceService(prefRepository, storageAccountService)
-	kVersionService := service.NewKVersionService(kVersionRepository, prefService)
-	aroVersionService := service.NewAROVersionService(aroVersionRepository, prefService)
+	kVersionService := service.NewKVersionService(kVersionRepository, prefService, authService)
+	aroVersionService := service.NewAROVersionService(aroVersionRepository, prefService, authService)
 	labService := service.NewLabService(labRepository, kVersionService, aroVersionService, storageAccountService, authService)
-	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, aroVersionService, storageAccountService, authService)
+	terraformService := service.NewTerraformService(terraformRepository, labService, workspaceService, logStreamService, actionStatusService, kVersionService, aroVersionService, storageAccountService, authService, *appConfig)
 	deploymentService := service.NewDeploymentService(deploymentRepository, labService, terraformService, actionStatusService, logStreamService, authService, workspaceService, *appConfig)
 
 	// gin routers
-	router := gin.Default()
+	router := gin.New() // Use gin.New() instead of gin.Default() to avoid default middleware
 	router.SetTrustedProxies(nil)
+
+	// Add our custom middlewares in order
+	router.Use(middleware.ContextMiddleware())    // First: Generate trace ID
+	router.Use(middleware.GinLoggerWithTraceID()) // Second: Log with trace ID
+	router.Use(gin.Recovery())                    // Third: Recovery middleware
 
 	config := cors.DefaultConfig()
 	config.AllowOrigins = strings.Split(appConfig.CorsAllowOrigins, ",")
@@ -88,7 +108,10 @@ func main() {
 	router.Use(cors.New(config))
 
 	authRouter := router.Group("/")
-	authRouter.Use(middleware.AuthRequired(miseServer, authService, logStreamService))
+	authRouter.Use(middleware.AuthRequired(miseServer, *appConfig))
+
+	apiKeyAuthRouter := router.Group("/")
+	apiKeyAuthRouter.Use(middleware.APIKeyAuthRequired(*appConfig))
 
 	actionStatusRouter := router.Group("/")
 	actionStatusRouter.Use(middleware.ActionStatusMiddleware(actionStatusService))
@@ -99,18 +122,19 @@ func main() {
 	authWithTerraformActionRouter := authRouter.Group("/")
 	authWithTerraformActionRouter.Use(middleware.TerraformActionMiddleware(actionStatusService))
 
+	apiKeyAuthWithTerraformActionRouter := apiKeyAuthRouter.Group("/")
+	apiKeyAuthWithTerraformActionRouter.Use(middleware.TerraformActionMiddleware(actionStatusService))
+
 	// server status
 	router.GET("/status", status)
 
 	// handlers
 	handler.NewLogStreamHandler(router, logStreamService)
 	handler.NewActionStatusHandler(router, actionStatusService)
-	handler.NewRedisHandler(actionStatusRouter, redisService)
-	// handler.NewLoginHandler(router, authService)
+	handler.NewRedisHandler(authWithActionRouter, redisService)
+	handler.NewAuthLogStreamHandler(authRouter, logStreamService)
 	handler.NewAuthActionStatusHandler(authRouter, actionStatusService)
 	handler.NewAuthHandler(authRouter, authService)
-	// handler.NewAuthWithActionStatusHandler(authWithActionRouter, authService)
-	// handler.NewStorageAccountHandler(authRouter, storageAccountService)
 	handler.NewStorageAccountWithActionStatusHandler(authWithActionRouter, storageAccountService)
 	handler.NewWorkspaceHandler(authRouter, workspaceService)
 	handler.NewPreferenceHandler(authRouter, prefService)
@@ -120,11 +144,9 @@ func main() {
 	handler.NewDeploymentHandler(authRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithActionStatusHandler(authWithActionRouter, deploymentService, terraformService, actionStatusService)
 	handler.NewDeploymentWithTerraformActionStatusHandler(authWithTerraformActionRouter, deploymentService, terraformService, actionStatusService)
-	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService)
+	handler.NewTerraformWithActionStatusHandler(authWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 
-	// go routine to poll and delete deployments.
-	// take seconds and multiply with 1000000000 and pass it to the function.
-	go deploymentService.PollAndDeleteDeployments(60 * 1000000000)
+	handler.NewTerraformWithAPIKeyAndActionStatusHandler(apiKeyAuthWithTerraformActionRouter, terraformService, actionStatusService, deploymentService, workspaceService)
 
 	// run server
 	router.Run()

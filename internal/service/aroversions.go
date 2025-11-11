@@ -1,52 +1,54 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 type aroVersionService struct {
 	aroVersionRepository entity.AROVersionRepository
 	preferenceService    entity.PreferenceService
+	authService          entity.AuthService
 }
 
-func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preferenceService entity.PreferenceService) entity.AROVersionService {
+func NewAROVersionService(aroVersionRepo entity.AROVersionRepository, preferenceService entity.PreferenceService, authService entity.AuthService) entity.AROVersionService {
 	return &aroVersionService{
 		aroVersionRepository: aroVersionRepo,
 		preferenceService:    preferenceService,
+		authService:          authService,
 	}
 }
 
-func (a *aroVersionService) GetAROVersions() (entity.AROVersions, error) {
-	slog.Info("Fetching ARO versions")
+func (a *aroVersionService) GetAROVersions(ctx context.Context) (entity.AROVersions, error) {
+	logging.LogInfo(ctx, "getting aro versions")
 	aroVersions := entity.AROVersions{}
 
-	preference, err := a.preferenceService.GetPreference()
+	preference, err := a.preferenceService.GetPreference(ctx)
 	if err != nil {
-		slog.Error("not able to get user's preference", err)
+		logging.LogError(ctx, "not able to get user's preference", err)
 		return aroVersions, err
 	}
 
-	slog.Info("Getting ARO versions for location " + preference.AzureRegion)
-	out, err := a.aroVersionRepository.GetAROVersions(preference.AzureRegion)
+	logging.LogInfo(ctx, "getting aro versions for location "+preference.AzureRegion)
+	out, err := a.aroVersionRepository.GetAROVersions(ctx, preference.AzureRegion, a.authService.GetSubscriptionId(ctx))
 	if err != nil {
-		slog.Error("not able to get ARO versions for location "+preference.AzureRegion, err)
+		logging.LogError(ctx, "not able to get ARO versions for location "+preference.AzureRegion, err)
 		return aroVersions, err
 	}
 
 	if err := json.Unmarshal([]byte(out), &aroVersions); err != nil {
-		slog.Error("not able to unmarshal ARO versions", err)
+		logging.LogError(ctx, "not able to unmarshal ARO versions", err)
 		return aroVersions, err
 	}
 
 	return aroVersions, nil
 }
 
-func (a *aroVersionService) GetDefaultAROVersion() string {
-	slog.Info("Fetching default ARO version")
-	aroVersions, err := a.GetAROVersions()
+func (a *aroVersionService) GetDefaultAROVersion(ctx context.Context) string {
+	logging.LogInfo(ctx, "getting default aro version")
+	aroVersions, err := a.GetAROVersions(ctx)
 	if err != nil {
 		return ""
 	}
@@ -59,9 +61,9 @@ func (a *aroVersionService) GetDefaultAROVersion() string {
 	return aroVersions.Value[middleIndex].Properties.Version
 }
 
-func (a *aroVersionService) DoesVersionExist(version string) bool {
-	slog.Info("Checking if ARO version exists: " + version)
-	aroVersions, err := a.GetAROVersions()
+func (a *aroVersionService) DoesVersionExist(ctx context.Context, version string) bool {
+	logging.LogInfo(ctx, "checking if aro version exists: "+version)
+	aroVersions, err := a.GetAROVersions(ctx)
 	if err != nil {
 		return false
 	}

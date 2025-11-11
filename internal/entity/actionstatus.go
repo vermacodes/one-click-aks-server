@@ -1,5 +1,7 @@
 package entity
 
+import "context"
+
 type ActionStatus struct {
 	InProgress bool `json:"inProgress"`
 }
@@ -28,31 +30,31 @@ type ServerNotification struct {
 }
 
 type ActionStatusService interface {
-	GetActionStatus() (ActionStatus, error)
-	SetActionStatus(ActionStatus) error
-	SetActionStart() error
-	SetActionEnd() error
-	WaitForActionStatusChange() (ActionStatus, error)
+	GetActionStatus(ctx context.Context) (ActionStatus, error)
+	SetActionStatus(ctx context.Context, status ActionStatus) error
+	SetActionStart(ctx context.Context) error
+	SetActionEnd(ctx context.Context) error
+	WaitForActionStatusChange(ctx context.Context) (ActionStatus, error)
 
-	SetTerraformOperation(TerraformOperation) error
-	GetTerraformOperation() (TerraformOperation, error)
-	WaitForTerraformOperationChange() (TerraformOperation, error)
+	SetTerraformOperation(ctx context.Context, op TerraformOperation) error
+	GetTerraformOperation(ctx context.Context) (TerraformOperation, error)
+	WaitForTerraformOperationChange(ctx context.Context) (TerraformOperation, error)
 
-	SetServerNotification(ServerNotification) error
-	GetServerNotification() (ServerNotification, error)
-	WaitForServerNotificationChange() (ServerNotification, error)
+	SetServerNotification(ctx context.Context, notification ServerNotification) error
+	GetServerNotification(ctx context.Context) (ServerNotification, error)
+	WaitForServerNotificationChange(ctx context.Context) (ServerNotification, error)
 }
 
 type ActionStatusRepository interface {
-	GetActionStatus() (string, error)
-	SetActionStatus(string) error
-	WaitForActionStatusChange() (string, error)
+	GetActionStatus(ctx context.Context) (string, error)
+	SetActionStatus(ctx context.Context, val string) error
+	WaitForActionStatusChange(ctx context.Context) (string, error)
 
-	SetTerraformOperation(string) error
-	GetTerraformOperation() (string, error)
-	WaitForTerraformOperationChange() (string, error)
+	SetTerraformOperation(ctx context.Context, val string) error
+	GetTerraformOperation(ctx context.Context) (string, error)
+	WaitForTerraformOperationChange(ctx context.Context) (string, error)
 
-	SetServerNotification(string) error
-	GetServerNotification() (string, error)
-	WaitForServerNotificationChange() (string, error)
+	SetServerNotification(ctx context.Context, val string) error
+	GetServerNotification(ctx context.Context) (string, error)
+	WaitForServerNotificationChange(ctx context.Context) (string, error)
 }

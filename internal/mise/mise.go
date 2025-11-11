@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
+	"one-click-aks-server/internal/logging"
 	"one-click-aks-server/internal/miseadapter"
 )
 
@@ -28,8 +28,7 @@ func (e *ErrTokenValidation) Error() string {
 
 func (s Server) DelegateAuthToContainer(authHeader, uri, method, ipAddr string) (miseadapter.Result, error) {
 	if s.VerboseLogging {
-		log.Default().Printf(
-			"VERBOSE: Original request Information:\nURL:%s, method:%s, original IP address:%s",
+		logging.LogDebug(context.Background(), "VERBOSE: Original request Information:\nURL:%s, method:%s, original IP address:%s",
 			uri,
 			method,
 			ipAddr,
@@ -54,7 +53,7 @@ func (s Server) DelegateAuthToContainer(authHeader, uri, method, ipAddr string) 
 	end := time.Now()
 	elapsed := end.Sub(start)
 
-	log.Default().Printf("time elapsed in mise container + adapter: %d", elapsed.Milliseconds())
+	logging.LogDebug(context.Background(), "time elapsed in mise container + adapter: %d", elapsed.Milliseconds())
 
 	if err != nil {
 		return miseadapter.Result{}, fmt.Errorf("error while validating token: %w", err)
@@ -63,9 +62,9 @@ func (s Server) DelegateAuthToContainer(authHeader, uri, method, ipAddr string) 
 	if s.VerboseLogging {
 		json, err := json.MarshalIndent(result, "", "   ")
 		if err != nil {
-			log.Default().Printf("error marshalling json of result object err=%v\n", err)
+			logging.LogError(context.Background(), "error marshalling json of result object", "error", err)
 		} else {
-			log.Default().Printf("VERBOSE: result struct:\n%s", string(json))
+			logging.LogDebug(context.Background(), "result struct:\n%s", string(json))
 		}
 	}
 

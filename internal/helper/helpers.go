@@ -15,11 +15,11 @@ import (
 	"unsafe"
 
 	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
-	"golang.org/x/exp/slog"
 )
 
 var alphabet = []byte("abcdefghijklmnopqrstuvwxyz0123456789")
@@ -51,14 +51,14 @@ func GetUserPrincipalFromMSALAuthToken(token string) (string, error) {
 	tokenParts := strings.Split(token, ".")
 	if len(tokenParts) < 2 {
 		err := errors.New("invalid token format")
-		slog.Error("invalid token format", err)
+		logging.LogError(context.Background(), "invalid token format", "error", err)
 		return "", err
 	}
 
 	// Decode the token
 	decodedToken, err := base64.StdEncoding.DecodeString(tokenParts[1] + strings.Repeat("=", (4-len(tokenParts[1])%4)%4))
 	if err != nil {
-		slog.Error("not able to decode token -> ", err)
+		logging.LogError(context.Background(), "not able to decode token", "error", err)
 		return "", err
 	}
 
@@ -66,14 +66,14 @@ func GetUserPrincipalFromMSALAuthToken(token string) (string, error) {
 	var tokenJSON map[string]interface{}
 	err = json.Unmarshal(decodedToken, &tokenJSON)
 	if err != nil {
-		slog.Error("not able to unmarshal token -> ", err)
+		logging.LogError(context.Background(), "not able to unmarshal token", "error", err)
 		return "", err
 	}
 
 	userPrincipal, ok := tokenJSON["upn"].(string)
 	if !ok {
 		err := errors.New("user principal name not found in token")
-		slog.Error("user principal name not found in token", err)
+		logging.LogError(context.Background(), "user principal name not found in token", "error", err)
 		return "", err
 	}
 
@@ -119,7 +119,7 @@ func VerifyToken(tokenString string) (bool, error) {
 
 	if !token.Valid {
 		err := errors.New("token is not valid")
-		slog.Error("token is not valid", err)
+		logging.LogError(context.Background(), "token is not valid", "error", err)
 		return false, err
 	}
 
@@ -170,4 +170,27 @@ func CalculateNewEpochTimeForDeployment(deployment *entity.Deployment) {
 		epochTime := now.Unix()
 		deployment.DeploymentAutoDeleteUnixTime = deployment.DeploymentLifespan + epochTime
 	}
+}
+
+func GetUserIDFromContext(ctx context.Context) string {
+	userID, ok := ctx.Value(logging.UserIDKey).(string)
+	if !ok {
+		return "unknown-user"
+	}
+	return userID
+}
+
+func GetUserAliasFromContext(ctx context.Context) string {
+	userID := GetUserIDFromContext(ctx)
+	if userID == "unknown-user" {
+		return userID
+	}
+
+	// Remove any domain suffix
+	if atIndex := strings.Index(userID, "@"); atIndex != -1 {
+		return userID[:atIndex]
+	}
+
+	// If no @ found, return the full userID
+	return userID
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -8,41 +9,42 @@ import (
 	"strings"
 
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 type kVersionService struct {
 	kVersionRepository entity.KVersionRepository
 	preferenceService  entity.PreferenceService
+	authService        entity.AuthService
 }
 
-func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceService entity.PreferenceService) entity.KVersionService {
+func NewKVersionService(kVersionRepo entity.KVersionRepository, preferenceService entity.PreferenceService, authService entity.AuthService) entity.KVersionService {
 	return &kVersionService{
 		kVersionRepository: kVersionRepo,
 		preferenceService:  preferenceService,
+		authService:        authService,
 	}
 }
 
-func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
-	slog.Info("Getting Kubernetes versions")
+func (k *kVersionService) GetOrchestrator(ctx context.Context) (entity.KubernetesVersions, error) {
+	logging.LogInfo(ctx, "getting kubernetes versions")
 	kubernetesVersions := entity.KubernetesVersions{}
 
-	preference, err := k.preferenceService.GetPreference()
+	preference, err := k.preferenceService.GetPreference(ctx)
 	if err != nil {
-		slog.Error("not able to get user's preference", err)
+		logging.LogError(ctx, "not able to get user's preference", err)
 		return kubernetesVersions, err
 	}
 
-	slog.Info("Getting Kubernetes versions for location " + preference.AzureRegion)
-	out, err := k.kVersionRepository.GetOrchestrator(preference.AzureRegion)
+	logging.LogDebug(ctx, "getting kubernetes versions for location "+preference.AzureRegion)
+	out, err := k.kVersionRepository.GetOrchestrator(ctx, preference.AzureRegion, k.authService.GetSubscriptionId(ctx))
 	if err != nil {
-		slog.Error("not able to get orchestrator", err)
+		logging.LogError(ctx, "not able to get orchestrator", err)
 		return kubernetesVersions, err
 	}
 
 	if err := json.Unmarshal([]byte(out), &kubernetesVersions); err != nil {
-		slog.Error("not able to unmarshal output from cli to object", err)
+		logging.LogError(ctx, "not able to unmarshal output from cli to object", err)
 		return kubernetesVersions, err
 	}
 
@@ -51,7 +53,7 @@ func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
 	for _, version := range kubernetesVersions.Values {
 		for _, capability := range version.Capabilities.SupportPlan {
 			if capability == "KubernetesOfficial" {
-				slog.Info("Adding version " + version.Version)
+				logging.LogDebug(ctx, "adding version "+version.Version)
 				filteredVersions.Values = append(filteredVersions.Values, version)
 				break
 			}
@@ -61,10 +63,10 @@ func (k *kVersionService) GetOrchestrator() (entity.KubernetesVersions, error) {
 	return filteredVersions, nil
 }
 
-func (k *kVersionService) GetMostRecentVersion() string {
-	o, err := k.GetOrchestrator()
+func (k *kVersionService) GetMostRecentVersion(ctx context.Context) string {
+	o, err := k.GetOrchestrator(ctx)
 	if err != nil {
-		slog.Error("not able to get orchestrator", err)
+		logging.LogError(ctx, "not able to get orchestrator", err)
 		return ""
 	}
 
@@ -78,7 +80,7 @@ func (k *kVersionService) GetMostRecentVersion() string {
 			versionParts := strings.Split(patchVersion, ".")
 
 			if len(versionParts) < 3 {
-				slog.Error("invalid version string", err)
+				logging.LogError(ctx, "invalid version string", err)
 				return ""
 			}
 
@@ -112,10 +114,10 @@ func (k *kVersionService) GetMostRecentVersion() string {
 	return mostRecentVersionString
 }
 
-func (k *kVersionService) GetOldestVersion() string {
-	o, err := k.GetOrchestrator()
+func (k *kVersionService) GetOldestVersion(ctx context.Context) string {
+	o, err := k.GetOrchestrator(ctx)
 	if err != nil {
-		slog.Error("not able to get orchestrator", err)
+		logging.LogError(ctx, "not able to get orchestrator", err)
 		return ""
 	}
 
@@ -129,7 +131,7 @@ func (k *kVersionService) GetOldestVersion() string {
 			versionParts := strings.Split(patchVersion, ".")
 
 			if len(versionParts) < 3 {
-				slog.Error("invalid version string", err)
+				logging.LogError(ctx, "invalid version string", err)
 				return ""
 			}
 
@@ -163,10 +165,10 @@ func (k *kVersionService) GetOldestVersion() string {
 	return oldestVersionString
 }
 
-func (k *kVersionService) DoesVersionExist(version string) bool {
-	o, err := k.GetOrchestrator()
+func (k *kVersionService) DoesVersionExist(ctx context.Context, version string) bool {
+	o, err := k.GetOrchestrator(ctx)
 	if err != nil {
-		slog.Error("not able to get orchestrator", err)
+		logging.LogError(ctx, "not able to get orchestrator", err)
 		return false
 	}
 
@@ -174,7 +176,7 @@ func (k *kVersionService) DoesVersionExist(version string) bool {
 	for _, v := range o.Values {
 		// Iterate over PatchVersions
 		for patchVersion := range v.PatchVersions {
-			slog.Debug("Patch Version" + patchVersion)
+			logging.LogDebug(ctx, "patch version "+patchVersion)
 			if patchVersion == version {
 				return true
 			}
@@ -183,10 +185,10 @@ func (k *kVersionService) DoesVersionExist(version string) bool {
 	return false
 }
 
-func (k *kVersionService) GetDefaultVersion() string {
-	o, err := k.GetOrchestrator()
+func (k *kVersionService) GetDefaultVersion(ctx context.Context) string {
+	o, err := k.GetOrchestrator(ctx)
 	if err != nil {
-		slog.Error("not able to get orchestrator", err)
+		logging.LogError(ctx, "not able to get orchestrator", err)
 		return ""
 	}
 
@@ -223,7 +225,7 @@ func (k *kVersionService) GetDefaultVersion() string {
 		}
 	}
 
-	slog.Error("not able to get default version", nil)
+	logging.LogError(ctx, "not able to get default version", nil)
 	return ""
 }
 

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>WebSocket Log Stream Test</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				max-width: 800px;
+				margin: 0 auto;
+				padding: 20px;
+			}
+			.status {
+				padding: 10px;
+				margin: 10px 0;
+				border-radius: 4px;
+			}
+			.connected {
+				background-color: #d4edda;
+				color: #155724;
+			}
+			.authenticating {
+				background-color: #fff3cd;
+				color: #856404;
+			}
+			.authenticated {
+				background-color: #d1ecf1;
+				color: #0c5460;
+			}
+			.error {
+				background-color: #f8d7da;
+				color: #721c24;
+			}
+			.disconnected {
+				background-color: #e2e3e5;
+				color: #383d41;
+			}
+
+			.logs {
+				background-color: #f8f9fa;
+				border: 1px solid #dee2e6;
+				border-radius: 4px;
+				padding: 15px;
+				margin: 15px 0;
+				font-family: "Courier New", monospace;
+				white-space: pre-wrap;
+				max-height: 400px;
+				overflow-y: auto;
+			}
+
+			.controls {
+				margin: 15px 0;
+			}
+
+			input[type="text"] {
+				padding: 8px;
+				margin: 5px;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				width: 300px;
+			}
+
+			button {
+				padding: 8px 16px;
+				margin: 5px;
+				border: none;
+				border-radius: 4px;
+				background-color: #007bff;
+				color: white;
+				cursor: pointer;
+			}
+
+			button:hover {
+				background-color: #0056b3;
+			}
+
+			button:disabled {
+				background-color: #6c757d;
+				cursor: not-allowed;
+			}
+
+			.message-log {
+				background-color: #f1f3f4;
+				border: 1px solid #dadce0;
+				border-radius: 4px;
+				padding: 10px;
+				margin: 10px 0;
+				font-family: "Courier New", monospace;
+				font-size: 12px;
+				max-height: 200px;
+				overflow-y: auto;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>WebSocket Log Stream Test</h1>
+
+		<div class="controls">
+			<input type="text" id="serverUrl" placeholder="WebSocket URL" value="ws://localhost:8881/logsws" />
+			<input type="text" id="authToken" placeholder="Bearer Token" value="your-token-here" />
+			<br />
+			<button id="connectBtn" onclick="connect()">Connect</button>
+			<button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+		</div>
+
+		<div id="status" class="status disconnected">Disconnected</div>
+
+		<div>
+			<h3>Live Logs</h3>
+			<div id="logs" class="logs">No logs received yet...</div>
+		</div>
+
+		<div>
+			<h3>Message Log</h3>
+			<div id="messageLog" class="message-log"></div>
+		</div>
+
+		<script>
+			let ws = null;
+			let authenticated = false;
+			let userID = null;
+
+			function updateStatus(status, className) {
+				const statusEl = document.getElementById("status");
+				statusEl.textContent = status;
+				statusEl.className = `status ${className}`;
+			}
+
+			function logMessage(message, type = "info") {
+				const messageLog = document.getElementById("messageLog");
+				const timestamp = new Date().toLocaleTimeString();
+				const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+				messageLog.textContent += logEntry;
+				messageLog.scrollTop = messageLog.scrollHeight;
+			}
+
+			function connect() {
+				const serverUrl = document.getElementById("serverUrl").value;
+				const token = document.getElementById("authToken").value;
+
+				if (!serverUrl || !token) {
+					alert("Please enter both server URL and auth token");
+					return;
+				}
+
+				if (ws) {
+					ws.close();
+				}
+
+				updateStatus("Connecting...", "disconnected");
+				logMessage(`Connecting to ${serverUrl}`, "info");
+
+				ws = new WebSocket(serverUrl);
+
+				ws.onopen = function () {
+					updateStatus("Connected - Authenticating...", "authenticating");
+					logMessage("WebSocket connected, sending authentication...", "info");
+
+					document.getElementById("connectBtn").disabled = true;
+					document.getElementById("disconnectBtn").disabled = false;
+
+					// Send authentication message
+					const authMessage = {
+						type: "auth",
+						data: {
+							token: token,
+						},
+					};
+
+					logMessage(`Sending auth message: ${JSON.stringify(authMessage)}`, "send");
+					ws.send(JSON.stringify(authMessage));
+				};
+
+				ws.onmessage = function (event) {
+					logMessage(`Received: ${event.data}`, "receive");
+
+					let message;
+					try {
+						message = JSON.parse(event.data);
+					} catch (e) {
+						logMessage(`Failed to parse message: ${e.message}`, "error");
+						return;
+					}
+
+					switch (message.type) {
+						case "auth_response":
+							if (message.data.success) {
+								authenticated = true;
+								userID = message.data.user_id;
+								updateStatus(`Authenticated as ${userID}`, "authenticated");
+								logMessage(`Authentication successful for user: ${userID}`, "success");
+							} else {
+								authenticated = false;
+								updateStatus(`Authentication Failed: ${message.data.error}`, "error");
+								logMessage(`Authentication failed: ${message.data.error}`, "error");
+								ws.close();
+							}
+							break;
+
+						case "logs":
+							const logsEl = document.getElementById("logs");
+							logsEl.textContent = message.data.logs || "No logs available";
+							logMessage(`Received log update (${message.data.logs?.length || 0} chars)`, "info");
+							break;
+
+						case "error":
+							updateStatus(`Server Error: ${message.data.message}`, "error");
+							logMessage(`Server error: ${message.data.message}`, "error");
+							break;
+
+						default:
+							logMessage(`Unknown message type: ${message.type}`, "warn");
+					}
+				};
+
+				ws.onerror = function (error) {
+					updateStatus("Connection Error", "error");
+					logMessage(`WebSocket error: ${error}`, "error");
+				};
+
+				ws.onclose = function (event) {
+					updateStatus("Disconnected", "disconnected");
+					logMessage(`WebSocket closed: ${event.code} - ${event.reason}`, "info");
+
+					authenticated = false;
+					userID = null;
+
+					document.getElementById("connectBtn").disabled = false;
+					document.getElementById("disconnectBtn").disabled = true;
+				};
+			}
+
+			function disconnect() {
+				if (ws) {
+					logMessage("Disconnecting...", "info");
+					ws.close();
+				}
+			}
+
+			// Clear message log periodically to prevent memory issues
+			setInterval(() => {
+				const messageLog = document.getElementById("messageLog");
+				const lines = messageLog.textContent.split("\n");
+				if (lines.length > 100) {
+					messageLog.textContent = lines.slice(-50).join("\n");
+				}
+			}, 10000);
+		</script>
+	</body>
+</html>

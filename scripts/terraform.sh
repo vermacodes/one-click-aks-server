@@ -40,7 +40,7 @@ if [[ "$ARM_SUBSCRIPTION_ID" == "" ]]; then
   export ARM_SUBSCRIPTION_ID=$(az account show --output json --only-show-error | jq -r .id)
 fi
 
-cd $root_directory/$terraform_directory
+# cd $root_directory/$terraform_directory
 log "Terraform Environment Variables"
 env | grep "TF_VAR" | while IFS='=' read -r key val; do
   # Try to parse as JSON, fallback to printing as a quoted string if jq fails

@@ -7,9 +7,9 @@ import (
 
 	"one-click-aks-server/internal/entity"
 	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slog"
 )
 
 type deploymentHandler struct {
@@ -69,7 +69,7 @@ func (d *deploymentHandler) GetMyDeployments(c *gin.Context) {
 	authToken = strings.Split(authToken, "Bearer ")[1]
 	userPrincipal, _ := helper.GetUserPrincipalFromMSALAuthToken(authToken)
 
-	deployments, err := d.deploymentService.GetMyDeployments(userPrincipal)
+	deployments, err := d.deploymentService.GetMyDeployments(c.Request.Context(), userPrincipal)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -82,7 +82,7 @@ func (d *deploymentHandler) GetDeployment(c *gin.Context) {
 	userId := c.Param("userId")
 	workspace := c.Param("workspace")
 	subscriptionId := c.Param("subscriptionId")
-	deployment, err := d.deploymentService.GetDeployment(userId, workspace, subscriptionId)
+	deployment, err := d.deploymentService.GetDeployment(c.Request.Context(), userId, workspace, subscriptionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,7 +98,7 @@ func (d *deploymentHandler) SelectDeployment(c *gin.Context) {
 		return
 	}
 
-	if err := d.deploymentService.SelectDeployment(deployment); err != nil {
+	if err := d.deploymentService.SelectDeployment(c.Request.Context(), deployment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -121,7 +121,7 @@ func (d *deploymentHandler) UpsertDeployment(c *gin.Context) {
 	deployment.DeploymentId = userPrincipal + "-" + deployment.DeploymentWorkspace + "-" + deployment.DeploymentSubscriptionId
 	deployment.DeploymentUserId = userPrincipal
 
-	if err := d.deploymentService.UpsertDeployment(deployment); err != nil {
+	if err := d.deploymentService.UpsertDeployment(c.Request.Context(), deployment); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -141,7 +141,7 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	authToken = strings.Split(authToken, "Bearer ")[1]
 	userPrincipal, _ := helper.GetUserPrincipalFromMSALAuthToken(authToken)
 
-	deployment, err := d.deploymentService.GetDeployment(userPrincipal, workspace, subscriptionId)
+	deployment, err := d.deploymentService.GetDeployment(c.Request.Context(), userPrincipal, workspace, subscriptionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -156,35 +156,38 @@ func (d *deploymentHandler) DeleteDeployment(c *gin.Context) {
 	fmt.Println(d.actionStatusService)
 	fmt.Println(terraformOperation)
 
-	if err := d.actionStatusService.SetTerraformOperation(terraformOperation); err != nil {
-		slog.Error("error setting terraform operation ", err)
+	if err := d.actionStatusService.SetTerraformOperation(c.Request.Context(), terraformOperation); err != nil {
+		logging.LogError(c.Request.Context(), "error setting terraform operation", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 
+	// background context for long running operation
+	bgCtx := logging.CreateBackgroundContextWithValues(c.Request.Context())
+
 	// Start the long-running operation in a goroutine
 	go func() {
-		if err := d.actionStatusService.SetActionStart(); err != nil {
-			slog.Error("error setting action start ", err)
+		if err := d.actionStatusService.SetActionStart(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error setting action start", "error", err)
 		}
 
-		if err := d.terraformService.Destroy(deployment.DeploymentLab); err != nil {
+		if err := d.terraformService.Destroy(bgCtx, deployment.DeploymentLab); err != nil {
 			terraformOperation.Status = entity.DestroyFailed
 		} else {
 			terraformOperation.Status = entity.DestroyCompleted
 		}
 
 		terraformOperation.InProgress = false
-		if err := d.actionStatusService.SetTerraformOperation(terraformOperation); err != nil {
-			slog.Error("error setting terraform operation ", err)
+		if err := d.actionStatusService.SetTerraformOperation(bgCtx, terraformOperation); err != nil {
+			logging.LogError(bgCtx, "error setting terraform operation", "error", err)
 		}
 
 		// Delete the deployment
-		if err := d.deploymentService.DeleteDeployment(userPrincipal, workspace, subscriptionId); err != nil {
-			slog.Error("error deleting deployment ", err)
+		if err := d.deploymentService.DeleteDeployment(bgCtx, userPrincipal, workspace, subscriptionId); err != nil {
+			logging.LogError(bgCtx, "error deleting deployment", "error", err)
 		}
 
-		if err := d.actionStatusService.SetActionEnd(); err != nil {
-			slog.Error("error setting action end ", err)
+		if err := d.actionStatusService.SetActionEnd(bgCtx); err != nil {
+			logging.LogError(bgCtx, "error setting action end", "error", err)
 		}
 
 	}()

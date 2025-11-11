@@ -5,7 +5,6 @@ import (
 	"one-click-aks-server/internal/entity"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slog"
 )
 
 type kVersionHandler struct {
@@ -22,8 +21,7 @@ func NewKVersionHandler(r *gin.RouterGroup, service entity.KVersionService) {
 }
 
 func (k *kVersionHandler) GetOrchestrator(c *gin.Context) {
-	slog.Info("Kubernetes orchestrator requested")
-	kubernetesOrchestrator, err := k.kVersionService.GetOrchestrator()
+	kubernetesOrchestrator, err := k.kVersionService.GetOrchestrator(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -34,7 +32,7 @@ func (k *kVersionHandler) GetOrchestrator(c *gin.Context) {
 
 // Default Kubernetes Version
 func (k *kVersionHandler) GetDefaultVersion(c *gin.Context) {
-	defaultVersion := k.kVersionService.GetDefaultVersion()
+	defaultVersion := k.kVersionService.GetDefaultVersion(c.Request.Context())
 	if defaultVersion == "" {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "not able to get default version"})
 		return

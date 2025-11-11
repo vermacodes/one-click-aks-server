@@ -1,12 +1,12 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/logging"
 )
 
 type labService struct {
@@ -27,128 +27,138 @@ func NewLabService(repo entity.LabRepository, kVersionService entity.KVersionSer
 	}
 }
 
-func (l *labService) GetLabFromRedis() (entity.LabType, error) {
+func (l *labService) GetLabFromRedis(ctx context.Context) (entity.LabType, error) {
+	logging.LogInfo(ctx, "starting lab retrieval from Redis")
+
 	lab := entity.LabType{}
-	out, err := l.labRepository.GetLabFromRedis()
+	out, err := l.labRepository.GetLabFromRedis(ctx)
 	if err != nil {
-
 		// If the lab was not found in redis then we will set to default.
+		logging.LogInfo(ctx, "lab not found in Redis, creating default lab")
 
-		slog.Info("lab not found in redis. Setting default.")
-
-		defaultLab, err := l.HelperDefaultLab()
+		defaultLab, err := l.HelperDefaultLab(ctx)
 		if err != nil {
-			slog.Error("not able to generate default lab", err)
+			logging.LogError(ctx, "failed to generate default lab", "error", err.Error())
 			return lab, err
 		}
 
-		if err := l.SetLabInRedis(defaultLab); err != nil {
-			slog.Error("not able to set default lab in redis.", err)
+		if err := l.SetLabInRedis(ctx, defaultLab); err != nil {
+			logging.LogError(ctx, "failed to set default lab in Redis", "error", err.Error())
 		}
 
+		logging.LogInfo(ctx, "default lab created and cached successfully")
 		return defaultLab, nil
 	}
-	slog.Debug("lab found in redis")
 
 	if err := json.Unmarshal([]byte(out), &lab); err != nil {
-		slog.Error("not able to unmarshal lab in redis to object", err)
+		logging.LogError(ctx, "failed to unmarshal lab from Redis", "error", err.Error())
+		return lab, err
 	}
 
+	logging.LogInfo(ctx, "lab retrieved from Redis successfully")
 	return lab, nil
 }
 
-func (l *labService) SetLabInRedis(lab entity.LabType) error {
+func (l *labService) SetLabInRedis(ctx context.Context, lab entity.LabType) error {
+	logging.LogInfo(ctx, "starting lab configuration in Redis")
 
 	for i := range lab.Template.KubernetesClusters {
 		if lab.Template.KubernetesClusters[i].KubernetesVersion == "" {
-			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion()
+			lab.Template.KubernetesClusters[i].KubernetesVersion = l.kVersionService.GetDefaultVersion(ctx)
 		}
 	}
 
 	for i := range lab.Template.AroClusters {
 		if lab.Template.AroClusters[i].Version == "" {
-			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion()
+			lab.Template.AroClusters[i].Version = l.aroVersionService.GetDefaultAROVersion(ctx)
 		}
 	}
 
 	val, err := json.Marshal(lab)
 	if err != nil || string(val) == "" {
-		slog.Error("not able to marshal object", err)
+		logging.LogError(ctx, "failed to marshal lab object", "error", err.Error())
 		return err
 	}
 
-	if err := l.labRepository.SetLabInRedis(string(val)); err != nil {
-		slog.Error("not able set lab in redis", err)
+	if err := l.labRepository.SetLabInRedis(ctx, string(val)); err != nil {
+		logging.LogError(ctx, "failed to store lab in Redis", "error", err.Error())
 		return err
 	}
 
+	logging.LogInfo(ctx, "lab configured in Redis successfully")
 	return nil
 }
 
-func (l *labService) DeleteLabFromRedis() error {
-	return l.labRepository.DeleteLabFromRedis()
+func (l *labService) DeleteLabFromRedis(ctx context.Context) error {
+	logging.LogInfo(ctx, "starting lab deletion from Redis")
+
+	err := l.labRepository.DeleteLabFromRedis(ctx)
+	if err != nil {
+		logging.LogError(ctx, "failed to delete lab from Redis", "error", err.Error())
+		return err
+	}
+
+	logging.LogInfo(ctx, "lab deleted from Redis successfully")
+	return nil
 }
 
-func (l *labService) GetProtectedLab(typeOfLab string, labId string) (entity.LabType, error) {
-	slog.Info("getting protected lab",
-		slog.String("typeOfLab", typeOfLab),
-		slog.String("labId", labId),
+func (l *labService) GetProtectedLab(ctx context.Context, typeOfLab string, labId string) (entity.LabType, error) {
+	logging.LogInfo(ctx, "starting protected lab retrieval",
+		"typeOfLab", typeOfLab,
+		"labId", labId,
 	)
 
 	lab := entity.LabType{}
 
 	if labId == "" || typeOfLab == "" {
-		slog.Error("required typeOfLab or labId is empty",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
+		logging.LogError(ctx, "validation failed: required parameters are empty",
+			"typeOfLab", typeOfLab,
+			"labId", labId,
 		)
 		return lab, fmt.Errorf("required typeOfLab or labId is empty")
 	}
 
-	typeOfLab = l.OriginalTypeOfLab(typeOfLab)
-
-	slog.Info("getting protected lab (original typeOfLab)",
-		slog.String("typeOfLab", typeOfLab),
-		slog.String("labId", labId),
-	)
+	originalTypeOfLab := l.OriginalTypeOfLab(ctx, typeOfLab)
 
 	// http call to actlabs-auth
-	labString, err := l.labRepository.GetProtectedLab(typeOfLab, labId)
+	labString, err := l.labRepository.GetProtectedLab(ctx, originalTypeOfLab, labId)
 	if err != nil {
-		slog.Error("not able to get protected lab request",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
-			slog.String("error", err.Error()),
+		logging.LogError(ctx, "failed to retrieve protected lab from repository",
+			"typeOfLab", originalTypeOfLab,
+			"labId", labId,
+			"error", err.Error(),
 		)
-		return lab, fmt.Errorf("not able to get protected %s", err.Error())
+		return lab, fmt.Errorf("failed to get protected lab: %s", err.Error())
 	}
 
 	if err := json.Unmarshal([]byte(labString), &lab); err != nil {
-		slog.Error("not able to unmarshal lab object",
-			slog.String("typeOfLab", typeOfLab),
-			slog.String("labId", labId),
-			slog.String("error", err.Error()),
+		logging.LogError(ctx, "failed to unmarshal protected lab",
+			"typeOfLab", originalTypeOfLab,
+			"labId", labId,
+			"error", err.Error(),
 		)
-		return lab, fmt.Errorf("not able to unmarshal lab object %s", err.Error())
+		return lab, fmt.Errorf("failed to unmarshal lab object: %s", err.Error())
 	}
 
 	if lab.ExtendScript == "redacted" || lab.ExtendScript == "" {
-		slog.Error("got the lab, but the extend script is redacted or empty",
-			slog.String("labId", labId),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("extendScript", lab.ExtendScript),
+		logging.LogError(ctx, "business rule violation: extend script is redacted or empty",
+			"labId", labId,
+			"labName", lab.Name,
+			"labType", lab.Type,
 		)
-
-		return lab, fmt.Errorf("got the lab, but the extend script is redacted or empty")
+		return lab, fmt.Errorf("extend script is not available for this lab")
 	}
 
-	lab.Type = l.RedactedTypeOfLab(lab.Type)
+	lab.Type = l.RedactedTypeOfLab(ctx, lab.Type)
 
+	logging.LogInfo(ctx, "protected lab retrieved successfully",
+		"labId", labId,
+		"labName", lab.Name,
+	)
 	return lab, nil
 }
 
-func (l *labService) OriginalTypeOfLab(typeOfLab string) string {
+func (l *labService) OriginalTypeOfLab(ctx context.Context, typeOfLab string) string {
 	// change typeOfLab to match the real type of lab
 	if typeOfLab == "assignment" {
 		return "readinesslab"
@@ -160,7 +170,7 @@ func (l *labService) OriginalTypeOfLab(typeOfLab string) string {
 	return typeOfLab
 }
 
-func (l *labService) RedactedTypeOfLab(typeOfLab string) string {
+func (l *labService) RedactedTypeOfLab(ctx context.Context, typeOfLab string) string {
 	// change typeOfLab to match the real type of lab
 	if typeOfLab == "readinesslab" {
 		return "assignment"
@@ -172,7 +182,8 @@ func (l *labService) RedactedTypeOfLab(typeOfLab string) string {
 	return typeOfLab
 }
 
-func (l *labService) HelperDefaultLab() (entity.LabType, error) {
+func (l *labService) HelperDefaultLab(ctx context.Context) (entity.LabType, error) {
+	logging.LogInfo(ctx, "creating default lab configuration")
 
 	var defaultResourceGroup = entity.TfvarResourceGroupType{
 		Location: "East US",
@@ -204,7 +215,7 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 
 	var defaultKubernetesClusters = []entity.TfvarKubernetesClusterType{
 		{
-			KubernetesVersion:       l.kVersionService.GetDefaultVersion(),
+			KubernetesVersion:       l.kVersionService.GetDefaultVersion(ctx),
 			NetworkPlugin:           "kubenet",
 			NetworkPolicy:           "null",
 			NetworkPluginMode:       "null",
@@ -230,9 +241,9 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		AppGateways:           []entity.AppGatewayType{},
 	}
 
-	extendScript, err := l.labRepository.GetExtendScriptTemplate()
+	extendScript, err := l.labRepository.GetExtendScriptTemplate(ctx)
 	if err != nil {
-		slog.Error("Not able to get extend script template. Defaulting to empty string.", err)
+		logging.LogError(ctx, "failed to get extend script template, using empty string", "error", err.Error())
 		extendScript = ""
 	}
 
@@ -243,5 +254,6 @@ func (l *labService) HelperDefaultLab() (entity.LabType, error) {
 		ExtendScript: extendScript,
 	}
 
+	logging.LogInfo(ctx, "default lab configuration created successfully")
 	return defaultLab, nil
 }

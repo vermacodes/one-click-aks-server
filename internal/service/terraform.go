@@ -2,13 +2,16 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
+	"one-click-aks-server/internal/config"
 	"one-click-aks-server/internal/entity"
-
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/helper"
+	"one-click-aks-server/internal/logging"
 )
 
 type terraformService struct {
@@ -21,6 +24,7 @@ type terraformService struct {
 	aroVersionService     entity.AROVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	authService           entity.AuthService
+	appConfig             config.Config
 }
 
 func NewTerraformService(
@@ -33,6 +37,7 @@ func NewTerraformService(
 	aroVersionService entity.AROVersionService,
 	storageAccountService entity.StorageAccountService,
 	authService entity.AuthService,
+	appConfig config.Config,
 ) entity.TerraformService {
 	return &terraformService{
 		terraformRepository:   terraformRepository,
@@ -44,40 +49,84 @@ func NewTerraformService(
 		workspaceService:      workspaceService,
 		storageAccountService: storageAccountService,
 		authService:           authService,
+		appConfig:             appConfig,
 	}
 }
 
-func (t *terraformService) Init() error {
-	lab, err := t.labService.GetLabFromRedis()
+func (t *terraformService) Init(ctx context.Context) error {
+	logging.LogInfo(ctx, "running terraform init")
+	lab, err := t.labService.GetLabFromRedis(ctx)
 	if err != nil {
 		return err
 	}
 
-	if err := helperTerraformAction(t, lab.Template, "init"); err != nil {
-		slog.Error("terraform init failed",
-			slog.String("labId", lab.Id),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("error", err.Error()),
+	if err := helperTerraformAction(ctx, t, lab.Template, "init"); err != nil {
+		logging.LogError(ctx, "terraform init failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
 		)
 		return fmt.Errorf("terraform init failed %s", err.Error())
 	}
 
 	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *terraformService) Plan(lab entity.LabType) error {
-	if err := helperTerraformAction(t, lab.Template, "plan"); err != nil {
-		slog.Error("terraform plan failed",
-			slog.String("labId", lab.Id),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("error", err.Error()),
+func (t *terraformService) EnsureInit(ctx context.Context) error {
+	logging.LogInfo(ctx, "ensuring terraform init")
+	lab, err := t.labService.GetLabFromRedis(ctx)
+	if err != nil {
+		return err
+	}
+
+	userAlias := helper.GetUserAliasFromContext(ctx)
+	userDir := filepath.Join(t.appConfig.RootDir, "user", userAlias)
+	tfUserDir := filepath.Join(userDir, "tf")
+
+	// check if .terraform directory exist in tfUserDir
+	terraformDir := filepath.Join(tfUserDir, ".terraform")
+	if _, err := os.Stat(terraformDir); os.IsNotExist(err) {
+		logging.LogInfo(ctx, "terraform not initialized in user directory, running init", "terraform_dir", tfUserDir)
+	} else {
+		logging.LogInfo(ctx, "terraform already initialized in user directory", "terraform_dir", tfUserDir)
+		// Terraform is already initialized, no need to run init again
+		return nil
+	}
+
+	if err := helperTerraformAction(ctx, t, lab.Template, "ensure_init"); err != nil {
+		logging.LogError(ctx, "terraform init failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
+		)
+		return fmt.Errorf("terraform init failed %s", err.Error())
+	}
+
+	// Invalidate workspace cache
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *terraformService) Plan(ctx context.Context, lab entity.LabType) error {
+
+	logging.LogInfo(ctx, "running terraform plan", "lab_id", lab.Id)
+
+	if err := helperTerraformAction(ctx, t, lab.Template, "plan"); err != nil {
+		logging.LogError(ctx, "terraform plan failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
 		)
 		return fmt.Errorf("terraform plan failed %s", err.Error())
 	}
@@ -85,51 +134,51 @@ func (t *terraformService) Plan(lab entity.LabType) error {
 	return nil
 }
 
-func (t *terraformService) Apply(lab entity.LabType) error {
+func (t *terraformService) Apply(ctx context.Context, lab entity.LabType) error {
 
 	// if lab is assignment, update assignment status to InProgress
 	if lab.Type == "assignment" {
-		userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
-		if err := t.UpdateAssignment(userId, lab.Id, "InProgress"); err != nil {
+		userId := helper.GetUserIDFromContext(ctx)
+		if err := t.UpdateAssignment(ctx, userId, lab.Id, "InProgress"); err != nil {
 			return fmt.Errorf("not able to update assignment status, try again")
 		}
 	}
 
-	if err := helperTerraformAction(t, lab.Template, "apply"); err != nil {
-		slog.Error("terraform apply failed",
-			slog.String("labId", lab.Id),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("error", err.Error()),
+	if err := helperTerraformAction(ctx, t, lab.Template, "apply"); err != nil {
+		logging.LogError(ctx, "terraform apply failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
 		)
 		return fmt.Errorf("terraform apply failed %s", err.Error())
 	}
 
 	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(ctx); err != nil {
 		return err
 	}
 
-	return t.Extend(lab, "apply")
+	return t.Extend(ctx, lab, "apply")
 
 }
 
-func (t *terraformService) Extend(lab entity.LabType, mode string) error {
-	slog.Info("running extend script",
-		slog.String("labId", lab.Id),
-		slog.String("labName", lab.Name),
-		slog.String("labType", lab.Type),
-		slog.String("mode", mode),
+func (t *terraformService) Extend(ctx context.Context, lab entity.LabType, mode string) error {
+	logging.LogInfo(ctx, "running extend script",
+		"lab_id", lab.Id,
+		"lab_name", lab.Name,
+		"lab_type", lab.Type,
+		"mode", mode,
 	)
 
 	// Getting back redacted values
 	if lab.ExtendScript == "redacted" {
-		lab, err := t.labService.GetProtectedLab(lab.Type, lab.Id)
+		lab, err := t.labService.GetProtectedLab(ctx, lab.Type, lab.Id)
 		if err != nil {
 			return err
 		}
 
-		err = helperExecuteScript(t, lab.ExtendScript, mode)
+		err = helperExecuteScript(ctx, t, lab.ExtendScript, mode)
 		if err != nil {
 			return err
 		}
@@ -137,8 +186,8 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 		// if lab is assignment and mode is validate,
 		// update assignment status to completed if the validation was good.
 		if lab.Type == "assignment" && mode == "validate" {
-			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
-			if err := t.UpdateAssignment(userId, lab.Id, "Completed"); err != nil {
+			userId := helper.GetUserIDFromContext(ctx)
+			if err := t.UpdateAssignment(ctx, userId, lab.Id, "Completed"); err != nil {
 				return fmt.Errorf("validation was successful but not able to update status, try again")
 			}
 		}
@@ -146,8 +195,8 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 		// if lab is challenge and mode is validate,
 		// update challenge status to completed if the validation was good.
 		if lab.Type == "challenge" && mode == "validate" {
-			userId := os.Getenv("ARM_USER_PRINCIPAL_NAME")
-			if err := t.UpdateChallenge(userId, lab.Id, "completed"); err != nil { // it is completed. not Completed.
+			userId := helper.GetUserIDFromContext(ctx)
+			if err := t.UpdateChallenge(ctx, userId, lab.Id, "completed"); err != nil { // it is completed. not Completed.
 				return fmt.Errorf("validation was successful but not able to update status, try again")
 			}
 		}
@@ -155,50 +204,50 @@ func (t *terraformService) Extend(lab entity.LabType, mode string) error {
 		return nil
 	}
 
-	return helperExecuteScript(t, lab.ExtendScript, mode)
+	return helperExecuteScript(ctx, t, lab.ExtendScript, mode)
 }
 
-func (t *terraformService) Destroy(lab entity.LabType) error {
-	slog.Info("terraform destroy",
-		slog.String("labId", lab.Id),
-		slog.String("labName", lab.Name),
-		slog.String("labType", lab.Type),
+func (t *terraformService) Destroy(ctx context.Context, lab entity.LabType) error {
+	logging.LogInfo(ctx, "terraform destroy",
+		"lab_id", lab.Id,
+		"lab_name", lab.Name,
+		"lab_type", lab.Type,
 	)
 
-	if err := t.Extend(lab, "destroy"); err != nil {
+	if err := t.Extend(ctx, lab, "destroy"); err != nil {
 		return err
 	}
 
-	if err := helperTerraformAction(t, lab.Template, "destroy"); err != nil {
-		slog.Error("terraform destroy failed",
-			slog.String("labId", lab.Id),
-			slog.String("labName", lab.Name),
-			slog.String("labType", lab.Type),
-			slog.String("error", err.Error()),
+	if err := helperTerraformAction(ctx, t, lab.Template, "destroy"); err != nil {
+		logging.LogError(ctx, "terraform destroy failed",
+			"lab_id", lab.Id,
+			"lab_name", lab.Name,
+			"lab_type", lab.Type,
+			"error", err.Error(),
 		)
 		return fmt.Errorf("terraform destroy failed %s", err.Error())
 	}
 
 	// Invalidate workspace cache
-	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(); err != nil {
+	if err := t.workspaceService.DeleteAllWorkspaceFromRedis(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *terraformService) UpdateAssignment(userId string, labId string, status string) error {
-	slog.Info("updating assignment status",
-		slog.String("userId", userId),
-		slog.String("labId", labId),
-		slog.String("status", status),
+func (t *terraformService) UpdateAssignment(ctx context.Context, userId string, labId string, status string) error {
+	logging.LogInfo(ctx, "updating assignment status",
+		"user_id", userId,
+		"lab_id", labId,
+		"status", status,
 	)
-	if err := t.terraformRepository.UpdateAssignment(userId, labId, status); err != nil {
-		slog.Error("not able to update assignment status",
-			slog.String("userId", userId),
-			slog.String("labId", labId),
-			slog.String("status", status),
-			slog.String("error", err.Error()),
+	if err := t.terraformRepository.UpdateAssignment(ctx, userId, labId, status); err != nil {
+		logging.LogError(ctx, "not able to update assignment status",
+			"user_id", userId,
+			"lab_id", labId,
+			"status", status,
+			"error", err.Error(),
 		)
 		return err
 	}
@@ -206,18 +255,18 @@ func (t *terraformService) UpdateAssignment(userId string, labId string, status 
 	return nil
 }
 
-func (t *terraformService) UpdateChallenge(userId string, labId string, status string) error {
-	slog.Info("updating challenge status",
-		slog.String("userId", userId),
-		slog.String("labId", labId),
-		slog.String("status", status),
+func (t *terraformService) UpdateChallenge(ctx context.Context, userId string, labId string, status string) error {
+	logging.LogInfo(ctx, "updating challenge status",
+		"user_id", userId,
+		"lab_id", labId,
+		"status", status,
 	)
-	if err := t.terraformRepository.UpdateChallenge(userId, labId, status); err != nil {
-		slog.Error("not able to update challenge status",
-			slog.String("userId", userId),
-			slog.String("labId", labId),
-			slog.String("status", status),
-			slog.String("error", err.Error()),
+	if err := t.terraformRepository.UpdateChallenge(ctx, userId, labId, status); err != nil {
+		logging.LogError(ctx, "not able to update challenge status",
+			"user_id", userId,
+			"lab_id", labId,
+			"status", status,
+			"error", err.Error(),
 		)
 		return err
 	}
@@ -225,26 +274,26 @@ func (t *terraformService) UpdateChallenge(userId string, labId string, status s
 	return nil
 }
 
-func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, action string) error {
+func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entity.TfvarConfigType, action string) error {
 
-	storageAccountName, err := t.storageAccountService.GetStorageAccountName()
+	storageAccountName, err := t.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
 		return err
 	}
 
-	helperEnsureKubernetesVersion(t, &tfvar)
+	helperEnsureKubernetesVersion(ctx, t, &tfvar)
 
-	helperEnsureAroVersion(t, &tfvar)
+	helperEnsureAroVersion(ctx, t, &tfvar)
 
-	helperEnsureAro(&tfvar)
+	helperEnsureAro(ctx, &tfvar)
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(tfvar, action, storageAccountName)
+	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
 		return err
 	}
 
 	// Getting current logs.
-	if _, err := t.logStreamService.GetLogs(); err != nil {
+	if _, err := t.logStreamService.GetLogs(ctx); err != nil {
 		return err
 	}
 
@@ -254,7 +303,7 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 
 		for in.Scan() {
 			// Appending logs to redis.
-			t.logStreamService.AppendLogs(fmt.Sprintf("%s\n", in.Text()))
+			t.logStreamService.AppendLogs(ctx, fmt.Sprintf("%s\n", in.Text()))
 		}
 		input.Close()
 	}(rPipe)
@@ -268,19 +317,19 @@ func helperTerraformAction(t *terraformService, tfvar entity.TfvarConfigType, ac
 // Ensure that the version of kubernetes exists.
 // if the version is old, it sets the version to current default.
 // best known use case is when a lab is created with an old version of kubernetes.
-func helperEnsureKubernetesVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
+func helperEnsureKubernetesVersion(ctx context.Context, t *terraformService, tfvar *entity.TfvarConfigType) {
 	for i, cluster := range tfvar.KubernetesClusters {
-		if !t.kVersionService.DoesVersionExist(cluster.KubernetesVersion) {
-			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion()
+		if !t.kVersionService.DoesVersionExist(ctx, cluster.KubernetesVersion) {
+			tfvar.KubernetesClusters[i].KubernetesVersion = t.kVersionService.GetDefaultVersion(ctx)
 		}
 	}
 }
 
 // Ensure that the version of ARO exists.
-func helperEnsureAroVersion(t *terraformService, tfvar *entity.TfvarConfigType) {
+func helperEnsureAroVersion(ctx context.Context, t *terraformService, tfvar *entity.TfvarConfigType) {
 	for i, cluster := range tfvar.AroClusters {
-		if !t.aroVersionService.DoesVersionExist(cluster.Version) {
-			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion()
+		if !t.aroVersionService.DoesVersionExist(ctx, cluster.Version) {
+			tfvar.AroClusters[i].Version = t.aroVersionService.GetDefaultAROVersion(ctx)
 		}
 	}
 }
@@ -288,25 +337,25 @@ func helperEnsureAroVersion(t *terraformService, tfvar *entity.TfvarConfigType) 
 // Ensure ARO exists.
 // ARO is introduced late, so the older lab objects will not have it in them.
 // We just need to add empty array to tfvar object.
-func helperEnsureAro(tfvar *entity.TfvarConfigType) {
+func helperEnsureAro(ctx context.Context, tfvar *entity.TfvarConfigType) {
 	if tfvar.AroClusters == nil {
 		tfvar.AroClusters = []entity.TfvarAroClusterType{}
 	}
 }
 
-func helperExecuteScript(t *terraformService, script string, mode string) error {
-	storageAccountName, err := t.storageAccountService.GetStorageAccountName()
+func helperExecuteScript(ctx context.Context, t *terraformService, script string, mode string) error {
+	storageAccountName, err := t.storageAccountService.GetStorageAccountName(ctx)
 	if err != nil {
-		slog.Error("not able to get storage account name",
-			slog.String("error", err.Error()),
+		logging.LogError(ctx, "not able to get storage account name",
+			"error", err,
 		)
 		return fmt.Errorf("not able to get storage account name")
 	}
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(script, mode, storageAccountName)
+	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(ctx, script, mode, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
-		slog.Error("not able to run terraform script",
-			slog.String("error", err.Error()),
+		logging.LogError(ctx, "not able to run terraform script",
+			"error", err,
 		)
 		return fmt.Errorf("not able to run script")
 	}
@@ -316,7 +365,7 @@ func helperExecuteScript(t *terraformService, script string, mode string) error 
 		in := bufio.NewScanner(input)
 
 		for in.Scan() {
-			t.logStreamService.AppendLogs(fmt.Sprintf("%s\n", in.Text()))
+			t.logStreamService.AppendLogs(ctx, fmt.Sprintf("%s\n", in.Text()))
 		}
 		input.Close()
 	}(rPipe)

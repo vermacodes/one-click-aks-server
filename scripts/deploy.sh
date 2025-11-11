@@ -6,7 +6,7 @@ az containerapp create \
   --subscription ACT-CSS-Readiness \
   --environment actlabs-hub-env-eastus \
   --allow-insecure false \
-  --image actlabs.azurecr.io/repro:alpha \
+  --image actlabs.azurecr.io/actlabs-server:alpha \
   --ingress 'external' \
   --min-replicas 1 \
   --max-replicas 1 \
@@ -21,7 +21,6 @@ az containerapp create \
   "AUTH_TOKEN_ISS=$AUTH_TOKEN_ISS" \
   "HTTPS_PORT=$HTTPS_PORT" \
   "HTTP_PORT=$HTTP_PORT" \
-  "PROTECTED_LAB_SECRET=$PROTECTED_LAB_SECRET" \
   "TENANT_ID=$TENANT_ID" \
   "HTTP_REQUEST_TIMEOUT_SECONDS=$HTTP_REQUEST_TIMEOUT_SECONDS" \
   "LOG_LEVEL=$LOG_LEVEL" \
@@ -29,4 +28,4 @@ az containerapp create \
   "AZURE_CLIENT_ID=$AZURE_CLIENT_ID" \
   "AZURE_CLIENT_SECRET=$AZURE_CLIENT_SECRET" \
   "AZURE_TENANT_ID=$AZURE_TENANT_ID" \
-  "ACTLABS_HUB_URL=$ACTLABS_HUB_URL"
+  "ACTLABS_HUB_URL_INTERNAL=$ACTLABS_HUB_URL_INTERNAL"

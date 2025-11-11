@@ -25,7 +25,7 @@ func NewLabHandler(r *gin.RouterGroup, labService entity.LabService) {
 }
 
 func (l *labHandler) GetLabFromRedis(c *gin.Context) {
-	lab, err := l.labService.GetLabFromRedis()
+	lab, err := l.labService.GetLabFromRedis(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -42,7 +42,7 @@ func (l *labHandler) SetLabInRedis(c *gin.Context) {
 		return
 	}
 
-	if err := l.labService.SetLabInRedis(lab); err != nil {
+	if err := l.labService.SetLabInRedis(c.Request.Context(), lab); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,50 +51,10 @@ func (l *labHandler) SetLabInRedis(c *gin.Context) {
 }
 
 func (l *labHandler) DeleteLabFromRedis(c *gin.Context) {
-	if err := l.labService.DeleteLabFromRedis(); err != nil {
+	if err := l.labService.DeleteLabFromRedis(c.Request.Context()); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.Status(http.StatusNoContent)
 }
-
-// func (l *labHandler) GetMyLabs(c *gin.Context) {
-// 	labs, err := l.labService.GetMyLabs()
-// 	if err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.IndentedJSON(http.StatusOK, labs)
-// }
-
-// func (l *labHandler) AddMyLab(c *gin.Context) {
-// 	lab := entity.LabType{}
-// 	if err := c.Bind(&lab); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	if err := l.labService.AddMyLab(lab); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.Status(http.StatusCreated)
-// }
-
-// func (l *labHandler) DeleteMyLab(c *gin.Context) {
-// 	lab := entity.LabType{}
-// 	if err := c.Bind(&lab); err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	if err := l.labService.DeleteMyLab(lab); err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.Status(http.StatusNoContent)
-// }

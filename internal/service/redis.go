@@ -1,28 +1,29 @@
 package service
 
 import (
-	"one-click-aks-server/internal/entity"
+	"context"
 
-	"golang.org/x/exp/slog"
+	"one-click-aks-server/internal/entity"
+	"one-click-aks-server/internal/logging"
 )
 
-type RedisService struct {
+type redisService struct {
 	redisRepository entity.RedisRepository
 }
 
 func NewRedisService(redisRepository entity.RedisRepository) entity.RedisService {
-	return &RedisService{
+	return &redisService{
 		redisRepository: redisRepository,
 	}
 }
 
-func (r *RedisService) ResetServerCache() error {
-	slog.Info("Resetting Server Cache")
-	if err := r.redisRepository.ResetServerCache(); err != nil {
-		slog.Error("Not able to reset server cache", err)
+func (r *redisService) ResetServerCache(ctx context.Context) error {
+	logging.LogInfo(ctx, "resetting server cache")
+	if err := r.redisRepository.ResetServerCache(ctx); err != nil {
+		logging.LogError(ctx, "not able to reset server cache", "error", err)
 		return err
 	}
 
-	slog.Debug("Server Cache Reset complete")
+	logging.LogDebug(ctx, "server cache reset complete")
 	return nil
 }
