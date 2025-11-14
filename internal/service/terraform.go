@@ -358,6 +358,9 @@ func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, pref
 	for i := range tfvar.KubernetesClusters {
 		if tfvar.KubernetesClusters[i].DefaultNodePool.VmSize == "UserDefaultVMSize" {
 			logging.LogDebug(ctx, "updated vm size to use users default", "UserDefaultVMSize", preferredVMSize)
+			if preferredVMSize == "" {
+				preferredVMSize = "Standard_D2_v5" // Fallback to default if user preference is empty.
+			}
 			tfvar.KubernetesClusters[i].DefaultNodePool.VmSize = preferredVMSize
 		}
 	}
