@@ -46,3 +46,8 @@ output "cluster_oidc_issuer_url" {
   value       = length(var.kubernetes_clusters) == 0 ? "" : azurerm_kubernetes_cluster.this[0].oidc_issuer_url
   description = "The OIDC Issuer URL associated with this AKS Cluster"
 }
+
+output "default_node_pool_vm_size" {
+  value       = length(var.kubernetes_clusters) == 0 ? "" : azurerm_kubernetes_cluster.this[0].default_node_pool[0].vm_size
+  description = "The VM Size of the default node pool"
+}
