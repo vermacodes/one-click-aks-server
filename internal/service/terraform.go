@@ -295,7 +295,7 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 
 	helperEnsureAro(ctx, &tfvar)
 
-	helperEnsureVMSize(ctx, &tfvar, userPreference.UserDefaultVMSize)
+	helperEnsureVMSize(ctx, &tfvar, userPreference.UserDefaultVMSize, t.appConfig.DefaultPreferredVMSize)
 
 	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
@@ -354,12 +354,12 @@ func helperEnsureAro(ctx context.Context, tfvar *entity.TfvarConfigType) {
 }
 
 // Manage VM Size per user preference or lab requirement.
-func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, preferredVMSize string) {
+func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, preferredVMSize string, defaultPreferredVMSize string) {
 	for i := range tfvar.KubernetesClusters {
 		if tfvar.KubernetesClusters[i].DefaultNodePool.VmSize == "UserDefaultVMSize" {
 			logging.LogDebug(ctx, "updated vm size to use users default", "UserDefaultVMSize", preferredVMSize)
 			if preferredVMSize == "" {
-				preferredVMSize = "Standard_D2_v5" // Fallback to default if user preference is empty.
+				preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
 			}
 			tfvar.KubernetesClusters[i].DefaultNodePool.VmSize = preferredVMSize
 		}
