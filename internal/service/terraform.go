@@ -24,6 +24,7 @@ type terraformService struct {
 	aroVersionService     entity.AROVersionService
 	storageAccountService entity.StorageAccountService // Some information is needed from storage account service.
 	authService           entity.AuthService
+	preferenceService     entity.PreferenceService
 	appConfig             config.Config
 }
 
@@ -37,6 +38,7 @@ func NewTerraformService(
 	aroVersionService entity.AROVersionService,
 	storageAccountService entity.StorageAccountService,
 	authService entity.AuthService,
+	preferenceService entity.PreferenceService,
 	appConfig config.Config,
 ) entity.TerraformService {
 	return &terraformService{
@@ -49,6 +51,7 @@ func NewTerraformService(
 		workspaceService:      workspaceService,
 		storageAccountService: storageAccountService,
 		authService:           authService,
+		preferenceService:     preferenceService,
 		appConfig:             appConfig,
 	}
 }
@@ -281,11 +284,18 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 		return err
 	}
 
+	userPreference, err := t.preferenceService.GetPreference(ctx)
+	if err != nil {
+		return err
+	}
+
 	helperEnsureKubernetesVersion(ctx, t, &tfvar)
 
 	helperEnsureAroVersion(ctx, t, &tfvar)
 
 	helperEnsureAro(ctx, &tfvar)
+
+	helperEnsureVMSize(ctx, &tfvar, userPreference.UserDefaultVMSize, t.appConfig.DefaultPreferredVMSize)
 
 	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx))
 	if err != nil {
@@ -340,6 +350,19 @@ func helperEnsureAroVersion(ctx context.Context, t *terraformService, tfvar *ent
 func helperEnsureAro(ctx context.Context, tfvar *entity.TfvarConfigType) {
 	if tfvar.AroClusters == nil {
 		tfvar.AroClusters = []entity.TfvarAroClusterType{}
+	}
+}
+
+// Manage VM Size per user preference or lab requirement.
+func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, preferredVMSize string, defaultPreferredVMSize string) {
+	for i := range tfvar.KubernetesClusters {
+		if tfvar.KubernetesClusters[i].DefaultNodePool.VmSize == "UserDefaultVMSize" {
+			logging.LogDebug(ctx, "updated vm size to use users default", "UserDefaultVMSize", preferredVMSize)
+			if preferredVMSize == "" {
+				preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
+			}
+			tfvar.KubernetesClusters[i].DefaultNodePool.VmSize = preferredVMSize
+		}
 	}
 }
 

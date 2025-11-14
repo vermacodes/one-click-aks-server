@@ -109,6 +109,7 @@ func (p *preferenceService) SetPreference(ctx context.Context, preference entity
 func defaultPreference() entity.Preference {
 	return entity.Preference{
 		AzureRegion:        "East US",
+		UserDefaultVMSize:  "Standard_DS2_v2",
 		TerminalAutoScroll: false,
 	}
 }

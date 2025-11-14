@@ -32,6 +32,7 @@ type Config struct {
 	CorsAllowOrigins                string
 	CorsAllowMethods                string
 	CorsAllowHeaders                string
+	DefaultPreferredVMSize          string
 	// Add other configuration fields as needed
 }
 
@@ -215,6 +216,12 @@ func NewConfig() *Config {
 	}
 	logging.LogDebug(ctx, "CORS_ALLOW_HEADERS: "+corsAllowHeaders)
 
+	defaultPreferredVMSize := os.Getenv("DEFAULT_PREFERRED_VM_SIZE")
+	if defaultPreferredVMSize == "" {
+		defaultPreferredVMSize = "Standard_D2_v5"
+	}
+	logging.LogDebug(ctx, "DEFAULT_PREFERRED_VM_SIZE: "+defaultPreferredVMSize)
+
 	// Retrieve other environment variables and check them as needed
 
 	return &Config{
@@ -241,6 +248,7 @@ func NewConfig() *Config {
 		CorsAllowOrigins:                corsAllowOrigins,
 		CorsAllowMethods:                corsAllowMethods,
 		CorsAllowHeaders:                corsAllowHeaders,
+		DefaultPreferredVMSize:          defaultPreferredVMSize,
 		// Add other configuration fields as needed
 	}
 }

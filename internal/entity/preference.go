@@ -4,6 +4,7 @@ import "context"
 
 type Preference struct {
 	AzureRegion        string `json:"azureRegion"`
+	UserDefaultVMSize  string `json:"userDefaultVMSize"`
 	TerminalAutoScroll bool   `json:"terminalAutoScroll"`
 }
 

@@ -193,7 +193,7 @@ func (l *labService) HelperDefaultLab(ctx context.Context) (entity.LabType, erro
 		EnableAutoScaling:         false,
 		MinCount:                  1,
 		MaxCount:                  1,
-		VmSize:                    "Standard_D2_v5",
+		VmSize:                    "UserDefaultVMSize",
 		OnlyCriticalAddonsEnabled: false,
 		OsSku:                     "Ubuntu",
 	}
