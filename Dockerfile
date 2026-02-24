@@ -1,4 +1,4 @@
-FROM actlabs.azurecr.io/actlabs-base:20251104-01
+FROM actlabs.azurecr.io/actlabs-base:20260224-01
 
 WORKDIR /app
 
