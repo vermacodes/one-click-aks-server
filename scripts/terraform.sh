@@ -2,7 +2,7 @@
 
 action=$1
 
-source $ROOT_DIR/scripts/helper.sh
+source $ROOT_DIR/scripts/helper.sh || { echo "Failed to source helper.sh"; exit 1; }
 
 function plan() {
   log "Planning"

@@ -71,7 +71,7 @@ done
 
 # no need to update these variable.
 export ROOT_DIR=$(pwd)
-source $ROOT_DIR/scripts/helper.sh
+source $ROOT_DIR/scripts/helper.sh || { echo "Failed to source helper.sh"; exit 1; }
 
 # Set TF_LOG if requested
 if [[ -n "$tf_log" ]]; then
