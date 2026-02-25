@@ -69,62 +69,6 @@ func NewAuth(appConfig *config.Config) *Auth {
 	return &Auth{Cred: cred}
 }
 
-// login using msi
-// func AzureCLILoginByMSI(username string, subscriptionId string) {
-// 	ctx := context.Background()
-// 	out, err := exec.Command("bash", "-c", "az login --identity --client-id "+username+" --verbose").Output()
-// 	if err != nil {
-// 		logging.LogInfo(ctx, "az login --identity --client-id "+username+" output", "output", string(out))
-// 		logging.LogError(ctx, "not able to login using msi", "username", username, "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az login --identity --client-id "+username+" output", "output", string(out))
-
-// 	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
-// 	if err != nil {
-// 		logging.LogError(ctx, "not able to set subscription", "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az account set --subscription output", "output", string(out))
-
-// 	out, err = exec.Command("bash", "-c", "az account show").Output()
-// 	if err != nil {
-// 		logging.LogError(ctx, "not able to show account", "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az account show output", "output", string(out))
-// }
-
-// // login using service principal
-// func AzureCLILoginByServicePrincipal(username string, password string, subscriptionId string, tenant string) {
-// 	ctx := context.Background()
-// 	out, err := exec.Command("bash", "-c", "az login --service-principal -u "+username+" -p "+password+" --tenant "+tenant).Output()
-// 	if err != nil {
-// 		logging.LogError(ctx, "not able to login using service principal", "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az login --service-principal output", "output", string(out))
-
-// 	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
-// 	if err != nil {
-// 		logging.LogError(ctx, "not able to set subscription", "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az account set --subscription output", "output", string(out))
-
-// 	out, err = exec.Command("bash", "-c", "az account show").Output()
-// 	if err != nil {
-// 		logging.LogError(ctx, "not able to show account", "error", err)
-// 		os.Exit(1)
-// 	}
-
-// 	logging.LogInfo(ctx, "az account show output", "output", string(out))
-// }
 
 func (a *Auth) GetARMAccessToken() (string, error) {
 	accessToken, err := a.Cred.GetToken(context.Background(), policy.TokenRequestOptions{
