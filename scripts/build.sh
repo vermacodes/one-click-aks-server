@@ -59,7 +59,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # build docker image
-docker build -t actlabs.azurecr.io/actlabs-server:${TAG} .
+docker build --no-cache --progress=plain -t actlabs.azurecr.io/actlabs-server:${TAG} .
 if [ $? -ne 0 ]; then
   echo "Failed to build docker image"
   exit 1
