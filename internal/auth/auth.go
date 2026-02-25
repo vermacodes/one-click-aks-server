@@ -72,14 +72,14 @@ func NewAuth(appConfig *config.Config) *Auth {
 // login using msi
 // func AzureCLILoginByMSI(username string, subscriptionId string) {
 // 	ctx := context.Background()
-// 	out, err := exec.Command("bash", "-c", "az login --identity --username "+username+" --verbose").Output()
+// 	out, err := exec.Command("bash", "-c", "az login --identity --client-id "+username+" --verbose").Output()
 // 	if err != nil {
-// 		logging.LogInfo(ctx, "az login --identity --username "+username+" output", "output", string(out))
+// 		logging.LogInfo(ctx, "az login --identity --client-id "+username+" output", "output", string(out))
 // 		logging.LogError(ctx, "not able to login using msi", "username", username, "error", err)
 // 		os.Exit(1)
 // 	}
 
-// 	logging.LogInfo(ctx, "az login --identity --username "+username+" output", "output", string(out))
+// 	logging.LogInfo(ctx, "az login --identity --client-id "+username+" output", "output", string(out))
 
 // 	out, err = exec.Command("bash", "-c", "az account set --subscription "+subscriptionId).Output()
 // 	if err != nil {
