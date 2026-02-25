@@ -54,7 +54,7 @@ function setupAzureLogin() {
       if [[ "$ARM_USE_MSI" == "true" ]]; then
         if [[ -n "$ARM_CLIENT_ID" ]]; then
           log "Using Managed Service Identity login with client ID: $ARM_CLIENT_ID"
-          if az login --identity --username "$ARM_CLIENT_ID" --only-show-errors >>$LOG_FILE 2>&1; then
+          if az login --identity --client-id "$ARM_CLIENT_ID" --only-show-errors >>$LOG_FILE 2>&1; then
             ok "Azure MSI login successful"
           else
             err "Azure MSI login failed"
