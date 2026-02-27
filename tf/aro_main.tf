@@ -53,7 +53,6 @@ resource "azurerm_role_assignment" "aro_rp_first_party_id_network_contributor" {
   principal_type       = "ServicePrincipal"
 }
 
-
 # ARO Cluster
 
 # This feature is still in preview. So the APIs are not yet available in Terraform.
@@ -78,6 +77,19 @@ resource "null_resource" "aro_cluster" {
 
   provisioner "local-exec" {
     command     = <<EOT
+
+      # Ensure Microsoft.RedHatOpenShift provider is registered (not tracked in TF state)
+      echo "Checking Microsoft.RedHatOpenShift provider registration status..."
+      provider_state=$(az provider show -n Microsoft.RedHatOpenShift --subscription ${self.triggers.subscription_id} --query "registrationState" -o tsv 2>/dev/null || echo "NotRegistered")
+      
+      if [[ "$provider_state" != "Registered" ]]; then
+        echo "Provider not registered. Registering now (this may take a few minutes)..."
+        az provider register -n Microsoft.RedHatOpenShift --subscription ${self.triggers.subscription_id} --wait
+        echo "Provider registered successfully"
+      else
+        echo "Provider already registered, proceeding..."
+      fi
+
       az aro create \
         --resource-group ${self.triggers.resource_group} \
         --subscription ${self.triggers.subscription_id} \
