@@ -16,6 +16,8 @@ import (
 	"one-click-aks-server/internal/repository"
 	"one-click-aks-server/internal/service"
 
+	"actlabs/ratelimit"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -56,6 +58,8 @@ func main() {
 	appConfig := config.NewConfig()
 	auth := auth.NewAuth(appConfig)
 	rdb := cache.NewRedisClient()
+
+	rateLimiter := ratelimit.NewLimiter(rdb, ratelimit.DefaultConfig())
 
 	// mise
 	miseServer := mise.Server{
@@ -109,6 +113,13 @@ func main() {
 
 	authRouter := router.Group("/")
 	authRouter.Use(middleware.AuthRequired(miseServer, *appConfig))
+	authRouter.Use(ratelimit.Middleware(rateLimiter, func(c *gin.Context) string {
+		// logging.UserIDKey is server's internal contextKey type
+		if uid, ok := c.Request.Context().Value(logging.UserIDKey).(string); ok {
+			return uid
+		}
+		return ""
+	}))
 
 	apiKeyAuthRouter := router.Group("/")
 	apiKeyAuthRouter.Use(middleware.APIKeyAuthRequired(*appConfig))
