@@ -32,7 +32,7 @@ func NewTerraformRepository(appConfig *config.Config) entity.TerraformRepository
 }
 
 // buildUserEnvironment creates user-specific environment variables
-func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar entity.TfvarConfigType, storageAccountName string, subscriptionId string) []string {
+func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar entity.TfvarConfigType, storageAccountName string, subscriptionId string, preference entity.Preference) []string {
 	userAlias := helper.GetUserAliasFromContext(ctx)
 
 	// Start with current environment
@@ -65,6 +65,12 @@ func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar en
 		userEnvVars["ARM_CLIENT_SECRET"] = t.appConfig.AzureClientSecret
 		userEnvVars["ARM_SUBSCRIPTION_ID"] = subscriptionId
 		userEnvVars["ARM_TENANT_ID"] = t.appConfig.AzureTenantID
+	}
+
+	// Add user preferences as environment variables
+	preferenceEnvVars := helper.ConvertStructToEnvVars(preference, "USER_PREF_")
+	for key, value := range preferenceEnvVars {
+		userEnvVars[key] = value
 	}
 
 	// Add terraform variables from tfvar struct
@@ -169,7 +175,7 @@ func (t *terraformRepository) copyFile(src, dst string) error {
 	return err
 }
 
-func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.TfvarConfigType, action string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.TfvarConfigType, action string, storageAccountName string, subscriptionId string, preference entity.Preference) (*exec.Cmd, *os.File, *os.File, error) {
 
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
@@ -178,7 +184,7 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 	}
 
 	// Build user-specific environment
-	userEnv := t.buildUserEnvironment(ctx, tfvar, storageAccountName, subscriptionId)
+	userEnv := t.buildUserEnvironment(ctx, tfvar, storageAccountName, subscriptionId, preference)
 
 	// Execute terraform script with appropriate action in user's tf directory
 	tfDir := filepath.Join(userDir, "tf")
@@ -201,7 +207,7 @@ func (t *terraformRepository) TerraformAction(ctx context.Context, tfvar entity.
 	return cmd, rPipe, wPipe, nil
 }
 
-func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error) {
+func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string, subscriptionId string, preference entity.Preference) (*exec.Cmd, *os.File, *os.File, error) {
 	// Create user-specific directory with terraform files
 	userDir, err := t.ensureUserDirectory(ctx)
 	if err != nil {
@@ -209,7 +215,7 @@ func (t *terraformRepository) ExecuteScript(ctx context.Context, script string, 
 	}
 
 	// Build user-specific environment with script mode
-	userEnv := t.buildUserEnvironment(ctx, entity.TfvarConfigType{}, storageAccountName, subscriptionId)
+	userEnv := t.buildUserEnvironment(ctx, entity.TfvarConfigType{}, storageAccountName, subscriptionId, preference)
 	userEnv = append(userEnv, "SCRIPT_MODE="+mode)
 
 	// Execute script in user's tf directory

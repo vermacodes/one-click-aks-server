@@ -297,7 +297,7 @@ func helperTerraformAction(ctx context.Context, t *terraformService, tfvar entit
 
 	helperEnsureVMSize(ctx, &tfvar, userPreference.UserDefaultVMSize, t.appConfig.DefaultPreferredVMSize)
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx))
+	cmd, rPipe, wPipe, err := t.terraformRepository.TerraformAction(ctx, tfvar, action, storageAccountName, t.authService.GetSubscriptionId(ctx), userPreference)
 	if err != nil {
 		return err
 	}
@@ -375,7 +375,15 @@ func helperExecuteScript(ctx context.Context, t *terraformService, script string
 		return fmt.Errorf("not able to get storage account name")
 	}
 
-	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(ctx, script, mode, storageAccountName, t.authService.GetSubscriptionId(ctx))
+	userPreference, err := t.preferenceService.GetPreference(ctx)
+	if err != nil {
+		logging.LogError(ctx, "not able to get user preference",
+			"error", err,
+		)
+		return fmt.Errorf("not able to get user preference")
+	}
+
+	cmd, rPipe, wPipe, err := t.terraformRepository.ExecuteScript(ctx, script, mode, storageAccountName, t.authService.GetSubscriptionId(ctx), userPreference)
 	if err != nil {
 		logging.LogError(ctx, "not able to run terraform script",
 			"error", err,

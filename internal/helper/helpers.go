@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 	"unicode"
@@ -43,6 +44,56 @@ func CamelToConventional(s string) string {
 		result = append(result, unicode.ToLower(runes[i]))
 	}
 	return string(result)
+}
+
+// ConvertStructToEnvVars converts a struct's fields to environment variable key-value pairs
+// with a given prefix. Field names are converted from camelCase to UPPER_SNAKE_CASE.
+// For example, with prefix "USER_PREF_":
+//   - AzureRegion -> USER_PREF_AZURE_REGION
+//   - UserDefaultVMSize -> USER_PREF_USER_DEFAULT_VM_SIZE
+func ConvertStructToEnvVars(v interface{}, prefix string) map[string]string {
+	envVars := make(map[string]string)
+
+	// Marshal and unmarshal to get actual values
+	jsonData, err := json.Marshal(v)
+	if err != nil {
+		return envVars
+	}
+
+	// Convert to map to get field values
+	var objMap map[string]interface{}
+	if err := json.Unmarshal(jsonData, &objMap); err != nil {
+		return envVars
+	}
+
+	// Get struct type for field names
+	t := reflect.TypeOf(v)
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// Iterate through struct fields
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+
+		// Get the JSON tag name (this is the key in objMap)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+
+		// Handle json tag options like "omitempty"
+		jsonFieldName := strings.Split(jsonTag, ",")[0]
+
+		// Get the value from the unmarshaled map
+		if value, ok := objMap[jsonFieldName]; ok && value != nil {
+			// Convert field name to environment variable format
+			envKey := prefix + strings.ToUpper(CamelToConventional(field.Name))
+			envVars[envKey] = fmt.Sprintf("%v", value)
+		}
+	}
+
+	return envVars
 }
 
 func GetUserPrincipalFromMSALAuthToken(token string) (string, error) {

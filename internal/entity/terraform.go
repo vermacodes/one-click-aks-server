@@ -54,8 +54,8 @@ type TerraformService interface {
 }
 
 type TerraformRepository interface {
-	TerraformAction(ctx context.Context, tfvar TfvarConfigType, action string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error)
-	ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string, subscriptionId string) (*exec.Cmd, *os.File, *os.File, error)
+	TerraformAction(ctx context.Context, tfvar TfvarConfigType, action string, storageAccountName string, subscriptionId string, preference Preference) (*exec.Cmd, *os.File, *os.File, error)
+	ExecuteScript(ctx context.Context, script string, mode string, storageAccountName string, subscriptionId string, preference Preference) (*exec.Cmd, *os.File, *os.File, error)
 
 	UpdateAssignment(ctx context.Context, userId string, labId string, status string) error
 	UpdateChallenge(ctx context.Context, userId string, labId string, status string) error
