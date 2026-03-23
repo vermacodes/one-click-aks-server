@@ -364,6 +364,15 @@ func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, pref
 			tfvar.KubernetesClusters[i].DefaultNodePool.VmSize = preferredVMSize
 		}
 	}
+
+	// Similar for jump servers in case of labs that require jump servers.
+	for i := range tfvar.Jumpservers {
+		logging.LogDebug(ctx, "updated jump server vm size to use users default", "UserDefaultVMSize", preferredVMSize)
+		if preferredVMSize == "" {
+			preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
+		}
+		tfvar.Jumpservers[i].VmSize = preferredVMSize
+	}
 }
 
 func helperExecuteScript(ctx context.Context, t *terraformService, script string, mode string) error {

@@ -62,6 +62,7 @@ type TfvarNetworkSecurityGroupType struct {
 type TfvarJumpserverType struct {
 	AdminPassword string `json:"adminPassword"`
 	AdminUserName string `json:"adminUsername"`
+	VmSize        string `json:"vmSize"`
 }
 
 type TfvarFirewallType struct {

@@ -17,7 +17,7 @@ resource "azurerm_network_interface" "this" {
     name                          = "${module.naming.network_interface.name}-ip"
     subnet_id                     = azurerm_subnet.this[1].id // Second subnet must be for jump server.
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.this[0].id
+    public_ip_address_id          = azurerm_public_ip.this[count.index].id
   }
 }
 
@@ -26,8 +26,8 @@ resource "azurerm_virtual_machine" "this" {
   name                             = module.naming.virtual_machine.name
   location                         = azurerm_resource_group.this.location
   resource_group_name              = azurerm_resource_group.this.name
-  network_interface_ids            = [azurerm_network_interface.this[0].id]
-  vm_size                          = "Standard_DS1_v2"
+  network_interface_ids            = [azurerm_network_interface.this[count.index].id]
+  vm_size                          = var.jumpservers[count.index].vm_size
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
 
@@ -45,8 +45,8 @@ resource "azurerm_virtual_machine" "this" {
   }
   os_profile {
     computer_name  = "jumpserver"
-    admin_username = var.jumpservers[0].admin_username
-    admin_password = var.jumpservers[0].admin_password
+    admin_username = var.jumpservers[count.index].admin_username
+    admin_password = var.jumpservers[count.index].admin_password
   }
   os_profile_linux_config {
     disable_password_authentication = false
