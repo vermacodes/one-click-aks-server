@@ -83,7 +83,7 @@ fi
 # You will get these from the output on the UI.
 # just run terraform plan and copy the environment variables which start with TF_VAR
 # modify them to be on liners and paste them here.
-export TF_VAR_resource_group='{"location": "East US"}'
+export TF_VAR_resource_group='{"location": "West Central US"}'
 export TF_VAR_network_security_groups='[]'
 export TF_VAR_container_registries='[]'
 export TF_VAR_subnets='[]'

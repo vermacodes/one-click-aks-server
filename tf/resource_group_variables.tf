@@ -4,7 +4,7 @@ variable "resource_group" {
     location = string
   })
   default = {
-    location = "eastus"
+    location = "West Central US"
   }
 }
 
