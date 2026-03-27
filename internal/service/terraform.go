@@ -355,12 +355,13 @@ func helperEnsureAro(ctx context.Context, tfvar *entity.TfvarConfigType) {
 
 // Manage VM Size per user preference or lab requirement.
 func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, preferredVMSize string, defaultPreferredVMSize string) {
+	if preferredVMSize == "" {
+		preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
+	}
+
 	for i := range tfvar.KubernetesClusters {
 		if tfvar.KubernetesClusters[i].DefaultNodePool.VmSize == "UserDefaultVMSize" {
 			logging.LogDebug(ctx, "updated vm size to use users default", "UserDefaultVMSize", preferredVMSize)
-			if preferredVMSize == "" {
-				preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
-			}
 			tfvar.KubernetesClusters[i].DefaultNodePool.VmSize = preferredVMSize
 		}
 	}
@@ -368,11 +369,8 @@ func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, pref
 	// Similar for jump servers in case of labs that require jump servers.
 	for i := range tfvar.Jumpservers {
 		if tfvar.Jumpservers[i].VmSize == "UserDefaultVMSize" || tfvar.Jumpservers[i].VmSize == "" {
-			logging.LogDebug(ctx, "updated jump server vm size to use users default", "UserDefaultVMSize", preferredVMSize)
-			if preferredVMSize == "" {
-				preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
-			}
 			tfvar.Jumpservers[i].VmSize = preferredVMSize
+			logging.LogDebug(ctx, "updated jump server vm size to use users default", "UserDefaultVMSize", preferredVMSize)
 		}
 	}
 }
