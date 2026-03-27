@@ -367,11 +367,13 @@ func helperEnsureVMSize(ctx context.Context, tfvar *entity.TfvarConfigType, pref
 
 	// Similar for jump servers in case of labs that require jump servers.
 	for i := range tfvar.Jumpservers {
-		logging.LogDebug(ctx, "updated jump server vm size to use users default", "UserDefaultVMSize", preferredVMSize)
-		if preferredVMSize == "" {
-			preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
+		if tfvar.Jumpservers[i].VmSize == "UserDefaultVMSize" || tfvar.Jumpservers[i].VmSize == "" {
+			logging.LogDebug(ctx, "updated jump server vm size to use users default", "UserDefaultVMSize", preferredVMSize)
+			if preferredVMSize == "" {
+				preferredVMSize = defaultPreferredVMSize // Fallback to default if user preference is empty.
+			}
+			tfvar.Jumpservers[i].VmSize = preferredVMSize
 		}
-		tfvar.Jumpservers[i].VmSize = preferredVMSize
 	}
 }
 
