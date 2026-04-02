@@ -9,7 +9,7 @@ import (
 func TestConvertStructToEnvVars(t *testing.T) {
 	// Test with Preference struct
 	preference := entity.Preference{
-		AzureRegion:        "East US",
+		AzureRegion:        "West Central US",
 		UserDefaultVMSize:  "Standard_DS2_v2",
 		TerminalAutoScroll: true,
 	}
@@ -20,7 +20,7 @@ func TestConvertStructToEnvVars(t *testing.T) {
 		key      string
 		expected string
 	}{
-		{"USER_PREF_AZURE_REGION", "East US"},
+		{"USER_PREF_AZURE_REGION", "West Central US"},
 		{"USER_PREF_USER_DEFAULT_VM_SIZE", "Standard_DS2_v2"},
 		{"USER_PREF_TERMINAL_AUTO_SCROLL", "true"},
 	}

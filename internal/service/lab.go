@@ -186,7 +186,7 @@ func (l *labService) HelperDefaultLab(ctx context.Context) (entity.LabType, erro
 	logging.LogInfo(ctx, "creating default lab configuration")
 
 	var defaultResourceGroup = entity.TfvarResourceGroupType{
-		Location: "East US",
+		Location: "West Central US",
 	}
 
 	var defaultNodePool = entity.TfvarDefaultNodePoolType{

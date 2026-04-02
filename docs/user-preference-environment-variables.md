@@ -9,7 +9,7 @@ This solution implements a scalable approach to expose user preferences as envir
 The following user preferences:
 ```json
 {
-  "azureRegion": "East US",
+  "azureRegion": "West Central US",
   "userDefaultVMSize": "Standard_DS2_v2",
   "terminalAutoScroll": true
 }
@@ -17,7 +17,7 @@ The following user preferences:
 
 Are automatically converted to environment variables:
 ```bash
-USER_PREF_AZURE_REGION="East US"
+USER_PREF_AZURE_REGION="West Central US"
 USER_PREF_USER_DEFAULT_VM_SIZE="Standard_DS2_v2"
 USER_PREF_TERMINAL_AUTO_SCROLL="true"
 ```

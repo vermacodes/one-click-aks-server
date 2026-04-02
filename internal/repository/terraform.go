@@ -48,6 +48,7 @@ func (t *terraformRepository) buildUserEnvironment(ctx context.Context, tfvar en
 		"container_name":       "repro-project-tf-state-files",
 		"tf_state_file_name":   userAlias + "-terraform.tfstate",
 		"TF_VAR_aro_rp_first_party_service_principal_id": t.appConfig.AroRpFirstPartySpID,
+		"ARM_USER_PRINCIPAL_NAME":                        helper.GetUserIDFromContext(ctx),
 	}
 
 	// Add authentication configuration
