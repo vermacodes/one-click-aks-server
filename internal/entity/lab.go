@@ -20,10 +20,12 @@ type TfvarFirewallType = labentity.TfvarFirewallType
 type ContainerRegistryType = labentity.ContainerRegistryType
 type AppGatewayType = labentity.AppGatewayType
 type TfvarConfigType = labentity.TfvarConfigType
-type Blob = labentity.Blob
-type Blobs = labentity.Blobs
-type EnumerationResults = labentity.EnumerationResults
-type BlobType = labentity.BlobType
+
+// type Blob = labentity.Blob
+// type Blobs = labentity.Blobs
+// type EnumerationResults = labentity.EnumerationResults
+// type BlobType = labentity.BlobType
+
 type LabType = labentity.LabType
 
 type LabService interface {
